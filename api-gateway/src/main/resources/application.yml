@@ -1,0 +1,112 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      server:
+        webmvc:
+          routes:
+            # Auth & User (UC01, UC02)
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**
+              filters:
+                - StripPrefix=2
+            # Branch (UC03)
+            - id: branch-service
+              uri: lb://branch-service
+              predicates:
+                - Path=/api/v1/branches/**
+              filters:
+                - StripPrefix=2
+            # Catalog (UC04, UC10)
+            - id: catalog-service
+              uri: lb://catalog-service
+              predicates:
+                - Path=/api/v1/medicines/**,/api/v1/search/**
+              filters:
+                - StripPrefix=2
+            # Category
+            - id: category-service
+              uri: lb://category-service
+              predicates:
+                - Path=/api/v1/categories/**
+              filters:
+                - StripPrefix=2
+            # Supplier (UC11)
+            - id: supplier-service
+              uri: lb://supplier-service
+              predicates:
+                - Path=/api/v1/suppliers/**
+              filters:
+                - StripPrefix=2
+            # Inventory (UC05)
+            - id: inventory-service
+              uri: lb://inventory-service
+              predicates:
+                - Path=/api/v1/inventory/**
+              filters:
+                - StripPrefix=2
+            # Customer (UC08)
+            - id: customer-service
+              uri: lb://customer-service
+              predicates:
+                - Path=/api/v1/customers/**
+              filters:
+                - StripPrefix=2
+            # Order (UC06)
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/v1/orders/**
+              filters:
+                - StripPrefix=2
+            # Payment (UC07)
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/v1/payments/**
+              filters:
+                - StripPrefix=2
+            # Prescription (UC12)
+            - id: prescription-service
+              uri: lb://prescription-service
+              predicates:
+                - Path=/api/v1/prescriptions/**
+              filters:
+                - StripPrefix=2
+            # Notification (UC13)
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/v1/notifications/**
+              filters:
+                - StripPrefix=2
+            # Report (UC09)
+            - id: report-service
+              uri: lb://report-service
+              predicates:
+                - Path=/api/v1/reports/**
+              filters:
+                - StripPrefix=2
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

@@ -1,0 +1,17 @@
+# Catalog Service (UC04 - Medicine, UC10 - Search)
+server:
+  port: 8083
+spring:
+  application:
+    name: catalog-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_catalog?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${MYSQL_USER:pcms_user}
+    password: ${MYSQL_PASSWORD:pcms_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect

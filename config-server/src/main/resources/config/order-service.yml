@@ -1,0 +1,23 @@
+# Order Service (UC06)
+server:
+  port: 8088
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_order?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${MYSQL_USER:pcms_user}
+    password: ${MYSQL_PASSWORD:pcms_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# Order business rules
+order:
+  bulk-discount-threshold: 10     # BR04 - 5% off when qty >= 10
+  bulk-discount-rate: 0.05
+  pending-payment-timeout-hours: 24  # BR01

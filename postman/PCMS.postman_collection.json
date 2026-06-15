@@ -1,0 +1,209 @@
+{
+  "info": {
+    "name": "PCMS - Pharmacy Chain Management System",
+    "description": "API collection for all 15 microservices (Spring Boot 4.0.7 + Spring Cloud 2025.1.2 + MySQL)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "gateway", "value": "http://localhost:8080", "type": "string"},
+    {"key": "eureka", "value": "http://localhost:8761", "type": "string"},
+    {"key": "config", "value": "http://localhost:8888", "type": "string"}
+  ],
+  "item": [
+    {
+      "name": "Infrastructure",
+      "item": [
+        {"name": "Eureka Dashboard", "request": {"method": "GET", "url": "{{eureka}}"}},
+        {"name": "Config Server", "request": {"method": "GET", "url": "{{config}}/user-service/default"}}
+      ]
+    },
+    {
+      "name": "UC01 - Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{gateway}}/api/v1/auth/login", "host": ["{{gateway}}"], "path": ["api","v1","auth","login"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"admin@pcms.vn\",\"password\":\"admin123\"}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/auth/refresh",
+            "body": {"mode": "raw", "raw": "{\"refreshToken\":\"<REFRESH_TOKEN>\"}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "UC02 - Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {"method": "GET", "url": "{{gateway}}/api/v1/users?page=0&size=20"}
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\":\"pharmacist01@pcms.vn\",\n  \"passwordHash\":\"$2a$10$...\",\n  \"fullName\":\"Nguyen Van A\",\n  \"phone\":\"0901234567\",\n  \"role\":\"PHARMACIST\",\n  \"branchId\":\"<BRANCH_UUID>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get User by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users/:id"}
+        }
+      ]
+    },
+    {
+      "name": "UC03 - Branches",
+      "item": [
+        {"name": "List Branches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches"}},
+        {
+          "name": "Create Branch",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/branches",
+            "body": {"mode": "raw", "raw": "{\n  \"code\":\"HQ\",\n  \"name\":\"Headquarter\",\n  \"address\":\"12 Le Loi, District 1, HCMC\",\n  \"phone\":\"0281234567\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "UC04 - Medicines",
+      "item": [
+        {"name": "List Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines"}},
+        {
+          "name": "Create Medicine",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/medicines",
+            "body": {"mode": "raw", "raw": "{\n  \"sku\":\"MD001\",\n  \"name\":\"Paracetamol 500mg\",\n  \"categoryId\":\"<CATEGORY_UUID>\",\n  \"supplierId\":\"<SUPPLIER_UUID>\",\n  \"price\":5000,\n  \"unit\":\"box\",\n  \"prescriptionRequired\":false\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "UC05 - Inventory",
+      "item": [
+        {"name": "List Stock by Branch", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory?branchId=<UUID>"}},
+        {
+          "name": "Import Stock",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/inventory/import",
+            "body": {"mode": "raw", "raw": "{\n  \"medicineId\":\"<MEDICINE_UUID>\",\n  \"branchId\":\"<BRANCH_UUID>\",\n  \"batchNo\":\"BTH-001\",\n  \"qty\":100,\n  \"expiryDate\":\"2027-12-31\",\n  \"actorId\":\"<USER_UUID>\"\n}"}
+          }
+        },
+        {"name": "Low Stock Alerts", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/low-stock"}},
+        {"name": "Expiring Batches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/expiring?days=30"}}
+      ]
+    },
+    {
+      "name": "UC06 - Orders",
+      "item": [
+        {"name": "List Orders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders"}},
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/orders",
+            "body": {"mode": "raw", "raw": "{\n  \"customerId\":\"<CUSTOMER_UUID>\",\n  \"branchId\":\"<BRANCH_UUID>\",\n  \"staffId\":\"<USER_UUID>\",\n  \"items\":[\n    {\"medicineId\":\"<MED_UUID>\",\"quantity\":2},\n    {\"medicineId\":\"<MED_UUID>\",\"quantity\":12}\n  ]\n}"}
+          }
+        },
+        {
+          "name": "Cancel Order (BR06)",
+          "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/orders/:id?actorId=<USER_UUID>"}
+        }
+      ]
+    },
+    {
+      "name": "UC07 - Payments",
+      "item": [
+        {
+          "name": "Pay with Cash",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/payments",
+            "body": {"mode": "raw", "raw": "{\n  \"orderId\":\"<ORDER_UUID>\",\n  \"paymentMethod\":\"CASH\",\n  \"amount\":100000,\n  \"tenderedAmount\":100000,\n  \"staffId\":\"<USER_UUID>\"\n}"}
+          }
+        },
+        {
+          "name": "Pay with QR",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/payments",
+            "body": {"mode": "raw", "raw": "{\n  \"orderId\":\"<ORDER_UUID>\",\n  \"paymentMethod\":\"QR\",\n  \"amount\":100000,\n  \"transactionRef\":\"QR_TXN_12345\",\n  \"staffId\":\"<USER_UUID>\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "UC08 - Customers",
+      "item": [
+        {"name": "List Customers", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers"}},
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/customers",
+            "body": {"mode": "raw", "raw": "{\n  \"name\":\"Nguyen Van A\",\n  \"phone\":\"0901234567\",\n  \"email\":\"nguyenvana@example.com\",\n  \"address\":\"123 Nguyen Hue, Q1, HCMC\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "UC09 - Reports",
+      "item": [
+        {"name": "Revenue Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/revenue?from=2026-06-01&to=2026-06-30&groupBy=day"}},
+        {"name": "Inventory Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/inventory?branchId=<UUID>"}}
+      ]
+    },
+    {
+      "name": "UC10 - Search",
+      "item": [
+        {"name": "Search Medicines (autocomplete)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search?q=para"}}
+      ]
+    },
+    {
+      "name": "UC12 - Prescriptions",
+      "item": [
+        {
+          "name": "Create Prescription",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/prescriptions",
+            "body": {"mode": "raw", "raw": "{\n  \"patientId\":\"<CUSTOMER_UUID>\",\n  \"doctorId\":\"<USER_UUID>\",\n  \"diagnosis\":\"Common cold\",\n  \"notes\":\"Drink warm water\",\n  \"licenseNo\":\"PH-LIC-001\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "UC13 - Notifications",
+      "item": [
+        {"name": "List My Notifications", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications?recipientId=<USER_UUID>"}},
+        {"name": "Unread Only", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications/unread?recipientId=<USER_UUID>"}}
+      ]
+    }
+  ]
+}

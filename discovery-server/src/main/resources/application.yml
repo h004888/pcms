@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: discovery-server
+  config:
+    import: "optional:configserver:http://localhost:8888"
+  profiles:
+    active: default
+
+server:
+  port: 8761
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    wait-time-in-ms-when-sync-empty: 0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

@@ -1,0 +1,261 @@
+version: '3.8'
+
+# =====================================================
+# PCMS - Pharmacy Chain Management System
+# 15 microservices + MySQL 8.0
+# Run order: mysql,config-server,discovery-server -> api-gateway -> others
+# =====================================================
+
+networks:
+  pcms-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
+
+services:
+
+  # ============== Infrastructure ==============
+  mysql:
+    image: mysql:8.0
+    container_name: pcms-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: pcms
+      MYSQL_USER: pcms_user
+      MYSQL_PASSWORD: pcms_pass
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    networks:
+      - pcms-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppcms_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  config-server:
+    build: ./config-server
+    container_name: pcms-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  discovery-server:
+    build: ./discovery-server
+    container_name: pcms-discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: pcms-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  # ============== Business Services ==============
+  user-service:
+    build: ./user-service
+    container_name: pcms-user-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  branch-service:
+    build: ./branch-service
+    container_name: pcms-branch-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  catalog-service:
+    build: ./catalog-service
+    container_name: pcms-catalog-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  category-service:
+    build: ./category-service
+    container_name: pcms-category-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  supplier-service:
+    build: ./supplier-service
+    container_name: pcms-supplier-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  inventory-service:
+    build: ./inventory-service
+    container_name: pcms-inventory-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  customer-service:
+    build: ./customer-service
+    container_name: pcms-customer-service
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  order-service:
+    build: ./order-service
+    container_name: pcms-order-service
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  payment-service:
+    build: ./payment-service
+    container_name: pcms-payment-service
+    ports:
+      - "8089:8089"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  prescription-service:
+    build: ./prescription-service
+    container_name: pcms-prescription-service
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    container_name: pcms-notification-service
+    ports:
+      - "8091:8091"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SMTP_USERNAME: ${SMTP_USERNAME:-notification@pcms.vn}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-changeme}
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped
+
+  report-service:
+    build: ./report-service
+    container_name: pcms-report-service
+    ports:
+      - "8092:8092"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - discovery-server
+      - mysql
+    networks:
+      - pcms-net
+    restart: unless-stopped

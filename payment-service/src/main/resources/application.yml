@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: payment-service
+  config:
+    import: "optional:configserver:http://localhost:8888"
+  profiles:
+    active: default
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+
+server:
+  port: 8089
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+payment:
+  loyalty-points-per-1000-vnd: 1  # BR07
+  invoice-prefix: "INV"           # NSF-11: INV-yyyymmdd-####
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+      customerService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

@@ -1,0 +1,27 @@
+# Notification Service (UC13)
+server:
+  port: 8091
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_notification?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${MYSQL_USER:pcms_user}
+    password: ${MYSQL_PASSWORD:pcms_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# Notification retry policy (NSF-09)
+notification:
+  retry:
+    max-attempts: 3
+    backoff-ms: 1000
+  channels:
+    in-app: true
+    email: false
+    sms: false
