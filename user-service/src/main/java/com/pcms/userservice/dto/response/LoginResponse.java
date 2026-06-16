@@ -1,0 +1,16 @@
+package com.pcms.userservice.dto.response;
+
+import com.pcms.userservice.enums.Role;
+import java.util.UUID;
+
+public record LoginResponse(
+    String accessToken,
+    String refreshToken,
+    String tokenType,
+    long expiresIn,
+    UUID userId,
+    String email,
+    String fullName,
+    Role role,
+    UUID branchId
+) {}

@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.pcms")
 @EnableJpaAuditing
 @EnableScheduling  // For NSF-10: account auto-unlock
 public class UserServiceApplication {

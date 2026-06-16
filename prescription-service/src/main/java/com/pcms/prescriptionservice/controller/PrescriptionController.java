@@ -1,21 +1,14 @@
 package com.pcms.prescriptionservice.controller;
 
-import com.pcms.prescriptionservice.entity.Prescription;
-import com.pcms.prescriptionservice.enums.PrescriptionStatus;
-import com.pcms.prescriptionservice.repository.PrescriptionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import com.pcms.prescriptionservice.dto.CreatePrescriptionRequest;
+import com.pcms.common.dto.PageResponse;
+import com.pcms.prescriptionservice.dto.PrescriptionResponse;
+import com.pcms.prescriptionservice.dto.UpdatePrescriptionRequest;
+import com.pcms.prescriptionservice.service.PrescriptionService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -26,31 +19,27 @@ import java.util.UUID;
 @RequestMapping("/prescriptions")
 public class PrescriptionController {
 
-    @Autowired
-    private PrescriptionRepository prescriptionRepository;
+    private final PrescriptionService prescriptionService;
+
+    public PrescriptionController(PrescriptionService prescriptionService) {
+        this.prescriptionService = prescriptionService;
+    }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> list(
+    public ResponseEntity<PageResponse<PrescriptionResponse>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<Prescription> prescriptions = prescriptionRepository.findAll(pageable);
-        return ResponseEntity.ok(Map.of(
-            "data", prescriptions.getContent(),
-            "page", prescriptions.getNumber(),
-            "size", prescriptions.getSize(),
-            "total", prescriptions.getTotalElements()
-        ));
+        return ResponseEntity.ok(prescriptionService.list(page, size));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Prescription> getById(@PathVariable UUID id) {
-        return prescriptionRepository.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<PrescriptionResponse> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(prescriptionService.getById(id));
     }
 
     @GetMapping("/code/{code}")
-    public ResponseEntity<Prescription> getByCode(@PathVariable String code) {
-        return prescriptionRepository.findByCode(code).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<PrescriptionResponse> getByCode(@PathVariable String code) {
+        return ResponseEntity.ok(prescriptionService.getByCode(code));
     }
 
     /**
@@ -58,52 +47,38 @@ public class PrescriptionController {
      * Auto-generates code RX-yyyy####
      */
     @PostMapping
-    @Transactional
-    public ResponseEntity<?> create(@RequestBody Prescription prescription) {
-        if (prescription.getPatientId() == null || prescription.getDoctorId() == null
-                || prescription.getDiagnosis() == null || prescription.getDiagnosis().isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("code", "MSG33", "message", "Patient, doctor, diagnosis are mandatory"));
-        }
-        prescription.setCode(generateCode());
-        // FR12.4: Compute digital signature hash
-        prescription.setSignatureHash(UUID.randomUUID().toString().replace("-", ""));
-        if (prescription.getStatus() == null) prescription.setStatus(PrescriptionStatus.SIGNED);
-        if (prescription.getStatus() == PrescriptionStatus.SIGNED) {
-            prescription.setIssuedAt(LocalDateTime.now());
-        }
-        return ResponseEntity.ok(prescriptionRepository.save(prescription));
+    public ResponseEntity<PrescriptionResponse> create(@Valid @RequestBody CreatePrescriptionRequest request) {
+        return ResponseEntity.ok(prescriptionService.create(request));
     }
 
     /** AT1: Save as draft */
     @PostMapping("/draft")
-    public ResponseEntity<?> saveDraft(@RequestBody Prescription prescription) {
-        prescription.setStatus(PrescriptionStatus.DRAFT);
-        prescription.setCode(generateCode());
-        return ResponseEntity.ok(prescriptionRepository.save(prescription));
+    public ResponseEntity<PrescriptionResponse> saveDraft(@Valid @RequestBody CreatePrescriptionRequest request) {
+        CreatePrescriptionRequest asDraft = new CreatePrescriptionRequest(
+                request.patientId(),
+                request.doctorId(),
+                request.diagnosis(),
+                request.notes(),
+                request.items(),
+                Boolean.TRUE,
+                request.licenseNo()
+        );
+        return ResponseEntity.ok(prescriptionService.create(asDraft));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PrescriptionResponse> update(@PathVariable UUID id,
+                                                       @Valid @RequestBody UpdatePrescriptionRequest request) {
+        return ResponseEntity.ok(prescriptionService.update(id, request));
     }
 
     @PutMapping("/{id}/sign")
-    @Transactional
-    public ResponseEntity<?> sign(@PathVariable UUID id) {
-        Optional<Prescription> optional = prescriptionRepository.findById(id);
-        if (optional.isEmpty()) return ResponseEntity.notFound().build();
-        Prescription p = optional.get();
-        p.setStatus(PrescriptionStatus.SIGNED);
-        p.setIssuedAt(LocalDateTime.now());
-        p.setSignatureHash(UUID.randomUUID().toString().replace("-", ""));
-        return ResponseEntity.ok(prescriptionRepository.save(p));
+    public ResponseEntity<PrescriptionResponse> sign(@PathVariable UUID id) {
+        return ResponseEntity.ok(prescriptionService.sign(id));
     }
 
-    private String generateCode() {
-        String year = String.valueOf(LocalDate.now().getYear());
-        Pageable limit = PageRequest.of(0, 1);
-        List<Prescription> latest = prescriptionRepository.findByYearPrefix(year, limit);
-        int nextNum = 1;
-        if (!latest.isEmpty()) {
-            String code = latest.get(0).getCode();
-            String numPart = code.substring(code.lastIndexOf('-') + 1);
-            try { nextNum = Integer.parseInt(numPart) + 1; } catch (NumberFormatException ignored) {}
-        }
-        return String.format("RX-%s%04d", year, nextNum);
+    @GetMapping("/{id}/print")
+    public ResponseEntity<PrescriptionResponse> print(@PathVariable UUID id) {
+        return ResponseEntity.ok(prescriptionService.print(id));
     }
 }

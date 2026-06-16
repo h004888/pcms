@@ -49,6 +49,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Shared module: business exceptions + GlobalExceptionHandler -->
+        <dependency>
+            <groupId>com.pcms</groupId>
+            <artifactId>pcms-common</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

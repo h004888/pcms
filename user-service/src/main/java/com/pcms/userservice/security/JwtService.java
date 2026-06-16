@@ -1,24 +1,28 @@
 package com.pcms.userservice.security;
 
+import com.pcms.common.security.JwtClaims;
+import com.pcms.common.security.JwtUtils;
 import com.pcms.userservice.entity.User;
-import com.pcms.userservice.repository.UserRepository;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
- * UC01 - JWT Token generation/validation (FR1.2)
- * - Access token: 15 min
- * - Refresh token: 7 days
+ * UC01 - JWT Token generation/validation (FR1.2).
+ *
+ * <p>Issues and validates JWT tokens using the standard PCMS claim contract
+ * (see {@link JwtClaims}). Backed by {@link JwtUtils} for the actual
+ * signing/parsing logic.
+ *
+ * <ul>
+ *   <li>Access token: 15 minutes</li>
+ *   <li>Refresh token: 7 days</li>
+ *   <li>Algorithm: HS256 (per STANDARDS.md §12.2)</li>
+ * </ul>
+ *
+ * <p>The signing secret is loaded from {@code app.jwt.secret} via Config Server.
  */
 @Service
 public class JwtService {
@@ -32,48 +36,42 @@ public class JwtService {
     @Value("${app.jwt.refresh-token-expiration-ms}")
     private long refreshTokenExpirationMs;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-    }
-
     public String generateAccessToken(User user) {
-        return buildToken(user, accessTokenExpirationMs, "access");
+        return JwtUtils.generateToken(
+                user.getId(),
+                user.getEmail(),
+                user.getRole().name(),
+                user.getBranchId(),
+                JwtClaims.TYPE_ACCESS,
+                accessTokenExpirationMs,
+                jwtSecret
+        );
     }
 
     public String generateRefreshToken(User user) {
-        return buildToken(user, refreshTokenExpirationMs, "refresh");
+        return JwtUtils.generateToken(
+                user.getId(),
+                user.getEmail(),
+                user.getRole().name(),
+                user.getBranchId(),
+                JwtClaims.TYPE_REFRESH,
+                refreshTokenExpirationMs,
+                jwtSecret
+        );
     }
 
-    private String buildToken(User user, long expirationMs, String type) {
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + expirationMs);
-
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("uid", user.getId().toString());
-        claims.put("email", user.getEmail());
-        claims.put("role", user.getRole().name());
-        claims.put("branch_id", user.getBranchId() != null ? user.getBranchId().toString() : null);
-        claims.put("type", type);
-
-        return Jwts.builder()
-                .claims(claims)
-                .subject(user.getEmail())
-                .issuedAt(now)
-                .expiration(expiry)
-                .signWith(getSigningKey(), Jwts.SIG.HS256)
-                .compact();
+    /**
+     * Validate token signature + expiration. Returns parsed claims.
+     */
+    public Claims parseAndValidate(String token) {
+        return JwtUtils.parseAndValidate(token, jwtSecret);
     }
 
+    /**
+     * Extract user UUID from a valid token.
+     */
     public UUID extractUserId(String token) {
-        String uid = Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .get("uid", String.class);
-        return UUID.fromString(uid);
+        Claims claims = parseAndValidate(token);
+        return JwtClaims.parseUuidOrNull(claims.getSubject());
     }
 }

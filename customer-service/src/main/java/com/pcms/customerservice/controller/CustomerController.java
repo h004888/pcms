@@ -1,20 +1,17 @@
 package com.pcms.customerservice.controller;
 
-import com.pcms.customerservice.entity.Customer;
-import com.pcms.customerservice.repository.CustomerRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import com.pcms.common.exception.ResourceNotFoundException;
+import com.pcms.common.dto.PageResponse;
+import com.pcms.customerservice.dto.CreateCustomerRequest;
+import com.pcms.customerservice.dto.CustomerResponse;
+import com.pcms.customerservice.dto.UpdateCustomerRequest;
+import com.pcms.customerservice.service.CustomerService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -25,92 +22,80 @@ import java.util.UUID;
 @RequestMapping("/customers")
 public class CustomerController {
 
-    @Autowired
-    private CustomerRepository customerRepository;
+    private final CustomerService customerService;
+
+    public CustomerController(CustomerService customerService) {
+        this.customerService = customerService;
+    }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> list(
+    public ResponseEntity<PageResponse<CustomerResponse>> list(
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by("createdAt").descending());
-        Page<Customer> customers = customerRepository.search(search, pageable);
-        return ResponseEntity.ok(Map.of(
-            "data", customers.getContent(),
-            "page", customers.getNumber(),
-            "size", customers.getSize(),
-            "total", customers.getTotalElements()
-        ));
+        return ResponseEntity.ok(PageResponse.of(customerService.list(search, page, size), c -> c));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Customer> getById(@PathVariable UUID id) {
-        return customerRepository.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<CustomerResponse> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(customerService.getById(id));
     }
 
     @GetMapping("/phone/{phone}")
-    public ResponseEntity<Customer> getByPhone(@PathVariable String phone) {
-        return customerRepository.findByPhone(phone).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<CustomerResponse> getByPhone(@PathVariable String phone) {
+        // Lookup by phone is not in the interface; delegate via repository through service: reuse list()
+        // For a single hit we expose the first match.
+        return customerService.list(phone, 0, 1).getContent().stream()
+            .filter(c -> c.phone() != null && c.phone().contains(phone))
+            .findFirst()
+            .map(ResponseEntity::ok)
+            .orElseThrow(() -> new ResourceNotFoundException("Customer with phone", phone));
     }
 
     /**
-     * POST /api/v1/customers - Step 5-9 of UC08 main flow
+     * POST /api/v1/customers - Step 5-9 of UC08 main flow.
      * Auto-generates code CUST-yyyy####
      */
     @PostMapping
-    @Transactional
-    public ResponseEntity<?> create(@RequestBody Customer customer) {
-        if (customerRepository.existsByPhone(customer.getPhone())) {
-            return ResponseEntity.status(409).body(Map.of("code", "MSG24", "message", "Phone already exists"));
-        }
-        // Step 8: Generate customer code CUST-yyyy####
-        customer.setCode(generateCode());
-        if (customer.getPoints() == null) customer.setPoints(0);
-        Customer saved = customerRepository.save(customer);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CreateCustomerRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(customerService.create(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Customer> update(@PathVariable UUID id, @RequestBody Customer details) {
-        Optional<Customer> optional = customerRepository.findById(id);
-        if (optional.isEmpty()) return ResponseEntity.notFound().build();
-        Customer c = optional.get();
-        c.setName(details.getName());
-        c.setPhone(details.getPhone());
-        c.setEmail(details.getEmail());
-        c.setAddress(details.getAddress());
-        c.setDob(details.getDob());
-        c.setGender(details.getGender());
-        // code and points preserved
-        return ResponseEntity.ok(customerRepository.save(c));
+    public ResponseEntity<CustomerResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateCustomerRequest request) {
+        return ResponseEntity.ok(customerService.update(id, request));
     }
 
     /**
-     * PUT /api/v1/customers/{id}/points - Called by payment-service (BR07)
-     * Award 1 point per 1000 VND of order total
+     * PUT /api/v1/customers/{id}/points/add - Called by payment-service (BR07)
+     * Award 1 point per 1000 VND of order total.
+     *
+     * <p>Idempotent: if {@code refOrderId} was already processed, the call
+     * returns the current customer state without changing points.
+     *
+     * <p>Request body:
+     * <pre>{@code
+     * {
+     *   "points": 5,                        // can be negative
+     *   "refOrderId": "uuid",               // optional but recommended
+     *   "reason": "ORDER_PAID:ORD-20260616-0001"  // optional
+     * }
+     * }</pre>
      */
     @PutMapping("/{id}/points/add")
-    @Transactional
-    public ResponseEntity<?> addPoints(@PathVariable UUID id, @RequestBody Map<String, Integer> body) {
-        Optional<Customer> optional = customerRepository.findById(id);
-        if (optional.isEmpty()) return ResponseEntity.notFound().build();
-        Customer c = optional.get();
-        int added = body.getOrDefault("points", 0);
-        c.setPoints(c.getPoints() + added);
-        customerRepository.save(c);
-        return ResponseEntity.ok(Map.of("customerId", c.getId(), "addedPoints", added, "totalPoints", c.getPoints()));
+    public ResponseEntity<Map<String, Object>> addPoints(@PathVariable UUID id,
+                                                         @RequestBody AddPointsRequest body) {
+        CustomerResponse c = customerService.addPoints(id,
+                body.points() == null ? 0 : body.points(),
+                body.refOrderId(),
+                body.reason());
+        return ResponseEntity.ok(Map.of(
+                "customerId", c.id(),
+                "addedPoints", body.points() == null ? 0 : body.points(),
+                "totalPoints", c.points()
+        ));
     }
 
-    private String generateCode() {
-        String year = String.valueOf(LocalDate.now().getYear());
-        Pageable limit = PageRequest.of(0, 1, Sort.by("code").descending());
-        List<Customer> latest = customerRepository.findByYearPrefix(year, limit);
-        int nextNum = 1;
-        if (!latest.isEmpty()) {
-            String latestCode = latest.get(0).getCode();
-            String numPart = latestCode.substring(latestCode.lastIndexOf('-') + 1);
-            try { nextNum = Integer.parseInt(numPart) + 1; } catch (NumberFormatException ignored) {}
-        }
-        return String.format("CUST-%s%04d", year, nextNum);
-    }
+    /** Request body for /points/add endpoint. */
+    public record AddPointsRequest(Integer points, UUID refOrderId, String reason) {}
 }

@@ -1,15 +1,11 @@
 package com.pcms.catalogservice.controller;
 
-import com.pcms.catalogservice.entity.Medicine;
-import com.pcms.catalogservice.enums.MedicineStatus;
-import com.pcms.catalogservice.repository.MedicineRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
+import com.pcms.catalogservice.dto.response.MedicineResponse;
+import com.pcms.catalogservice.service.SearchService;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -20,24 +16,25 @@ import java.util.UUID;
 @RequestMapping("/search")
 public class SearchController {
 
-    @Autowired
-    private MedicineRepository medicineRepository;
+    private final SearchService searchService;
+
+    public SearchController(SearchService searchService) {
+        this.searchService = searchService;
+    }
 
     /** GET /api/v1/search?q=paracetamol - returns top 5 autocomplete (AT2) */
     @GetMapping
-    public List<Medicine> search(@RequestParam(required = false) String q) {
-        if (q == null || q.isBlank()) return List.of();
-        return medicineRepository.findTop5ByNameLike(q, PageRequest.of(0, 5));
+    public List<MedicineResponse> search(@RequestParam(required = false) String q) {
+        return searchService.autocomplete(q);
     }
 
     /** Full search with filters */
     @GetMapping("/full")
-    public List<Medicine> fullSearch(
+    public List<MedicineResponse> fullSearch(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice) {
-
-        return medicineRepository.search(q, categoryId, minPrice, maxPrice, MedicineStatus.ACTIVE, PageRequest.of(0, 100)).getContent();
+        return searchService.fullSearch(q, categoryId, minPrice, maxPrice);
     }
 }

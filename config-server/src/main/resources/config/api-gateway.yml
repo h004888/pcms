@@ -1,0 +1,15 @@
+# API Gateway (port 8080)
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: "optional:configserver:http://localhost:8888"
+  profiles:
+    active: default
+
+# JWT secret (must match user-service)
+app:
+  jwt:
+    secret: "pcms-jwt-secret-key-must-be-at-least-32-bytes-long-for-hs256-signing-2026"

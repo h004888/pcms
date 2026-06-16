@@ -1,13 +1,18 @@
 package com.pcms.reportservice.controller;
 
+import com.pcms.reportservice.dto.InventoryReportRequest;
+import com.pcms.reportservice.dto.InventoryReportResponse;
+import com.pcms.reportservice.dto.RevenueReportRequest;
+import com.pcms.reportservice.dto.RevenueReportResponse;
+import com.pcms.reportservice.dto.StaffReportRequest;
+import com.pcms.reportservice.dto.StaffReportResponse;
 import com.pcms.reportservice.service.ReportService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -18,28 +23,49 @@ import java.util.UUID;
 @RequestMapping("/reports")
 public class ReportController {
 
-    @Autowired
-    private ReportService reportService;
+    private final ReportService reportService;
+
+    public ReportController(ReportService reportService) {
+        this.reportService = reportService;
+    }
 
     /**
      * GET /api/v1/reports/revenue - Step 1-5 of UC09 main flow
      * Query params: from, to (date), branchId, groupBy (day|week|month)
      */
     @GetMapping("/revenue")
-    public ResponseEntity<Map<String, Object>> revenue(
+    public ResponseEntity<RevenueReportResponse> revenue(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) UUID branchId,
             @RequestParam(defaultValue = "day") String groupBy) {
-        return ResponseEntity.ok(reportService.generateRevenueReport(from, to, branchId, groupBy));
+        return ResponseEntity.ok(reportService.revenue(from, to, branchId, groupBy));
+    }
+
+    /** POST variant accepting a JSON request body. */
+    @PostMapping("/revenue")
+    public ResponseEntity<RevenueReportResponse> revenuePost(@Valid @RequestBody RevenueReportRequest request) {
+        return ResponseEntity.ok(reportService.revenue(request));
     }
 
     /**
      * GET /api/v1/reports/inventory - Inventory snapshot
      */
     @GetMapping("/inventory")
-    public ResponseEntity<Map<String, Object>> inventory(@RequestParam(required = false) UUID branchId) {
-        return ResponseEntity.ok(reportService.generateInventoryReport(branchId));
+    public ResponseEntity<InventoryReportResponse> inventory(@RequestParam(required = false) UUID branchId) {
+        return ResponseEntity.ok(reportService.inventory(branchId));
+    }
+
+    /** POST variant accepting a JSON request body. */
+    @PostMapping("/inventory")
+    public ResponseEntity<InventoryReportResponse> inventoryPost(@Valid @RequestBody InventoryReportRequest request) {
+        return ResponseEntity.ok(reportService.inventory(request));
+    }
+
+    /** Staff performance report. */
+    @PostMapping("/staff")
+    public ResponseEntity<StaffReportResponse> staff(@Valid @RequestBody StaffReportRequest request) {
+        return ResponseEntity.ok(reportService.staff(request));
     }
 
     /**
@@ -52,9 +78,6 @@ public class ReportController {
             @RequestParam String format,  // excel | pdf
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return ResponseEntity.status(501).body(Map.of(
-            "code", "MSG26",
-            "message", "Export to be implemented (FR9.3/FR9.4) - use Apache POI for Excel, iText for PDF"
-        ));
+        return ResponseEntity.status(501).body(reportService.export(type, format, from, to));
     }
 }

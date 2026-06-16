@@ -19,6 +19,8 @@
     <description>Parent project for PCMS - Pharmacy Chain Management System</description>
 
     <modules>
+        <!-- Shared library (no Spring Boot, plain library) -->
+        <module>pcms-common</module>
         <!-- Infrastructure -->
         <module>config-server</module>
         <module>discovery-server</module>
@@ -45,6 +47,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <resilience4j.version>2.4.0</resilience4j.version>
         <jjwt.version>0.12.6</jjwt.version>
+        <springdoc.version>2.6.0</springdoc.version>
+        <caffeine.version>3.1.8</caffeine.version>
     </properties>
 
     <dependencyManagement>
@@ -82,6 +86,16 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

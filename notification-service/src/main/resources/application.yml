@@ -1,3 +1,6 @@
+# Notification Service (UC13)
+server:
+  port: 8091
 spring:
   application:
     name: notification-service
@@ -5,42 +8,48 @@ spring:
     import: "optional:configserver:http://localhost:8888"
   profiles:
     active: default
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_notification?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${MYSQL_USER:pcms_user}
+    password: ${MYSQL_PASSWORD:pcms_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-  # NOTE: spring.mail.* intentionally NOT set
-  # When SMTP is not configured, JavaMailSender bean is null,
-  # and NotificationSenderService.sendEmail() will skip with a warning.
-  # To enable real email, set:
-  #   SPRING_MAIL_HOST, SPRING_MAIL_PORT, SPRING_MAIL_USERNAME, SPRING_MAIL_PASSWORD
-  #   as environment variables or in config-server/notification-service.yml
+  # B-11: SMTP config for email notifications (MailHog in dev)
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USER:}
+    password: ${MAIL_PASS:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
-server:
-  port: 8091
+# Notification retry policy (NSF-09)
+notification:
+  retry:
+    max-attempts: 3
+    backoff-ms: 1000
+  channels:
+    in-app: true
+    email: ${NOTIFICATION_EMAIL_ENABLED:true}
+    sms: ${NOTIFICATION_SMS_ENABLED:false}
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-
-notification:
-  retry:
-    max-attempts: 3     # NSF-09
-    backoff-ms: 1000
-  channels:
-    in-app: true
-    email: false
-    sms: false
-
-# Email retry is disabled by default (no SMTP configured).
-# To enable, add spring.mail.* config and uncomment below.
-# resilience4j:
-#   retry:
-#     instances:
-#       emailService:
-#         max-attempts: 3
-#         wait-duration: 1s
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
 
 management:
   endpoints:

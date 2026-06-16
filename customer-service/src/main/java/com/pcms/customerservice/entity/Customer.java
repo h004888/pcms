@@ -1,5 +1,6 @@
 package com.pcms.customerservice.entity;
 
+import com.pcms.customerservice.enums.CustomerStatus;
 import com.pcms.customerservice.enums.Gender;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -48,6 +49,11 @@ public class Customer {
     @Column(length = 10)
     private Gender gender;
 
+    /** B-15: ACTIVE or INACTIVE (soft-delete). */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private CustomerStatus status = CustomerStatus.ACTIVE;
+
     /** BR07: Loyalty points balance */
     @Column(nullable = false)
     private Integer points = 0;
@@ -84,6 +90,8 @@ public class Customer {
     public void setDob(LocalDate dob) { this.dob = dob; }
     public Gender getGender() { return gender; }
     public void setGender(Gender gender) { this.gender = gender; }
+    public CustomerStatus getStatus() { return status; }
+    public void setStatus(CustomerStatus status) { this.status = status; }
     public Integer getPoints() { return points; }
     public void setPoints(Integer points) { this.points = points; }
     public LocalDateTime getCreatedAt() { return createdAt; }

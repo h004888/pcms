@@ -1,0 +1,338 @@
+package com.pcms.orderservice.service.impl;
+
+import com.pcms.common.exception.InvalidOperationException;
+import com.pcms.common.exception.ResourceNotFoundException;
+import com.pcms.orderservice.client.CatalogClient;
+import com.pcms.orderservice.client.CustomerClient;
+import com.pcms.orderservice.client.InventoryClient;
+import com.pcms.orderservice.dto.CreateOrderRequest;
+import com.pcms.orderservice.dto.OrderItemRequest;
+import com.pcms.orderservice.dto.OrderResponse;
+import com.pcms.orderservice.dto.UpdateOrderRequest;
+import com.pcms.orderservice.entity.Order;
+import com.pcms.orderservice.entity.OrderItem;
+import com.pcms.orderservice.entity.OrderSequence;
+import com.pcms.orderservice.enums.OrderStatus;
+import com.pcms.orderservice.repository.OrderRepository;
+import com.pcms.orderservice.repository.OrderSequenceRepository;
+import com.pcms.orderservice.service.OrderService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Implementation of {@link OrderService}.
+ *
+ * <p>BR04: 5% discount when qty >= 10 same medicine.
+ * <br>BR01: Auto-cancel pending orders after 24h.
+ * <br>NSF-05: FIFO batch consumption via inventory-service.
+ * <br>NSF-12: Generate order number ORD-yyyymmdd-####.
+ */
+@Service
+public class OrderServiceImpl implements OrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    private final OrderRepository orderRepository;
+    private final CatalogClient catalogClient;
+    private final InventoryClient inventoryClient;
+    private final CustomerClient customerClient;
+    private final com.pcms.orderservice.client.BranchClient branchClient;
+    private final com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository;
+    private final com.pcms.orderservice.repository.OutboxEventRepository outboxRepo;
+
+    @Value("${order.bulk-discount-threshold:10}")
+    private int bulkDiscountThreshold;
+
+    @Value("${order.bulk-discount-rate:0.05}")
+    private BigDecimal bulkDiscountRate;
+
+    public OrderServiceImpl(OrderRepository orderRepository,
+                            CatalogClient catalogClient,
+                            InventoryClient inventoryClient,
+                            CustomerClient customerClient,
+                            com.pcms.orderservice.client.BranchClient branchClient,
+                            com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository,
+                            com.pcms.orderservice.repository.OutboxEventRepository outboxRepo) {
+        this.orderRepository = orderRepository;
+        this.catalogClient = catalogClient;
+        this.inventoryClient = inventoryClient;
+        this.customerClient = customerClient;
+        this.branchClient = branchClient;
+        this.sequenceRepository = sequenceRepository;
+        this.outboxRepo = outboxRepo;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> list(UUID customerId, OrderStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by("createdAt").descending());
+        Page<Order> orders;
+        if (customerId != null) {
+            orders = orderRepository.findByCustomerId(customerId, pageable);
+        } else if (status != null) {
+            orders = orderRepository.findByStatus(status, pageable);
+        } else {
+            orders = orderRepository.findAll(pageable);
+        }
+        return orders.map(OrderResponse::from);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse getById(UUID id) {
+        return orderRepository.findById(id)
+            .map(OrderResponse::from)
+            .orElseThrow(() -> new ResourceNotFoundException("Order", id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse getByNumber(String orderNumber) {
+        return orderRepository.findByOrderNumber(orderNumber)
+            .map(OrderResponse::from)
+            .orElseThrow(() -> new ResourceNotFoundException("Order", orderNumber));
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse create(CreateOrderRequest request) {
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new InvalidOperationException(
+                "Order must contain at least one item",
+                "Đơn hàng phải có ít nhất một sản phẩm");
+        }
+
+        // B-20: Validate customer exists via customer-service
+        try {
+            var customer = customerClient.getCustomerById(request.customerId());
+            if (customer == null || customer.get("status") == null
+                    || "UNREACHABLE".equals(customer.get("status"))) {
+                throw new ResourceNotFoundException("Customer", request.customerId());
+            }
+        } catch (feign.FeignException.NotFound e) {
+            throw new ResourceNotFoundException("Customer", request.customerId());
+        }
+        // B-21: Validate branch exists via branch-service
+        try {
+            var branch = branchClient.getBranchById(request.branchId());
+            if (branch == null || branch.get("status") == null
+                    || "UNREACHABLE".equals(branch.get("status"))) {
+                throw new ResourceNotFoundException("Branch", request.branchId());
+            }
+        } catch (feign.FeignException.NotFound e) {
+            throw new ResourceNotFoundException("Branch", request.branchId());
+        }
+
+        Order order = new Order();
+        order.setCustomerId(request.customerId());
+        order.setBranchId(request.branchId());
+        order.setStaffId(request.staffId());
+        order.setCouponCode(request.couponCode());
+        order.setStatus(OrderStatus.PENDING_PAYMENT);
+
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+
+        for (OrderItemRequest itemReq : request.items()) {
+            // Call catalog-service to get medicine info
+            Map<String, Object> medicine = catalogClient.getMedicineById(itemReq.medicineId());
+            String name = (String) medicine.getOrDefault("name", "Unknown");
+            // If catalog fallback returned a placeholder (id matches but name="Unknown"),
+            // the medicine was not found.
+            if ("Unknown".equals(name) || medicine.get("price") == null
+                    || BigDecimal.ZERO.compareTo(new BigDecimal(medicine.get("price").toString())) == 0) {
+                throw new ResourceNotFoundException("Medicine", itemReq.medicineId());
+            }
+            BigDecimal price = new BigDecimal(medicine.get("price").toString());
+
+            OrderItem item = new OrderItem();
+            item.setOrder(order);
+            item.setMedicineId(itemReq.medicineId());
+            item.setMedicineName(name);
+            item.setQty(itemReq.quantity());
+            item.setUnitPrice(price);
+
+            // BR04 bulk discount
+            BigDecimal lineSubtotal = price.multiply(BigDecimal.valueOf(itemReq.quantity()));
+            BigDecimal lineDiscount = BigDecimal.ZERO;
+            if (itemReq.quantity() >= bulkDiscountThreshold) {
+                lineDiscount = lineSubtotal.multiply(bulkDiscountRate).setScale(2, RoundingMode.HALF_UP);
+            }
+            item.setDiscount(lineDiscount);
+            item.setSubtotal(lineSubtotal.subtract(lineDiscount));
+
+            order.getItems().add(item);
+            subtotal = subtotal.add(lineSubtotal);
+            totalDiscount = totalDiscount.add(lineDiscount);
+        }
+
+        order.setSubtotal(subtotal);
+        order.setDiscount(totalDiscount);
+        order.setTotal(subtotal.subtract(totalDiscount));
+        order.setOrderNumber(generateOrderNumber());
+
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse update(UUID id, UpdateOrderRequest request) {
+        Order order = orderRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Order", id));
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidOperationException(
+                "Order can only be updated while PENDING_PAYMENT",
+                "Đơn hàng chỉ có thể cập nhật khi đang chờ thanh toán");
+        }
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new InvalidOperationException(
+                "Order must contain at least one item",
+                "Đơn hàng phải có ít nhất một sản phẩm");
+        }
+        // Replace items and recompute totals
+        order.getItems().clear();
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+        for (OrderItemRequest itemReq : request.items()) {
+            Map<String, Object> medicine = catalogClient.getMedicineById(itemReq.medicineId());
+            String name = (String) medicine.getOrDefault("name", "Unknown");
+            if ("Unknown".equals(name) || medicine.get("price") == null
+                    || BigDecimal.ZERO.compareTo(new BigDecimal(medicine.get("price").toString())) == 0) {
+                throw new ResourceNotFoundException("Medicine", itemReq.medicineId());
+            }
+            BigDecimal price = new BigDecimal(medicine.get("price").toString());
+
+            OrderItem item = new OrderItem();
+            item.setOrder(order);
+            item.setMedicineId(itemReq.medicineId());
+            item.setMedicineName(name);
+            item.setQty(itemReq.quantity());
+            item.setUnitPrice(price);
+
+            BigDecimal lineSubtotal = price.multiply(BigDecimal.valueOf(itemReq.quantity()));
+            BigDecimal lineDiscount = BigDecimal.ZERO;
+            if (itemReq.quantity() >= bulkDiscountThreshold) {
+                lineDiscount = lineSubtotal.multiply(bulkDiscountRate).setScale(2, RoundingMode.HALF_UP);
+            }
+            item.setDiscount(lineDiscount);
+            item.setSubtotal(lineSubtotal.subtract(lineDiscount));
+            order.getItems().add(item);
+
+            subtotal = subtotal.add(lineSubtotal);
+            totalDiscount = totalDiscount.add(lineDiscount);
+        }
+        order.setSubtotal(subtotal);
+        order.setDiscount(totalDiscount);
+        order.setTotal(subtotal.subtract(totalDiscount));
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse markAsPaid(UUID orderId, UUID actorId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidOperationException(
+                "Order can only be marked paid while PENDING_PAYMENT",
+                "Đơn hàng chỉ có thể chuyển PAID khi đang chờ thanh toán");
+        }
+        order.setStatus(OrderStatus.PAID);
+        orderRepository.save(order);
+
+        // B-17: Outbox pattern — persist side-effect events in same TX.
+        // OutboxPublisher will dispatch asynchronously with retry.
+        for (OrderItem item : order.getItems()) {
+            String payload = String.format(
+                "{\"medicineId\":\"%s\",\"branchId\":\"%s\",\"qty\":%d,\"orderId\":\"%s\",\"actorId\":\"%s\"}",
+                item.getMedicineId(), order.getBranchId(), item.getQty(), order.getId(), actorId);
+            outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
+                "Order", order.getId(), "STOCK_CONSUMED",
+                "inventory-service", "/inventory/consume", payload));
+        }
+
+        // BR07: Award loyalty points (idempotent on orderId) via outbox
+        int points = order.getTotal().divide(BigDecimal.valueOf(1000), 0, RoundingMode.FLOOR).intValue();
+        if (points > 0) {
+            String payload = String.format(
+                "{\"points\":%d,\"refOrderId\":\"%s\",\"reason\":\"ORDER_PAID:%s\"}",
+                points, order.getId(), order.getOrderNumber());
+            outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
+                "Order", order.getId(), "POINTS_AWARDED",
+                "customer-service", "/customers/" + order.getCustomerId() + "/points/add", payload));
+        }
+
+        return OrderResponse.from(order);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse cancel(UUID orderId, UUID actorId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            throw new InvalidOperationException(
+                "Cannot cancel completed order",
+                "Không thể hủy đơn hàng đã hoàn tất");
+        }
+        OrderStatus previousStatus = order.getStatus();
+        order.setStatus(OrderStatus.CANCELLED);
+        // BR06: Restore stock only if previously PAID
+        if (previousStatus == OrderStatus.PAID) {
+            for (OrderItem item : order.getItems()) {
+                try {
+                    inventoryClient.consumeStock(new InventoryClient.ConsumeRequest(
+                        item.getMedicineId(), order.getBranchId(), -item.getQty(), actorId, order.getId()));
+                } catch (Exception e) {
+                    log.warn("Failed to restore stock for order {}: {}", order.getId(), e.getMessage());
+                }
+            }
+        }
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+    /**
+     * B-08: Generate next order number using a dedicated sequence table to avoid race condition.
+     * Falls back to the legacy scan-based method if sequence table not present.
+     * <p>Sequence row is locked with PESSIMISTIC_WRITE so concurrent calls serialize.
+     */
+    private String generateOrderNumber() {
+        String datePrefix = LocalDate.now().format(DATE_FMT);
+        // Use SELECT ... FOR UPDATE to lock the row and serialize concurrent calls
+        Optional<OrderSequence> seqOpt = sequenceRepository.findByIdForUpdate(datePrefix);
+        OrderSequence seq;
+        if (seqOpt.isPresent()) {
+            seq = seqOpt.get();
+            seq.setLastSeq(seq.getLastSeq() + 1);
+        } else {
+            // First order of the day — check if any prior order exists (for migration)
+            int next = 1;
+            List<Order> latest = orderRepository.findByDatePrefix(datePrefix, PageRequest.of(0, 1));
+            if (!latest.isEmpty()) {
+                String numPart = latest.get(0).getOrderNumber()
+                        .substring(latest.get(0).getOrderNumber().lastIndexOf('-') + 1);
+                try { next = Integer.parseInt(numPart) + 1; } catch (NumberFormatException ignored) {}
+            }
+            seq = new OrderSequence(datePrefix, next);
+        }
+        sequenceRepository.save(seq);
+        return String.format("ORD-%s-%04d", datePrefix, seq.getLastSeq());
+    }
+}

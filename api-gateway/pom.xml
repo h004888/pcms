@@ -34,6 +34,27 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- PCMS common (for JwtUtils, JwtClaims, ErrorResponse) -->
+        <dependency>
+            <groupId>com.pcms</groupId>
+            <artifactId>pcms-common</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <!-- JWT validation in gateway -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>
