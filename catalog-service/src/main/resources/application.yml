@@ -1,6 +1,10 @@
 spring:
   application:
     name: catalog-service
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 3MB
   config:
     import: "optional:configserver:http://localhost:8888"
   profiles:
@@ -34,3 +38,7 @@ management:
     web:
       exposure:
         include: "*"
+
+pcms:
+  catalog:
+    image-upload-dir: uploads/medicines

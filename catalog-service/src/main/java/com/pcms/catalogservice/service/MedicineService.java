@@ -5,6 +5,7 @@ import com.pcms.catalogservice.dto.request.UpdateMedicineRequest;
 import com.pcms.catalogservice.dto.response.MedicineResponse;
 import com.pcms.catalogservice.dto.response.PageResponse;
 import com.pcms.catalogservice.enums.MedicineStatus;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -12,11 +13,11 @@ import java.util.UUID;
 public interface MedicineService {
 
     PageResponse<MedicineResponse> list(String search,
-                                        UUID categoryId,
-                                        BigDecimal minPrice,
-                                        BigDecimal maxPrice,
-                                        int page,
-                                        int size);
+            UUID categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            int page,
+            int size);
 
     MedicineResponse getById(UUID id);
 
@@ -26,13 +27,17 @@ public interface MedicineService {
 
     MedicineResponse update(UUID id, UpdateMedicineRequest request);
 
+    MedicineResponse updateImage(UUID id, MultipartFile image);
+
     void softDelete(UUID id);
 
+    long countByCategoryId(UUID categoryId);
+
     PageResponse<MedicineResponse> search(String search,
-                                          UUID categoryId,
-                                          BigDecimal minPrice,
-                                          BigDecimal maxPrice,
-                                          MedicineStatus status,
-                                          int page,
-                                          int size);
+            UUID categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            MedicineStatus status,
+            int page,
+            int size);
 }

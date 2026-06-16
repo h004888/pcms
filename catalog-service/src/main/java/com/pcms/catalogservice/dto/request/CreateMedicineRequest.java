@@ -9,12 +9,12 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record CreateMedicineRequest(
-        @NotBlank @Size(max = 20) String sku,
-        @NotBlank @Size(max = 200) String name,
-        @NotNull UUID categoryId,
-        UUID supplierId,
-        @NotNull @DecimalMin("0.01") BigDecimal price,
-        @NotBlank @Size(max = 20) String unit,
-        Boolean prescriptionRequired,
-        String imageUrl
-) {}
+                @Size(max = 20, message = "SKU không được vượt quá 20 ký tự") String sku,
+                @NotBlank(message = "Tên thuốc không được để trống") @Size(max = 200, message = "Tên thuốc không được vượt quá 200 ký tự") String name,
+                @NotNull(message = "Danh mục không được để trống") UUID categoryId,
+                UUID supplierId,
+                @NotNull(message = "Giá bán không được để trống") @DecimalMin(value = "0.01", message = "Giá bán phải lớn hơn 0") BigDecimal price,
+                @NotBlank(message = "Đơn vị tính không được để trống") @Size(max = 20, message = "Đơn vị tính không được vượt quá 20 ký tự") String unit,
+                Boolean prescriptionRequired,
+                String imageUrl) {
+}

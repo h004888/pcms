@@ -4,10 +4,13 @@ import com.pcms.catalogservice.dto.request.CreateMedicineRequest;
 import com.pcms.catalogservice.dto.request.UpdateMedicineRequest;
 import com.pcms.catalogservice.dto.response.MedicineResponse;
 import com.pcms.catalogservice.dto.response.PageResponse;
+import com.pcms.catalogservice.service.ImageStorageService;
 import com.pcms.catalogservice.service.MedicineService;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -21,21 +24,25 @@ import java.util.UUID;
 public class MedicineController {
 
     private final MedicineService medicineService;
+    private final ImageStorageService imageStorageService;
 
-    public MedicineController(MedicineService medicineService) {
+    public MedicineController(MedicineService medicineService, ImageStorageService imageStorageService) {
         this.medicineService = medicineService;
+        this.imageStorageService = imageStorageService;
     }
 
     @GetMapping
     public ResponseEntity<PageResponse<MedicineResponse>> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false, name = "category") UUID category,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(
-                medicineService.list(search, categoryId, minPrice, maxPrice, page, size));
+                medicineService.list(search, categoryId != null ? categoryId : category, minPrice, maxPrice, page,
+                        size));
     }
 
     @GetMapping("/{id}")
@@ -48,6 +55,11 @@ public class MedicineController {
         return ResponseEntity.ok(medicineService.getBySku(sku));
     }
 
+    @GetMapping("/count")
+    public ResponseEntity<Long> countByCategory(@RequestParam UUID categoryId) {
+        return ResponseEntity.ok(medicineService.countByCategoryId(categoryId));
+    }
+
     @PostMapping
     public ResponseEntity<MedicineResponse> create(@Valid @RequestBody CreateMedicineRequest request) {
         return ResponseEntity.ok(medicineService.create(request));
@@ -55,8 +67,20 @@ public class MedicineController {
 
     @PutMapping("/{id}")
     public ResponseEntity<MedicineResponse> update(@PathVariable UUID id,
-                                                    @Valid @RequestBody UpdateMedicineRequest request) {
+            @Valid @RequestBody UpdateMedicineRequest request) {
         return ResponseEntity.ok(medicineService.update(id, request));
+    }
+
+    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MedicineResponse> uploadImage(@PathVariable UUID id,
+            @RequestPart("image") MultipartFile image) {
+        return ResponseEntity.ok(medicineService.updateImage(id, image));
+    }
+
+    @GetMapping("/{id}/image")
+    public ResponseEntity<byte[]> getImage(@PathVariable UUID id) {
+        MedicineResponse medicine = medicineService.getById(id);
+        return imageStorageService.loadAsResponseEntity(medicine.imageUrl());
     }
 
     @DeleteMapping("/{id}")

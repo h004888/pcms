@@ -5,12 +5,15 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record UpdateMedicineRequest(
-        @Size(max = 200) String name,
-        @DecimalMin("0.01") BigDecimal price,
-        @Size(max = 20) String unit,
-        Boolean prescriptionRequired,
-        String imageUrl,
-        MedicineStatus status
-) {}
+                @Size(max = 200, message = "Tên thuốc không được vượt quá 200 ký tự") String name,
+                UUID categoryId,
+                UUID supplierId,
+                @DecimalMin(value = "0.01", message = "Giá bán phải lớn hơn 0") BigDecimal price,
+                @Size(max = 20, message = "Đơn vị tính không được vượt quá 20 ký tự") String unit,
+                Boolean prescriptionRequired,
+                String imageUrl,
+                MedicineStatus status) {
+}

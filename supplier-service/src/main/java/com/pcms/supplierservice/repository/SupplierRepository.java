@@ -15,11 +15,15 @@ import java.util.UUID;
 @Repository
 public interface SupplierRepository extends JpaRepository<Supplier, UUID> {
     Optional<Supplier> findByTaxCode(String taxCode);
+
     boolean existsByTaxCode(String taxCode);
+
+    boolean existsByTaxCodeAndIdNot(String taxCode, UUID id);
+
     List<Supplier> findByStatus(SupplierStatus status);
 
     @Query("SELECT s FROM Supplier s WHERE " +
-           "(:search IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "  OR LOWER(s.taxCode) LIKE LOWER(CONCAT('%', :search, '%')))")
+            "(:search IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "  OR LOWER(s.taxCode) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Supplier> search(String search, Pageable pageable);
 }

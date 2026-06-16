@@ -25,24 +25,30 @@ public class SearchServiceImpl implements SearchService {
     @Override
     @Transactional(readOnly = true)
     public List<MedicineResponse> autocomplete(String q) {
-        if (q == null || q.isBlank()) return Collections.emptyList();
+        if (q == null || q.isBlank())
+            return Collections.emptyList();
         List<Medicine> results = medicineRepository.findTop5ByNameLike(q, PageRequest.of(0, 5));
-        if (results.isEmpty()) return Collections.emptyList();
+        if (results.isEmpty())
+            return Collections.emptyList();
         return results.stream().map(MedicineResponse::from).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MedicineResponse> fullSearch(String q,
-                                             UUID categoryId,
-                                             BigDecimal minPrice,
-                                             BigDecimal maxPrice) {
+            UUID categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean inStock) {
+        // inStock is accepted for API compatibility with SCR-SEARCH.
+        // Stock lives in inventory-service, so this dev implementation ignores it.
         List<Medicine> results = medicineRepository
                 .search(q, categoryId, minPrice, maxPrice,
                         com.pcms.catalogservice.enums.MedicineStatus.ACTIVE,
                         PageRequest.of(0, 100))
                 .getContent();
-        if (results.isEmpty()) return Collections.emptyList();
+        if (results.isEmpty())
+            return Collections.emptyList();
         return results.stream().map(MedicineResponse::from).toList();
     }
 }

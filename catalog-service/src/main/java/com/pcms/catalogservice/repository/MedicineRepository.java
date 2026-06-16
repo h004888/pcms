@@ -18,24 +18,28 @@ import java.util.UUID;
 public interface MedicineRepository extends JpaRepository<Medicine, UUID> {
 
     Optional<Medicine> findBySku(String sku);
+
     boolean existsBySku(String sku);
 
+    long countByCategoryId(UUID categoryId);
+
     List<Medicine> findByCategoryId(UUID categoryId);
+
     List<Medicine> findByStatus(MedicineStatus status);
 
     /** UC10: Search/filter medicines */
     @Query("SELECT m FROM Medicine m WHERE " +
-           "(:query IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%'))) " +
-           "AND (:categoryId IS NULL OR m.categoryId = :categoryId) " +
-           "AND (:minPrice IS NULL OR m.price >= :minPrice) " +
-           "AND (:maxPrice IS NULL OR m.price <= :maxPrice) " +
-           "AND (:status IS NULL OR m.status = :status)")
+            "(:query IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+            "AND (:categoryId IS NULL OR m.categoryId = :categoryId) " +
+            "AND (:minPrice IS NULL OR m.price >= :minPrice) " +
+            "AND (:maxPrice IS NULL OR m.price <= :maxPrice) " +
+            "AND (:status IS NULL OR m.status = :status)")
     Page<Medicine> search(@Param("query") String query,
-                          @Param("categoryId") UUID categoryId,
-                          @Param("minPrice") BigDecimal minPrice,
-                          @Param("maxPrice") BigDecimal maxPrice,
-                          @Param("status") MedicineStatus status,
-                          Pageable pageable);
+            @Param("categoryId") UUID categoryId,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("status") MedicineStatus status,
+            Pageable pageable);
 
     /** Autocomplete for UC10 AT2 */
     @Query("SELECT m FROM Medicine m WHERE LOWER(m.name) LIKE LOWER(CONCAT('%', :prefix, '%')) AND m.status = 'ACTIVE' ORDER BY m.name ASC")
