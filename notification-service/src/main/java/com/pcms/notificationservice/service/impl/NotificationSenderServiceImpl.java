@@ -11,8 +11,10 @@ import com.pcms.notificationservice.enums.NotificationChannel;
 import com.pcms.notificationservice.enums.NotificationStatus;
 import com.pcms.notificationservice.repository.NotificationRepository;
 import com.pcms.notificationservice.service.NotificationSenderService;
+import com.pcms.notificationservice.service.SmsSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +48,9 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     private final JavaMailSender mailSender; // may be null when mail is not configured
     private final int maxAttempts;
     private final long backoffMs;
+
+    @Autowired(required = false)
+    private SmsSender smsSender;
 
     public NotificationSenderServiceImpl(
             NotificationRepository notificationRepository,
@@ -212,7 +217,11 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     }
 
     private void sendSms(Notification n) {
-        log.info("SMS sent (mock) to recipient {}: {}", n.getRecipientId(), n.getTitle());
+        if (smsSender != null) {
+            smsSender.send("RECIPIENT-" + n.getRecipientId(), n.getTitle() + ": " + n.getBody());
+        } else {
+            log.info("[SMS-MOCK] recipient={} msg={}", n.getRecipientId(), n.getTitle());
+        }
     }
 
     private static NotificationResponse toResponse(Notification n) {

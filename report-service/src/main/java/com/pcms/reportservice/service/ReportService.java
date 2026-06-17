@@ -1,13 +1,16 @@
 package com.pcms.reportservice.service;
 
+import com.pcms.reportservice.dto.CreateScheduleRequest;
 import com.pcms.reportservice.dto.InventoryReportRequest;
 import com.pcms.reportservice.dto.InventoryReportResponse;
 import com.pcms.reportservice.dto.RevenueReportRequest;
 import com.pcms.reportservice.dto.RevenueReportResponse;
+import com.pcms.reportservice.dto.ScheduleResponse;
 import com.pcms.reportservice.dto.StaffReportRequest;
 import com.pcms.reportservice.dto.StaffReportResponse;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -50,8 +53,15 @@ public interface ReportService {
 
     /**
      * Generate Excel or PDF exports of a report.
-     *
-     * @return a placeholder response indicating the export was queued.
      */
     Object export(String type, String format, LocalDate from, LocalDate to);
+
+    /** B9: Real-time dashboard stats — today's orders, revenue, low-stock count. */
+    java.util.Map<String, Object> realtimeStats();
+
+    /** B#13: Create a new report schedule. */
+    ScheduleResponse createSchedule(CreateScheduleRequest request);
+
+    /** B#13: List all active report schedules. */
+    List<ScheduleResponse> listSchedules();
 }

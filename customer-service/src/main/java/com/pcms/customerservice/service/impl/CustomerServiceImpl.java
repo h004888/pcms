@@ -3,6 +3,7 @@ package com.pcms.customerservice.service.impl;
 import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
+import com.pcms.customerservice.enums.LoyaltyTier;
 import com.pcms.customerservice.dto.CreateCustomerRequest;
 import com.pcms.customerservice.dto.CustomerResponse;
 import com.pcms.customerservice.dto.UpdateCustomerRequest;
@@ -62,6 +63,14 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public CustomerResponse getByPhone(String phone) {
+        return customerRepository.findByPhone(phone)
+            .map(CustomerResponse::from)
+            .orElseThrow(() -> new ResourceNotFoundException("Customer with phone", phone));
+    }
+
+    @Override
     @Transactional
     public CustomerResponse create(CreateCustomerRequest request) {
         if (customerRepository.existsByPhone(request.phone())) {
@@ -75,6 +84,7 @@ public class CustomerServiceImpl implements CustomerService {
         c.setDob(request.dob());
         c.setGender(request.gender());
         c.setPoints(0);
+        c.setTier(LoyaltyTier.BRONZE);
         c.setCode(generateCode());
         return CustomerResponse.from(customerRepository.save(c));
     }
@@ -131,6 +141,7 @@ public class CustomerServiceImpl implements CustomerService {
             .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
         int newBalance = (c.getPoints() == null ? 0 : c.getPoints()) + points;
         c.setPoints(newBalance);
+        c.setTier(LoyaltyTier.of(newBalance));
         Customer saved = customerRepository.save(c);
 
         // Audit + idempotency record

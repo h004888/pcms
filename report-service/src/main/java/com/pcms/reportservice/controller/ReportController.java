@@ -1,9 +1,11 @@
 package com.pcms.reportservice.controller;
 
+import com.pcms.reportservice.dto.CreateScheduleRequest;
 import com.pcms.reportservice.dto.InventoryReportRequest;
 import com.pcms.reportservice.dto.InventoryReportResponse;
 import com.pcms.reportservice.dto.RevenueReportRequest;
 import com.pcms.reportservice.dto.RevenueReportResponse;
+import com.pcms.reportservice.dto.ScheduleResponse;
 import com.pcms.reportservice.dto.StaffReportRequest;
 import com.pcms.reportservice.dto.StaffReportResponse;
 import com.pcms.reportservice.service.ReportService;
@@ -13,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -62,22 +65,59 @@ public class ReportController {
         return ResponseEntity.ok(reportService.inventory(request));
     }
 
-    /** Staff performance report. */
+    /** Staff performance report (POST with JSON body). */
     @PostMapping("/staff")
     public ResponseEntity<StaffReportResponse> staff(@Valid @RequestBody StaffReportRequest request) {
         return ResponseEntity.ok(reportService.staff(request));
     }
 
+    /** GET variant of staff report using query params. */
+    @GetMapping("/staff")
+    public ResponseEntity<StaffReportResponse> staffGet(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) UUID branchId) {
+        return ResponseEntity.ok(reportService.staff(new StaffReportRequest(from, to, branchId)));
+    }
+
+    /** B#13: Create a report schedule. */
+    @PostMapping("/schedules")
+    public ResponseEntity<ScheduleResponse> createSchedule(@Valid @RequestBody CreateScheduleRequest request) {
+        return ResponseEntity.ok(reportService.createSchedule(request));
+    }
+
+    /** B#13: List all active report schedules. */
+    @GetMapping("/schedules")
+    public ResponseEntity<List<ScheduleResponse>> listSchedules() {
+        return ResponseEntity.ok(reportService.listSchedules());
+    }
+
     /**
-     * GET /api/v1/reports/export - Step 6-8 of UC09 main flow
-     * TODO: implement Excel/PDF generation
+     * GET /api/v1/reports/export — returns Excel or PDF file bytes.
      */
     @GetMapping("/export")
     public ResponseEntity<?> export(
-            @RequestParam String type,    // revenue | inventory | staff
-            @RequestParam String format,  // excel | pdf
+            @RequestParam String type,
+            @RequestParam String format,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return ResponseEntity.status(501).body(reportService.export(type, format, from, to));
+        Object result = reportService.export(type, format, from, to);
+        if (result instanceof byte[] bytes) {
+            String contentType = "pdf".equalsIgnoreCase(format)
+                    ? "application/pdf"
+                    : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            String filename = type + "-report." + ("pdf".equalsIgnoreCase(format) ? "pdf" : "xlsx");
+            return ResponseEntity.ok()
+                    .header("Content-Type", contentType)
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .body(bytes);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /** B9: GET /api/v1/reports/realtime/stats — today's summary. */
+    @GetMapping("/realtime/stats")
+    public ResponseEntity<java.util.Map<String, Object>> realtimeStats() {
+        return ResponseEntity.ok(reportService.realtimeStats());
     }
 }

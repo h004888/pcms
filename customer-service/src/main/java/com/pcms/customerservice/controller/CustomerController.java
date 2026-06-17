@@ -2,6 +2,7 @@ package com.pcms.customerservice.controller;
 
 import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.common.dto.PageResponse;
+import com.pcms.customerservice.client.OrderClient;
 import com.pcms.customerservice.dto.CreateCustomerRequest;
 import com.pcms.customerservice.dto.CustomerResponse;
 import com.pcms.customerservice.dto.UpdateCustomerRequest;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,9 +25,11 @@ import java.util.UUID;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final OrderClient orderClient;
 
-    public CustomerController(CustomerService customerService) {
+    public CustomerController(CustomerService customerService, OrderClient orderClient) {
         this.customerService = customerService;
+        this.orderClient = orderClient;
     }
 
     @GetMapping
@@ -43,13 +47,13 @@ public class CustomerController {
 
     @GetMapping("/phone/{phone}")
     public ResponseEntity<CustomerResponse> getByPhone(@PathVariable String phone) {
-        // Lookup by phone is not in the interface; delegate via repository through service: reuse list()
-        // For a single hit we expose the first match.
-        return customerService.list(phone, 0, 1).getContent().stream()
-            .filter(c -> c.phone() != null && c.phone().contains(phone))
-            .findFirst()
-            .map(ResponseEntity::ok)
-            .orElseThrow(() -> new ResourceNotFoundException("Customer with phone", phone));
+        return ResponseEntity.ok(customerService.getByPhone(phone));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
+        customerService.softDelete(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -94,6 +98,24 @@ public class CustomerController {
                 "addedPoints", body.points() == null ? 0 : body.points(),
                 "totalPoints", c.points()
         ));
+    }
+
+    /** B5: GET /customers/{id}/orders - delegate to order-service via Feign. */
+    @GetMapping("/{id}/orders")
+    public ResponseEntity<Map<String, Object>> getOrders(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        customerService.getById(id); // verify customer exists
+        return ResponseEntity.ok(orderClient.getOrdersByCustomer(id, page, size));
+    }
+
+    /** B5: GET /customers/{id}/history — combined profile + recent orders. */
+    @GetMapping("/{id}/history")
+    public ResponseEntity<Map<String, Object>> getHistory(@PathVariable UUID id) {
+        CustomerResponse customer = customerService.getById(id);
+        Map<String, Object> orders = orderClient.getOrdersByCustomer(id, 0, 10);
+        return ResponseEntity.ok(Map.of("customer", customer, "recentOrders", orders));
     }
 
     /** Request body for /points/add endpoint. */

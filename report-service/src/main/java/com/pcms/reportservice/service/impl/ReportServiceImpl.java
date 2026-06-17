@@ -3,17 +3,22 @@ package com.pcms.reportservice.service.impl;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.reportservice.client.InventoryClient;
 import com.pcms.reportservice.client.OrderClient;
+import com.pcms.reportservice.dto.CreateScheduleRequest;
 import com.pcms.reportservice.dto.InventoryReportRequest;
 import com.pcms.reportservice.dto.InventoryReportResponse;
 import com.pcms.reportservice.dto.RevenueReportRequest;
 import com.pcms.reportservice.dto.RevenueReportResponse;
+import com.pcms.reportservice.dto.ScheduleResponse;
 import com.pcms.reportservice.dto.StaffReportRequest;
 import com.pcms.reportservice.dto.StaffReportResponse;
+import com.pcms.reportservice.entity.ReportSchedule;
+import com.pcms.reportservice.repository.ReportScheduleRepository;
 import com.pcms.reportservice.service.ReportService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,15 +37,18 @@ public class ReportServiceImpl implements ReportService {
     private final InventoryClient inventoryClient;
     private final com.pcms.reportservice.service.impl.ExcelExportService excelExportService;
     private final com.pcms.reportservice.service.impl.PdfExportService pdfExportService;
+    private final ReportScheduleRepository scheduleRepository;
 
     public ReportServiceImpl(OrderClient orderClient,
                               InventoryClient inventoryClient,
                               com.pcms.reportservice.service.impl.ExcelExportService excelExportService,
-                              com.pcms.reportservice.service.impl.PdfExportService pdfExportService) {
+                              com.pcms.reportservice.service.impl.PdfExportService pdfExportService,
+                              ReportScheduleRepository scheduleRepository) {
         this.orderClient = orderClient;
         this.inventoryClient = inventoryClient;
         this.excelExportService = excelExportService;
         this.pdfExportService = pdfExportService;
+        this.scheduleRepository = scheduleRepository;
     }
 
     @Override
@@ -211,6 +219,60 @@ public class ReportServiceImpl implements ReportService {
                     "Unknown export format: " + format + " (supported: excel, pdf)",
                     "Định dạng xuất không hỗ trợ: " + format);
         }
+    }
+
+    @Override
+    public Map<String, Object> realtimeStats() {
+        LocalDate today = LocalDate.now();
+        Map<String, Object> ordersResp = orderClient.getOrders(null, 0, 1000);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> allOrders =
+                (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
+
+        long todayOrders = 0;
+        double todayRevenue = 0.0;
+        for (Map<String, Object> order : allOrders) {
+            String createdAtStr = (String) order.get("createdAt");
+            if (createdAtStr == null) continue;
+            try {
+                LocalDateTime created = LocalDateTime.parse(createdAtStr);
+                if (created.toLocalDate().equals(today)) {
+                    todayOrders++;
+                    todayRevenue += ((Number) order.getOrDefault("total", 0)).doubleValue();
+                }
+            } catch (Exception ignored) {}
+        }
+
+        List<Map<String, Object>> lowStock = inventoryClient.getLowStock();
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("date", today.toString());
+        result.put("todayOrders", todayOrders);
+        result.put("todayRevenue", todayRevenue);
+        result.put("totalOrders", allOrders.size());
+        result.put("lowStockCount", lowStock.size());
+        return result;
+    }
+
+    @Override
+    public ScheduleResponse createSchedule(CreateScheduleRequest request) {
+        ReportSchedule schedule = new ReportSchedule();
+        schedule.setReportType(request.reportType());
+        schedule.setFrequency(request.frequency());
+        schedule.setFormat(request.format());
+        schedule.setScheduleTime(request.scheduleTime());
+        schedule.setRecipients(request.recipients());
+        schedule.setBranchId(request.branchId());
+        schedule.setActive(true);
+        return ScheduleResponse.from(scheduleRepository.save(schedule));
+    }
+
+    @Override
+    public List<ScheduleResponse> listSchedules() {
+        return scheduleRepository.findByActiveTrue()
+                .stream()
+                .map(ScheduleResponse::from)
+                .toList();
     }
 
     private void validateRange(LocalDate from, LocalDate to) {

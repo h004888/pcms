@@ -2,6 +2,7 @@ package com.pcms.customerservice.entity;
 
 import com.pcms.customerservice.enums.CustomerStatus;
 import com.pcms.customerservice.enums.Gender;
+import com.pcms.customerservice.enums.LoyaltyTier;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -58,6 +59,11 @@ public class Customer {
     @Column(nullable = false)
     private Integer points = 0;
 
+    /** B10: Tier auto-calculated from points (BRONZE/SILVER/GOLD). */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private LoyaltyTier tier = LoyaltyTier.BRONZE;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -94,6 +100,8 @@ public class Customer {
     public void setStatus(CustomerStatus status) { this.status = status; }
     public Integer getPoints() { return points; }
     public void setPoints(Integer points) { this.points = points; }
+    public LoyaltyTier getTier() { return tier; }
+    public void setTier(LoyaltyTier tier) { this.tier = tier; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

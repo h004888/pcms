@@ -1,15 +1,14 @@
 package com.pcms.customerservice.dto;
 
 import com.pcms.customerservice.entity.Customer;
+import com.pcms.customerservice.enums.CustomerStatus;
 import com.pcms.customerservice.enums.Gender;
+import com.pcms.customerservice.enums.LoyaltyTier;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Response DTO for customer.
- */
 public record CustomerResponse(
     UUID id,
     String code,
@@ -20,6 +19,8 @@ public record CustomerResponse(
     LocalDate dob,
     Gender gender,
     Integer points,
+    LoyaltyTier tier,
+    CustomerStatus status,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {
@@ -34,6 +35,8 @@ public record CustomerResponse(
             c.getDob(),
             c.getGender(),
             c.getPoints(),
+            c.getTier() != null ? c.getTier() : LoyaltyTier.BRONZE,
+            c.getStatus(),
             c.getCreatedAt(),
             c.getUpdatedAt()
         );

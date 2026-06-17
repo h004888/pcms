@@ -14,6 +14,7 @@ import java.util.UUID;
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, UUID> {
 
+    /** B12: exact phone lookup (used by getByPhone endpoint). */
     Optional<Customer> findByPhone(String phone);
     Optional<Customer> findByCode(String code);
     boolean existsByPhone(String phone);

@@ -18,6 +18,9 @@ public interface CustomerService {
 
     CustomerResponse getByCode(String code);
 
+    /** B12: Exact phone match lookup. */
+    CustomerResponse getByPhone(String phone);
+
     /** Auto-generate CUST-yyyy#### and persist. */
     CustomerResponse create(CreateCustomerRequest request);
 
