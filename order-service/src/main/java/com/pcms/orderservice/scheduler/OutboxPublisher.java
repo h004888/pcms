@@ -1,35 +1,36 @@
 package com.pcms.orderservice.scheduler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pcms.common.exception.InvalidOperationException;
+import com.pcms.orderservice.client.CustomerPointsClient;
+import com.pcms.orderservice.client.InventoryOutboxClient;
+import com.pcms.orderservice.client.NotificationOutboxClient;
+import com.pcms.orderservice.entity.DeadLetterEvent;
 import com.pcms.orderservice.entity.OutboxEvent;
+import com.pcms.orderservice.repository.DeadLetterEventRepository;
 import com.pcms.orderservice.repository.OutboxEventRepository;
+import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Outbox event publisher (B-17).
  *
- * <p>Every 30 seconds, picks up PENDING events from the outbox table and
+ * <p>
+ * Every 30 seconds, picks up PENDING events from the outbox table and
  * dispatches them via REST call to the target service. On success, marks
  * SENT. On failure, increments retry_count (will be retried next cycle).
- *
- * <p>Replace {@code RestTemplate} with a Feign client when inter-service
- * HTTP is more standardized.
  */
 @Component
 public class OutboxPublisher {
@@ -39,24 +40,31 @@ public class OutboxPublisher {
     private static final int MAX_RETRIES = 5;
 
     private final OutboxEventRepository outboxRepo;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final DeadLetterEventRepository deadLetterEventRepository;
+    private final InventoryOutboxClient inventoryOutboxClient;
+    private final CustomerPointsClient customerPointsClient;
+    private final NotificationOutboxClient notificationOutboxClient;
+    private final ObjectMapper objectMapper;
 
-    @Value("${app.services.inventory-url:http://localhost:8086}")
-    private String inventoryServiceUrl;
-
-    @Value("${app.services.customer-url:http://localhost:8087}")
-    private String customerServiceUrl;
-
-    @Autowired
-    public OutboxPublisher(OutboxEventRepository outboxRepo) {
+    public OutboxPublisher(OutboxEventRepository outboxRepo,
+            DeadLetterEventRepository deadLetterEventRepository,
+            InventoryOutboxClient inventoryOutboxClient,
+            CustomerPointsClient customerPointsClient,
+            NotificationOutboxClient notificationOutboxClient,
+            ObjectMapper objectMapper) {
         this.outboxRepo = outboxRepo;
+        this.deadLetterEventRepository = deadLetterEventRepository;
+        this.inventoryOutboxClient = inventoryOutboxClient;
+        this.customerPointsClient = customerPointsClient;
+        this.notificationOutboxClient = notificationOutboxClient;
+        this.objectMapper = objectMapper;
     }
 
-    @Scheduled(fixedRate = 30_000)  // every 30 seconds
+    @Scheduled(fixedRate = 30_000) // every 30 seconds
     @Transactional
     public void publishPending() {
         List<OutboxEvent> pending = outboxRepo
-                .findByStatusOrderByCreatedAtAsc(OutboxEvent.Status.PENDING, PageRequest.of(0, BATCH_SIZE));
+                .findReadyToPublish(OutboxEvent.Status.PENDING, LocalDateTime.now(), PageRequest.of(0, BATCH_SIZE));
         if (pending.isEmpty()) {
             return;
         }
@@ -67,14 +75,17 @@ public class OutboxPublisher {
                 event.setStatus(OutboxEvent.Status.SENT);
                 event.setSentAt(LocalDateTime.now());
                 outboxRepo.save(event);
-            } catch (Exception e) {
+            } catch (FeignException | InvalidOperationException e) {
                 event.setRetryCount(event.getRetryCount() + 1);
                 event.setLastError(e.getMessage());
                 if (event.getRetryCount() >= MAX_RETRIES) {
                     event.setStatus(OutboxEvent.Status.FAILED);
+                    deadLetterEventRepository.save(new DeadLetterEvent(event));
                     log.error("[outbox] Event {} failed after {} retries: {}",
                             event.getId(), MAX_RETRIES, e.getMessage());
                 } else {
+                    event.setNextAttemptAt(
+                            LocalDateTime.now().plusSeconds(calculateBackoffSeconds(event.getRetryCount())));
                     log.warn("[outbox] Event {} failed (retry {}/{}): {}",
                             event.getId(), event.getRetryCount(), MAX_RETRIES, e.getMessage());
                 }
@@ -84,29 +95,55 @@ public class OutboxPublisher {
     }
 
     private void dispatch(OutboxEvent event) {
-        String baseUrl = resolveServiceUrl(event.getTargetService());
-        String url = baseUrl + event.getEndpoint();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        // Forward idempotency key if present
-        if (event.getEventType() != null) {
-            headers.set("X-Outbox-Event-Id", event.getId().toString());
-        }
-        HttpEntity<String> entity = new HttpEntity<>(event.getPayload(), headers);
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                url, HttpMethod.POST, entity, String.class);
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new RestClientException("Non-2xx response: " + response.getStatusCode());
+        Map<String, Object> payload = parsePayload(event);
+        String eventId = event.getId().toString();
+        switch (event.getTargetService()) {
+            case "inventory-service" -> dispatchInventory(event, eventId, payload);
+            case "customer-service" -> customerPointsClient.addPoints(eventId, extractCustomerId(event), payload);
+            case "notification-service" -> notificationOutboxClient.orderPaid(eventId, payload);
+            default -> throw new InvalidOperationException(
+                    "Unknown outbox target service: " + event.getTargetService(),
+                    "Không xác định được service nhận outbox event");
         }
     }
 
-    private String resolveServiceUrl(String serviceName) {
-        return switch (serviceName) {
-            case "inventory-service" -> inventoryServiceUrl;
-            case "customer-service" -> customerServiceUrl;
-            default -> throw new IllegalArgumentException("Unknown service: " + serviceName);
+    private void dispatchInventory(OutboxEvent event, String eventId, Map<String, Object> payload) {
+        UUID orderId = event.getAggregateId();
+        if (event.getEndpoint().endsWith("/cancelled")) {
+            inventoryOutboxClient.orderCancelled(eventId, orderId, payload);
+            return;
+        }
+        inventoryOutboxClient.orderPaid(eventId, orderId, payload);
+    }
+
+    private UUID extractCustomerId(OutboxEvent event) {
+        String[] parts = event.getEndpoint().split("/");
+        if (parts.length < 3) {
+            throw new InvalidOperationException(
+                    "Invalid customer outbox endpoint: " + event.getEndpoint(),
+                    "Endpoint outbox của khách hàng không hợp lệ");
+        }
+        return UUID.fromString(parts[2]);
+    }
+
+    private Map<String, Object> parsePayload(OutboxEvent event) {
+        try {
+            return objectMapper.readValue(event.getPayload(), new TypeReference<>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new InvalidOperationException(
+                    "Invalid outbox payload for event " + event.getId(),
+                    "Payload outbox event không hợp lệ");
+        }
+    }
+
+    private long calculateBackoffSeconds(int retryCount) {
+        return switch (retryCount) {
+            case 1 -> 1L;
+            case 2 -> 5L;
+            case 3 -> 30L;
+            case 4 -> 120L;
+            default -> 600L;
         };
     }
 }

@@ -21,6 +21,9 @@ public interface PrescriptionService {
 
     PrescriptionResponse update(UUID id, UpdatePrescriptionRequest request);
 
+    /** Link a signed prescription to an order after POS sale. */
+    PrescriptionResponse linkOrder(UUID id, UUID orderId);
+
     /**
      * Print/export a prescription in printable form (HTML/JSON placeholder).
      */

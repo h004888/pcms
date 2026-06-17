@@ -3,26 +3,31 @@ package com.pcms.orderservice.service;
 import com.pcms.orderservice.dto.CreateOrderRequest;
 import com.pcms.orderservice.dto.OrderResponse;
 import com.pcms.orderservice.dto.UpdateOrderRequest;
-import com.pcms.orderservice.entity.Order;
 import com.pcms.orderservice.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
  * Service interface for Order operations (UC06).
  *
- * <p>BR04: 5% discount when qty >= 10 same medicine.
- * <br>BR01: Auto-cancel pending orders after 24h.
- * <br>NSF-05: FIFO batch consumption via inventory-service.
- * <br>NSF-12: Generate order number ORD-yyyymmdd-####.
+ * <p>
+ * BR04: 5% discount when qty >= 10 same medicine.
+ * <br>
+ * BR01: Auto-cancel pending orders after 24h.
+ * <br>
+ * NSF-05: FIFO batch consumption via inventory-service.
+ * <br>
+ * NSF-12: Generate order number ORD-yyyymmdd-####.
  */
 public interface OrderService {
 
     /** Paginated list. Optionally filtered by customerId or status. */
     Page<OrderResponse> list(UUID customerId, OrderStatus status, int page, int size);
+
+    Page<OrderResponse> list(UUID customerId, OrderStatus status, UUID branchId,
+            LocalDate dateFrom, LocalDate dateTo, int page, int size);
 
     OrderResponse getById(UUID id);
 
@@ -36,6 +41,12 @@ public interface OrderService {
 
     /** Called by payment-service after payment success. */
     OrderResponse markAsPaid(UUID orderId, UUID actorId);
+
+    /** Manager approval workflow. */
+    OrderResponse approve(UUID orderId, UUID actorId);
+
+    /** Manager rejection workflow. */
+    OrderResponse reject(UUID orderId, UUID actorId);
 
     /** AT2 of UC06: Cancel order; restore stock if previously PAID (BR06). */
     OrderResponse cancel(UUID orderId, UUID actorId);

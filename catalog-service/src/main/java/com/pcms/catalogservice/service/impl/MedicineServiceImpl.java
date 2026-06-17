@@ -97,6 +97,16 @@ public class MedicineServiceImpl implements MedicineService {
 
     @Override
     @Transactional
+    public MedicineResponse create(CreateMedicineRequest request, MultipartFile image) {
+        MedicineResponse created = create(request);
+        if (image == null || image.isEmpty()) {
+            return created;
+        }
+        return updateImage(created.id(), image);
+    }
+
+    @Override
+    @Transactional
     public MedicineResponse update(UUID id, UpdateMedicineRequest request) {
         Medicine medicine = medicineRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Medicine", id));
@@ -122,6 +132,16 @@ public class MedicineServiceImpl implements MedicineService {
             medicine.setStatus(request.status());
         Medicine saved = medicineRepository.save(medicine);
         return MedicineResponse.from(saved);
+    }
+
+    @Override
+    @Transactional
+    public MedicineResponse update(UUID id, UpdateMedicineRequest request, MultipartFile image) {
+        MedicineResponse updated = update(id, request);
+        if (image == null || image.isEmpty()) {
+            return updated;
+        }
+        return updateImage(id, image);
     }
 
     @Override
@@ -182,7 +202,9 @@ public class MedicineServiceImpl implements MedicineService {
         } catch (FeignException.NotFound ex) {
             throw new ResourceNotFoundException("Category", categoryId);
         } catch (FeignException ex) {
-            throw new InvalidOperationException("Cannot validate category", "Không thể kiểm tra danh mục thuốc");
+            throw new InvalidOperationException(
+                    "Cannot validate category",
+                    "Không thể kiểm tra danh mục thuốc");
         }
     }
 

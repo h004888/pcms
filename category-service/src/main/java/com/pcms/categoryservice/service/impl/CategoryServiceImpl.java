@@ -12,6 +12,8 @@ import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
 import feign.FeignException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +37,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "categorySearch", key = "#search == null ? '' : #search.toLowerCase()")
     public Page<CategoryResponse> list(String search, Pageable pageable) {
         if (search == null || search.isBlank()) {
             List<CategoryResponse> active = repository.findByStatus(CategoryStatus.ACTIVE).stream()
@@ -55,6 +58,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @CacheEvict(value = "categorySearch", allEntries = true)
     public CategoryResponse create(CreateCategoryRequest request) {
         if (repository.existsByName(request.name())) {
             throw new DuplicateResourceException("name", request.name());
@@ -67,6 +71,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @CacheEvict(value = "categorySearch", allEntries = true)
     public CategoryResponse update(UUID id, UpdateCategoryRequest request) {
         Category category = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", id));
@@ -82,6 +87,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @CacheEvict(value = "categorySearch", allEntries = true)
     public void delete(UUID id) {
         Category category = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", id));

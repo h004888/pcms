@@ -61,20 +61,26 @@ public class PrescriptionController {
                 request.notes(),
                 request.items(),
                 Boolean.TRUE,
-                request.licenseNo()
-        );
+                request.licenseNo());
         return ResponseEntity.ok(prescriptionService.create(asDraft));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<PrescriptionResponse> update(@PathVariable UUID id,
-                                                       @Valid @RequestBody UpdatePrescriptionRequest request) {
+            @Valid @RequestBody UpdatePrescriptionRequest request) {
         return ResponseEntity.ok(prescriptionService.update(id, request));
     }
 
     @PutMapping("/{id}/sign")
     public ResponseEntity<PrescriptionResponse> sign(@PathVariable UUID id) {
         return ResponseEntity.ok(prescriptionService.sign(id));
+    }
+
+    /** POST /api/v1/prescriptions/{id}/link-order?orderId=... - B-16 */
+    @PostMapping("/{id}/link-order")
+    public ResponseEntity<PrescriptionResponse> linkOrder(@PathVariable UUID id,
+            @RequestParam UUID orderId) {
+        return ResponseEntity.ok(prescriptionService.linkOrder(id, orderId));
     }
 
     @GetMapping("/{id}/print")

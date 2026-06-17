@@ -5,7 +5,6 @@ import com.pcms.orderservice.enums.OrderStatus;
 import com.pcms.orderservice.repository.OrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,13 +22,16 @@ public class OrderAutoCancelScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(OrderAutoCancelScheduler.class);
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
     @Value("${order.pending-payment-timeout-hours:24}")
     private int timeoutHours;
 
-    @Scheduled(fixedRate = 900_000)  // 15 min = 900_000 ms
+    public OrderAutoCancelScheduler(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
+
+    @Scheduled(fixedRate = 900_000) // 15 min = 900_000 ms
     @Transactional
     public void autoCancelStaleOrders() {
         LocalDateTime cutoff = LocalDateTime.now().minusHours(timeoutHours);
@@ -38,8 +40,8 @@ public class OrderAutoCancelScheduler {
             order.setStatus(OrderStatus.CANCELLED);
             orderRepository.save(order);
             log.info("NSF-01/BR01: Auto-cancelled order {} (created {})",
-                order.getOrderNumber(), order.getCreatedAt());
-            // TODO: emit notification to customer (UC13, MSG19)
+                    order.getOrderNumber(), order.getCreatedAt());
+            // TODO(PCMS-UC13): emit notification to customer (UC13, MSG19)
         }
         if (!stale.isEmpty()) {
             log.info("NSF-01: Cancelled {} stale pending orders", stale.size());

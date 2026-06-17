@@ -15,11 +15,18 @@ import java.util.UUID;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     Optional<Payment> findByInvoiceNumber(String invoiceNumber);
+
     Optional<Payment> findByOrderId(UUID orderId);
+
     /** B-09: Look up by gateway transaction reference (for webhook). */
     Optional<Payment> findByTransactionRef(String transactionRef);
+
     Page<Payment> findByStatus(PaymentStatus status, Pageable pageable);
 
-    @Query("SELECT p FROM Payment p WHERE p.invoiceNumber LIKE CONCAT('INV-', :datePrefix, '%') ORDER BY p.invoiceNumber DESC")
+    @Query("""
+            SELECT p FROM Payment p
+            WHERE p.invoiceNumber LIKE CONCAT('INV-', :datePrefix, '%')
+            ORDER BY p.invoiceNumber DESC
+            """)
     List<Payment> findByDatePrefix(String datePrefix, Pageable pageable);
 }

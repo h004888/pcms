@@ -16,4 +16,10 @@ public interface InventoryClient {
 
     @GetMapping("/inventory/low-stock")
     List<Map<String, Object>> getLowStock();
+
+    @GetMapping("/inventory/report/stock-level")
+    List<Map<String, Object>> getStockLevelReport(@RequestParam(required = false) UUID branchId);
+
+    @GetMapping("/inventory/report/movement")
+    List<Map<String, Object>> getMovementReport(@RequestParam(required = false) UUID branchId);
 }

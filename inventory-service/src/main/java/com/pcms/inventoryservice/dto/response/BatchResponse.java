@@ -11,21 +11,21 @@ public record BatchResponse(
         UUID medicineId,
         UUID branchId,
         String batchNo,
+        String barcode,
         Integer qtyOnHand,
         LocalDate expiryDate,
         Integer minStockLevel,
-        LocalDateTime receivedAt
-) {
+        LocalDateTime receivedAt) {
     public static BatchResponse from(InventoryBatch b) {
         return new BatchResponse(
                 b.getId(),
                 b.getMedicineId(),
                 b.getBranchId(),
                 b.getBatchNo(),
+                b.getBarcode(),
                 b.getQtyOnHand(),
                 b.getExpiryDate(),
                 b.getMinStockLevel(),
-                b.getReceivedAt()
-        );
+                b.getReceivedAt());
     }
 }

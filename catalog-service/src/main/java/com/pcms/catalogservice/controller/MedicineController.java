@@ -5,8 +5,10 @@ import com.pcms.catalogservice.dto.request.UpdateMedicineRequest;
 import com.pcms.catalogservice.dto.response.MedicineResponse;
 import com.pcms.catalogservice.dto.response.PageResponse;
 import com.pcms.catalogservice.service.ImageStorageService;
+import com.pcms.catalogservice.service.MedicineExportService;
 import com.pcms.catalogservice.service.MedicineService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,10 +27,14 @@ public class MedicineController {
 
     private final MedicineService medicineService;
     private final ImageStorageService imageStorageService;
+    private final MedicineExportService medicineExportService;
 
-    public MedicineController(MedicineService medicineService, ImageStorageService imageStorageService) {
+    public MedicineController(MedicineService medicineService,
+            ImageStorageService imageStorageService,
+            MedicineExportService medicineExportService) {
         this.medicineService = medicineService;
         this.imageStorageService = imageStorageService;
+        this.medicineExportService = medicineExportService;
     }
 
     @GetMapping
@@ -60,15 +66,38 @@ public class MedicineController {
         return ResponseEntity.ok(medicineService.countByCategoryId(categoryId));
     }
 
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@RequestParam(required = false) UUID categoryId) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=medicines.xlsx")
+                .body(medicineExportService.exportExcel(categoryId));
+    }
+
     @PostMapping
     public ResponseEntity<MedicineResponse> create(@Valid @RequestBody CreateMedicineRequest request) {
         return ResponseEntity.ok(medicineService.create(request));
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MedicineResponse> createMultipart(
+            @RequestPart("payload") @Valid CreateMedicineRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return ResponseEntity.ok(medicineService.create(request, image));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<MedicineResponse> update(@PathVariable UUID id,
             @Valid @RequestBody UpdateMedicineRequest request) {
         return ResponseEntity.ok(medicineService.update(id, request));
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MedicineResponse> updateMultipart(@PathVariable UUID id,
+            @RequestPart("payload") @Valid UpdateMedicineRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return ResponseEntity.ok(medicineService.update(id, request, image));
     }
 
     @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

@@ -12,32 +12,36 @@ import java.util.UUID;
 
 public interface MedicineService {
 
-    PageResponse<MedicineResponse> list(String search,
-            UUID categoryId,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            int page,
-            int size);
+        PageResponse<MedicineResponse> list(String search,
+                        UUID categoryId,
+                        BigDecimal minPrice,
+                        BigDecimal maxPrice,
+                        int page,
+                        int size);
 
-    MedicineResponse getById(UUID id);
+        MedicineResponse getById(UUID id);
 
-    MedicineResponse getBySku(String sku);
+        MedicineResponse getBySku(String sku);
 
-    MedicineResponse create(CreateMedicineRequest request);
+        MedicineResponse create(CreateMedicineRequest request);
 
-    MedicineResponse update(UUID id, UpdateMedicineRequest request);
+        MedicineResponse create(CreateMedicineRequest request, MultipartFile image);
 
-    MedicineResponse updateImage(UUID id, MultipartFile image);
+        MedicineResponse update(UUID id, UpdateMedicineRequest request);
 
-    void softDelete(UUID id);
+        MedicineResponse update(UUID id, UpdateMedicineRequest request, MultipartFile image);
 
-    long countByCategoryId(UUID categoryId);
+        MedicineResponse updateImage(UUID id, MultipartFile image);
 
-    PageResponse<MedicineResponse> search(String search,
-            UUID categoryId,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            MedicineStatus status,
-            int page,
-            int size);
+        void softDelete(UUID id);
+
+        long countByCategoryId(UUID categoryId);
+
+        PageResponse<MedicineResponse> search(String search,
+                        UUID categoryId,
+                        BigDecimal minPrice,
+                        BigDecimal maxPrice,
+                        MedicineStatus status,
+                        int page,
+                        int size);
 }

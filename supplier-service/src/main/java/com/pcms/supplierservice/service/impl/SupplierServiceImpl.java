@@ -10,6 +10,8 @@ import com.pcms.supplierservice.repository.SupplierRepository;
 import com.pcms.supplierservice.service.SupplierService;
 import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.ResourceNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class SupplierServiceImpl implements SupplierService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "supplierSearch", key = "#search == null ? '' : #search.toLowerCase()")
     public Page<SupplierResponse> list(String search, Pageable pageable) {
         return repository.search(search, pageable).map(this::toResponse);
     }
@@ -43,6 +46,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
+    @CacheEvict(value = "supplierSearch", allEntries = true)
     public SupplierResponse create(CreateSupplierRequest request) {
         if (repository.existsByTaxCode(request.taxCode())) {
             throw new DuplicateResourceException("taxCode", request.taxCode());
@@ -61,6 +65,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
+    @CacheEvict(value = "supplierSearch", allEntries = true)
     public SupplierResponse update(UUID id, UpdateSupplierRequest request) {
         Supplier supplier = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier", id));
@@ -102,6 +107,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
+    @CacheEvict(value = "supplierSearch", allEntries = true)
     public void softDelete(UUID id) {
         Supplier supplier = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier", id));

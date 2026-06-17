@@ -28,18 +28,22 @@ import java.util.UUID;
 /**
  * Payment gateway webhook receiver (B-09).
  *
- * <p>Gateway calls this endpoint when async payment (CARD/QR) completes.
+ * <p>
+ * Gateway calls this endpoint when async payment (CARD/QR) completes.
  * Flow:
  * <ol>
- *   <li>Verify HMAC signature (CR-09 / FR7.2)</li>
- *   <li>Idempotency check by {@code gatewayEventId} — if already processed, return 200 OK without re-processing</li>
- *   <li>Persist {@link WebhookEvent} for audit</li>
- *   <li>Match to internal {@link Payment} by {@code transactionRef} or order id</li>
- *   <li>Update payment status → SUCCESS or FAILED</li>
- *   <li>Trigger order.markAsPaid via OrderClient</li>
+ * <li>Verify HMAC signature (CR-09 / FR7.2)</li>
+ * <li>Idempotency check by {@code gatewayEventId} — if already processed,
+ * return 200 OK without re-processing</li>
+ * <li>Persist {@link WebhookEvent} for audit</li>
+ * <li>Match to internal {@link Payment} by {@code transactionRef} or order
+ * id</li>
+ * <li>Update payment status → SUCCESS or FAILED</li>
+ * <li>Trigger order.markAsPaid via OrderClient</li>
  * </ol>
  *
- * <p>Always returns 200 OK for valid (verified + new) events. Returns 4xx
+ * <p>
+ * Always returns 200 OK for valid (verified + new) events. Returns 4xx
  * for signature failures or malformed bodies. This is intentional so the
  * gateway does not retry successful events.
  */
@@ -56,9 +60,9 @@ public class WebhookController {
     private final String webhookSecret;
 
     public WebhookController(WebhookEventRepository webhookRepo,
-                             PaymentRepository paymentRepo,
-                             com.pcms.paymentservice.client.OrderClient orderClient,
-                             @Value("${app.payment.webhook-secret:}") String webhookSecret) {
+            PaymentRepository paymentRepo,
+            com.pcms.paymentservice.client.OrderClient orderClient,
+            @Value("${app.payment.webhook-secret:}") String webhookSecret) {
         this.webhookRepo = webhookRepo;
         this.paymentRepo = paymentRepo;
         this.orderClient = orderClient;
@@ -145,7 +149,8 @@ public class WebhookController {
                     log.warn("Failed to call orderService.markAsPaid for order {}: {}",
                             payment.getOrderId(), e.getMessage());
                 }
-            } else if ("payment.failed".equalsIgnoreCase(eventType) || "payment.cancelled".equalsIgnoreCase(eventType)) {
+            } else if ("payment.failed".equalsIgnoreCase(eventType)
+                    || "payment.cancelled".equalsIgnoreCase(eventType)) {
                 payment.setStatus(PaymentStatus.FAILED);
                 paymentRepo.save(payment);
             } else {
@@ -184,9 +189,11 @@ public class WebhookController {
     }
 
     private boolean constantTimeEquals(String a, String b) {
-        if (a == null || b == null || a.length() != b.length()) return false;
+        if (a == null || b == null || a.length() != b.length())
+            return false;
         int diff = 0;
-        for (int i = 0; i < a.length(); i++) diff |= a.charAt(i) ^ b.charAt(i);
+        for (int i = 0; i < a.length(); i++)
+            diff |= a.charAt(i) ^ b.charAt(i);
         return diff == 0;
     }
 

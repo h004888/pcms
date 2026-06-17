@@ -16,7 +16,8 @@ public interface OrderClient {
 
     @PutMapping("/orders/{id}/pay")
     @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackMarkPaid")
-    Map<String, Object> markOrderPaid(@PathVariable UUID id, @RequestParam(name = "actorId", required = false) UUID actorId);
+    Map<String, Object> markOrderPaid(@PathVariable UUID id,
+            @RequestParam(name = "actorId", required = false) UUID actorId);
 
     default Map<String, Object> fallbackMarkPaid(UUID id, UUID actorId, Throwable t) {
         return Map.of("status", "DEFERRED", "message", "Order service unavailable, payment recorded");

@@ -8,6 +8,8 @@ import com.pcms.reportservice.dto.StaffReportRequest;
 import com.pcms.reportservice.dto.StaffReportResponse;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -47,6 +49,10 @@ public interface ReportService {
      * Group orders/payments by staff.
      */
     StaffReportResponse staff(StaffReportRequest request);
+
+    Map<String, Object> realtimeStats(UUID branchId);
+
+    List<Map<String, Object>> recentOrders(UUID branchId, int limit);
 
     /**
      * Generate Excel or PDF exports of a report.

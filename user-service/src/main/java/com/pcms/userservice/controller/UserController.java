@@ -1,18 +1,31 @@
 package com.pcms.userservice.controller;
 
+import com.pcms.userservice.dto.request.ChangeUserRoleRequest;
+import com.pcms.userservice.dto.request.ChangeUserStatusRequest;
 import com.pcms.userservice.dto.request.CreateUserRequest;
 import com.pcms.userservice.dto.request.UpdateUserRequest;
 import com.pcms.userservice.dto.response.PageResponse;
 import com.pcms.userservice.dto.response.UserResponse;
 import com.pcms.userservice.enums.Role;
+import com.pcms.userservice.enums.UserStatus;
 import com.pcms.userservice.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -41,14 +54,28 @@ public class UserController {
     public ResponseEntity<PageResponse<UserResponse>> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Role role,
+            @RequestParam(required = false) UserStatus status,
             @RequestParam(required = false) UUID branchId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         Pageable pageable = PageRequest.of(page, Math.min(size, 100),
                 Sort.by("createdAt").descending());
-        Page<UserResponse> users = userService.list(search, role, branchId, pageable);
+        Page<UserResponse> users = userService.list(search, role, branchId, status, pageable);
         return ResponseEntity.ok(PageResponse.from(users));
+    }
+
+    /** GET /api/v1/users/export - Export filtered users as CSV. */
+    @GetMapping("/export")
+    public ResponseEntity<String> export(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Role role,
+            @RequestParam(required = false) UserStatus status,
+            @RequestParam(required = false) UUID branchId) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=users.csv")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(userService.exportCsv(search, role, branchId, status));
     }
 
     /** GET /api/v1/users/{id} - Get by ID */
@@ -57,9 +84,12 @@ public class UserController {
         return ResponseEntity.ok(userService.getById(id));
     }
 
-    /** POST /api/v1/users - Create user (Admin/CEO only).
-     *  A random temporary password is generated server-side and hashed; in production
-     *  it would be sent to the user via email. */
+    /**
+     * POST /api/v1/users - Create user (Admin/CEO only).
+     * A random temporary password is generated server-side and hashed; in
+     * production
+     * it would be sent to the user via email.
+     */
     @PostMapping
     public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest request) {
         String tempPassword = generateTempPassword();
@@ -70,8 +100,28 @@ public class UserController {
     /** PUT /api/v1/users/{id} - Update user */
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> update(@PathVariable UUID id,
-                                               @Valid @RequestBody UpdateUserRequest request) {
+            @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(userService.update(id, request));
+    }
+
+    /** PUT /api/v1/users/{id}/role - Change user role. */
+    @PutMapping("/{id}/role")
+    public ResponseEntity<UserResponse> changeRole(@PathVariable UUID id,
+            @Valid @RequestBody ChangeUserRoleRequest request) {
+        return ResponseEntity.ok(userService.changeRole(id, request.role()));
+    }
+
+    /** PUT /api/v1/users/{id}/status - Change user status. */
+    @PutMapping("/{id}/status")
+    public ResponseEntity<UserResponse> changeStatus(@PathVariable UUID id,
+            @Valid @RequestBody ChangeUserStatusRequest request) {
+        return ResponseEntity.ok(userService.changeStatus(id, request.status()));
+    }
+
+    /** POST /api/v1/users/{id}/unlock - Clear BR05 account lock. */
+    @PostMapping("/{id}/unlock")
+    public ResponseEntity<UserResponse> unlock(@PathVariable UUID id) {
+        return ResponseEntity.ok(userService.unlock(id));
     }
 
     /** DELETE /api/v1/users/{id} - Soft delete (FR2.5) */
@@ -86,7 +136,7 @@ public class UserController {
     public ResponseEntity<List<UserResponse>> findByRole(@PathVariable Role role) {
         // No pagination in the original endpoint; use a large page to return all
         Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by("createdAt").descending());
-        Page<UserResponse> page = userService.list(null, role, null, pageable);
+        Page<UserResponse> page = userService.list(null, role, null, null, pageable);
         return ResponseEntity.ok(page.getContent());
     }
 

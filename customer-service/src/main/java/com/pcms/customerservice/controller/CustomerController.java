@@ -1,10 +1,13 @@
 package com.pcms.customerservice.controller;
 
-import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.common.dto.PageResponse;
-import com.pcms.customerservice.dto.CreateCustomerRequest;
-import com.pcms.customerservice.dto.CustomerResponse;
-import com.pcms.customerservice.dto.UpdateCustomerRequest;
+import com.pcms.customerservice.dto.request.AddPointsRequest;
+import com.pcms.customerservice.dto.request.CreateCustomerRequest;
+import com.pcms.customerservice.dto.request.UpdateCustomerRequest;
+import com.pcms.customerservice.dto.response.CustomerHistoryResponse;
+import com.pcms.customerservice.dto.response.CustomerOrderSummaryResponse;
+import com.pcms.customerservice.dto.response.CustomerResponse;
+import com.pcms.customerservice.dto.response.LoyaltyTransactionResponse;
 import com.pcms.customerservice.service.CustomerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -43,13 +46,36 @@ public class CustomerController {
 
     @GetMapping("/phone/{phone}")
     public ResponseEntity<CustomerResponse> getByPhone(@PathVariable String phone) {
-        // Lookup by phone is not in the interface; delegate via repository through service: reuse list()
-        // For a single hit we expose the first match.
-        return customerService.list(phone, 0, 1).getContent().stream()
-            .filter(c -> c.phone() != null && c.phone().contains(phone))
-            .findFirst()
-            .map(ResponseEntity::ok)
-            .orElseThrow(() -> new ResourceNotFoundException("Customer with phone", phone));
+        return ResponseEntity.ok(customerService.getByPhone(phone));
+    }
+
+    @GetMapping("/{id}/tier")
+    public ResponseEntity<Map<String, Object>> getTier(@PathVariable UUID id) {
+        return ResponseEntity.ok(Map.of("customerId", id, "tier", customerService.getTier(id)));
+    }
+
+    @GetMapping("/{id}/orders")
+    public ResponseEntity<PageResponse<CustomerOrderSummaryResponse>> getOrders(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(customerService.getOrders(id, page, size));
+    }
+
+    @GetMapping("/{id}/points")
+    public ResponseEntity<PageResponse<LoyaltyTransactionResponse>> getPoints(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(customerService.getPoints(id, page, size));
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<CustomerHistoryResponse> getHistory(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(customerService.getHistory(id, page, size));
     }
 
     /**
@@ -62,8 +88,15 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateCustomerRequest request) {
+    public ResponseEntity<CustomerResponse> update(@PathVariable UUID id,
+            @Valid @RequestBody UpdateCustomerRequest request) {
         return ResponseEntity.ok(customerService.update(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        customerService.softDelete(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -76,15 +109,15 @@ public class CustomerController {
      * <p>Request body:
      * <pre>{@code
      * {
-     *   "points": 5,                        // can be negative
-     *   "refOrderId": "uuid",               // optional but recommended
-     *   "reason": "ORDER_PAID:ORD-20260616-0001"  // optional
+     * "points": 5, // can be negative
+     * "refOrderId": "uuid", // optional but recommended
+     * "reason": "ORDER_PAID:ORD-20260616-0001" // optional
      * }
      * }</pre>
      */
     @PutMapping("/{id}/points/add")
     public ResponseEntity<Map<String, Object>> addPoints(@PathVariable UUID id,
-                                                         @RequestBody AddPointsRequest body) {
+            @Valid @RequestBody AddPointsRequest body) {
         CustomerResponse c = customerService.addPoints(id,
                 body.points() == null ? 0 : body.points(),
                 body.refOrderId(),
@@ -92,10 +125,6 @@ public class CustomerController {
         return ResponseEntity.ok(Map.of(
                 "customerId", c.id(),
                 "addedPoints", body.points() == null ? 0 : body.points(),
-                "totalPoints", c.points()
-        ));
+                "totalPoints", c.points()));
     }
-
-    /** Request body for /points/add endpoint. */
-    public record AddPointsRequest(Integer points, UUID refOrderId, String reason) {}
 }

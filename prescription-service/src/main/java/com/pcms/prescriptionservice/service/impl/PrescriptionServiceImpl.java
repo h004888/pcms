@@ -2,6 +2,8 @@ package com.pcms.prescriptionservice.service.impl;
 
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
+import com.pcms.prescriptionservice.client.CustomerClient;
+import com.pcms.prescriptionservice.client.UserClient;
 import com.pcms.prescriptionservice.dto.CreatePrescriptionRequest;
 import com.pcms.common.dto.PageResponse;
 import com.pcms.prescriptionservice.dto.PrescriptionItemRequest;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,9 +31,15 @@ import java.util.UUID;
 public class PrescriptionServiceImpl implements PrescriptionService {
 
     private final PrescriptionRepository prescriptionRepository;
+    private final UserClient userClient;
+    private final CustomerClient customerClient;
 
-    public PrescriptionServiceImpl(PrescriptionRepository prescriptionRepository) {
+    public PrescriptionServiceImpl(PrescriptionRepository prescriptionRepository,
+            UserClient userClient,
+            CustomerClient customerClient) {
         this.prescriptionRepository = prescriptionRepository;
+        this.userClient = userClient;
+        this.customerClient = customerClient;
     }
 
     @Override
@@ -127,6 +136,29 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     }
 
     @Override
+    public PrescriptionResponse linkOrder(UUID id, UUID orderId) {
+        if (orderId == null) {
+            throw new InvalidOperationException(
+                    "Order ID is required",
+                    "Mã đơn hàng là bắt buộc");
+        }
+        Prescription prescription = prescriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Prescription", id));
+        if (prescription.getStatus() != PrescriptionStatus.SIGNED) {
+            throw new InvalidOperationException(
+                    "Only signed prescriptions can be linked to orders",
+                    "Chỉ có thể liên kết đơn thuốc đã ký với đơn hàng");
+        }
+        if (prescription.getOrderId() != null && !prescription.getOrderId().equals(orderId)) {
+            throw new InvalidOperationException(
+                    "Prescription is already linked to another order",
+                    "Đơn thuốc đã được liên kết với đơn hàng khác");
+        }
+        prescription.setOrderId(orderId);
+        return toResponse(prescriptionRepository.save(prescription));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PrescriptionResponse print(UUID id) {
         return getById(id);
@@ -147,6 +179,51 @@ public class PrescriptionServiceImpl implements PrescriptionService {
             throw new InvalidOperationException(
                     "Patient is required",
                     "Bệnh nhân là bắt buộc");
+        }
+        if (request.doctorId() == null) {
+            throw new InvalidOperationException(
+                    "Doctor is required",
+                    "Bác sĩ/dược sĩ kê đơn là bắt buộc");
+        }
+        validatePatient(request.patientId());
+        validateDoctor(request.doctorId());
+    }
+
+    private void validatePatient(UUID patientId) {
+        try {
+            Map<String, Object> customer = customerClient.getCustomerById(patientId);
+            if (customer == null || "UNREACHABLE".equals(customer.get("status"))) {
+                throw new ResourceNotFoundException("Customer", patientId);
+            }
+            if (!"ACTIVE".equalsIgnoreCase(String.valueOf(customer.get("status")))) {
+                throw new InvalidOperationException(
+                        "Patient customer must be active",
+                        "Khách hàng bệnh nhân phải đang hoạt động");
+            }
+        } catch (feign.FeignException.NotFound ex) {
+            throw new ResourceNotFoundException("Customer", patientId);
+        }
+    }
+
+    private void validateDoctor(UUID doctorId) {
+        try {
+            Map<String, Object> user = userClient.getUserById(doctorId);
+            if (user == null || "UNREACHABLE".equals(user.get("status"))) {
+                throw new ResourceNotFoundException("User", doctorId);
+            }
+            String role = String.valueOf(user.get("role"));
+            if (!"PHARMACIST".equalsIgnoreCase(role) && !"BRANCH_MANAGER".equalsIgnoreCase(role)) {
+                throw new InvalidOperationException(
+                        "Prescription signer must be PHARMACIST or BRANCH_MANAGER",
+                        "Người kê đơn phải là dược sĩ hoặc quản lý chi nhánh");
+            }
+            if (!"ACTIVE".equalsIgnoreCase(String.valueOf(user.get("status")))) {
+                throw new InvalidOperationException(
+                        "Prescription signer must be active",
+                        "Người kê đơn phải đang hoạt động");
+            }
+        } catch (feign.FeignException.NotFound ex) {
+            throw new ResourceNotFoundException("User", doctorId);
         }
     }
 
@@ -185,12 +262,12 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                 p.getCode(),
                 p.getPatientId(),
                 p.getDoctorId(),
+                p.getOrderId(),
                 p.getDiagnosis(),
                 p.getNotes(),
                 p.getSignatureHash(),
                 p.getStatus(),
                 p.getIssuedAt(),
-                items
-        );
+                items);
     }
 }

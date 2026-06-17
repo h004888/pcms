@@ -1,6 +1,8 @@
 package com.pcms.customerservice.repository;
 
 import com.pcms.customerservice.entity.LoyaltyTransaction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,4 +17,6 @@ public interface LoyaltyTransactionRepository extends JpaRepository<LoyaltyTrans
      * Returns empty if no transaction was ever recorded for this order.
      */
     Optional<LoyaltyTransaction> findByRefOrderId(UUID refOrderId);
+
+    Page<LoyaltyTransaction> findByCustomerId(UUID customerId, Pageable pageable);
 }

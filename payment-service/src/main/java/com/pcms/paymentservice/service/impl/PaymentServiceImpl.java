@@ -5,6 +5,8 @@ import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.paymentservice.client.OrderClient;
 import com.pcms.paymentservice.dto.CreatePaymentRequest;
 import com.pcms.paymentservice.dto.PaymentResponse;
+import com.pcms.paymentservice.dto.RefundHistoryResponse;
+import com.pcms.paymentservice.dto.RefundPaymentRequest;
 import com.pcms.paymentservice.entity.Payment;
 import com.pcms.paymentservice.enums.PaymentMethod;
 import com.pcms.paymentservice.enums.PaymentStatus;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -29,9 +32,12 @@ import java.util.UUID;
 /**
  * Implementation of {@link PaymentService} (UC07).
  *
- * <p>FR7.1 CASH, FR7.2 CARD, FR7.3 QR.
- * <br>MSG21: insufficient tendered for CASH.
- * <br>NSF-11: invoice number INV-yyyymmdd-####.
+ * <p>
+ * FR7.1 CASH, FR7.2 CARD, FR7.3 QR.
+ * <br>
+ * MSG21: insufficient tendered for CASH.
+ * <br>
+ * NSF-11: invoice number INV-yyyymmdd-####.
  */
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -61,16 +67,16 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional(readOnly = true)
     public PaymentResponse getById(UUID id) {
         return paymentRepository.findById(id)
-            .map(PaymentResponse::from)
-            .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
+                .map(PaymentResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaymentResponse getByOrderId(UUID orderId) {
         return paymentRepository.findByOrderId(orderId)
-            .map(PaymentResponse::from)
-            .orElseThrow(() -> new ResourceNotFoundException("Payment for order", orderId));
+                .map(PaymentResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment for order", orderId));
     }
 
     @Override
@@ -79,20 +85,20 @@ public class PaymentServiceImpl implements PaymentService {
         // Validation
         if (request.amount() == null || request.amount().signum() <= 0) {
             throw new InvalidOperationException(
-                "Invalid amount",
-                "Số tiền không hợp lệ");
+                    "Invalid amount",
+                    "Số tiền không hợp lệ");
         }
         if (request.paymentMethod() == PaymentMethod.CASH) {
             if (request.tenderedAmount() == null || request.tenderedAmount().compareTo(request.amount()) < 0) {
                 throw new InvalidOperationException(
-                    "Insufficient tendered amount",
-                    "Số tiền khách đưa không đủ");
+                        "Insufficient tendered amount",
+                        "Số tiền khách đưa không đủ");
             }
         } else if (request.paymentMethod() == PaymentMethod.CARD || request.paymentMethod() == PaymentMethod.QR) {
             if (request.transactionRef() == null || request.transactionRef().isBlank()) {
                 throw new InvalidOperationException(
-                    "Transaction reference is required for CARD/QR payments",
-                    "Cần mã giao dịch cho thanh toán thẻ/QR");
+                        "Transaction reference is required for CARD/QR payments",
+                        "Cần mã giao dịch cho thanh toán thẻ/QR");
             }
         }
 
@@ -133,10 +139,56 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponse softCancel(UUID id) {
-        Payment p = paymentRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
-        p.setStatus(PaymentStatus.REFUNDED);
-        return PaymentResponse.from(paymentRepository.save(p));
+        return refund(id, new RefundPaymentRequest(null, "Soft cancel"));
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse refund(UUID id, RefundPaymentRequest request) {
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
+        if (payment.getStatus() != PaymentStatus.SUCCESS && payment.getStatus() != PaymentStatus.PARTIALLY_REFUNDED) {
+            throw new InvalidOperationException(
+                    "Only successful payments can be refunded",
+                    "Chỉ có thể hoàn tiền thanh toán thành công");
+        }
+        BigDecimal alreadyRefunded = payment.getRefundedAmount() == null ? BigDecimal.ZERO
+                : payment.getRefundedAmount();
+        BigDecimal remaining = payment.getAmount().subtract(alreadyRefunded);
+        BigDecimal refundAmount = request.amount() == null ? remaining : request.amount();
+        if (refundAmount.signum() <= 0 || refundAmount.compareTo(remaining) > 0) {
+            throw new InvalidOperationException(
+                    "Refund amount exceeds remaining payment amount",
+                    "Số tiền hoàn vượt quá số tiền còn lại");
+        }
+        BigDecimal totalRefunded = alreadyRefunded.add(refundAmount);
+        payment.setRefundedAmount(totalRefunded);
+        payment.setRefundReason(request.reason());
+        payment.setRefundedAt(LocalDateTime.now());
+        payment.setStatus(totalRefunded.compareTo(payment.getAmount()) >= 0
+                ? PaymentStatus.REFUNDED
+                : PaymentStatus.PARTIALLY_REFUNDED);
+        return PaymentResponse.from(paymentRepository.save(payment));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RefundHistoryResponse refundHistory(UUID id) {
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
+        BigDecimal refunded = payment.getRefundedAmount() == null ? BigDecimal.ZERO : payment.getRefundedAmount();
+        List<RefundHistoryResponse.RefundEntry> entries = payment.getRefundedAt() == null
+                ? List.of()
+                : List.of(new RefundHistoryResponse.RefundEntry(
+                        refunded,
+                        payment.getRefundReason(),
+                        payment.getRefundedAt()));
+        return new RefundHistoryResponse(
+                payment.getId(),
+                payment.getAmount(),
+                refunded,
+                payment.getAmount().subtract(refunded),
+                entries);
     }
 
     /**
@@ -150,7 +202,10 @@ public class PaymentServiceImpl implements PaymentService {
             String inv = latest.get(0).getInvoiceNumber();
             if (inv != null) {
                 String numPart = inv.substring(inv.lastIndexOf('-') + 1);
-                try { nextNum = Integer.parseInt(numPart) + 1; } catch (NumberFormatException ignored) {}
+                try {
+                    nextNum = Integer.parseInt(numPart) + 1;
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
         return String.format("INV-%s-%04d", datePrefix, nextNum);

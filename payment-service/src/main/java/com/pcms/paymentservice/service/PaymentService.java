@@ -2,6 +2,8 @@ package com.pcms.paymentservice.service;
 
 import com.pcms.paymentservice.dto.CreatePaymentRequest;
 import com.pcms.paymentservice.dto.PaymentResponse;
+import com.pcms.paymentservice.dto.RefundHistoryResponse;
+import com.pcms.paymentservice.dto.RefundPaymentRequest;
 import org.springframework.data.domain.Page;
 
 import java.util.UUID;
@@ -17,9 +19,18 @@ public interface PaymentService {
 
     PaymentResponse getByOrderId(UUID orderId);
 
-    /** Process a payment (CASH, CARD, QR). Validates, persists, and notifies order-service. */
+    /**
+     * Process a payment (CASH, CARD, QR). Validates, persists, and notifies
+     * order-service.
+     */
     PaymentResponse create(CreatePaymentRequest request);
 
     /** Soft-cancel: mark payment REFUNDED. */
     PaymentResponse softCancel(UUID id);
+
+    /** Refund payment partially or fully. */
+    PaymentResponse refund(UUID id, RefundPaymentRequest request);
+
+    /** Get lightweight refund history for a payment. */
+    RefundHistoryResponse refundHistory(UUID id);
 }

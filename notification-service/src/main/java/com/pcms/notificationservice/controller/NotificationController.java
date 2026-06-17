@@ -1,16 +1,14 @@
 package com.pcms.notificationservice.controller;
 
-import com.pcms.notificationservice.dto.BroadcastRequest;
-import com.pcms.notificationservice.dto.CreateNotificationRequest;
-import com.pcms.notificationservice.dto.NotificationResponse;
 import com.pcms.common.dto.PageResponse;
+import com.pcms.notificationservice.dto.request.BroadcastRequest;
+import com.pcms.notificationservice.dto.request.BulkNotificationRequest;
+import com.pcms.notificationservice.dto.request.ComposeNotificationRequest;
+import com.pcms.notificationservice.dto.request.CreateNotificationRequest;
+import com.pcms.notificationservice.dto.response.NotificationResponse;
 import com.pcms.notificationservice.enums.NotificationStatus;
-import com.pcms.notificationservice.repository.NotificationRepository;
 import com.pcms.notificationservice.service.NotificationSenderService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,20 +25,19 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationSenderService senderService;
-    private final NotificationRepository notificationRepository;
 
-    public NotificationController(NotificationSenderService senderService,
-                                  NotificationRepository notificationRepository) {
+    public NotificationController(NotificationSenderService senderService) {
         this.senderService = senderService;
-        this.notificationRepository = notificationRepository;
     }
 
     @GetMapping
     public ResponseEntity<PageResponse<NotificationResponse>> list(
             @RequestParam UUID recipientId,
+            @RequestParam(required = false, defaultValue = "all") String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(senderService.list(recipientId, page, size));
+        NotificationStatus resolvedStatus = resolveStatus(status);
+        return ResponseEntity.ok(senderService.list(recipientId, resolvedStatus, page, size));
     }
 
     @GetMapping("/unread")
@@ -48,26 +45,12 @@ public class NotificationController {
             @RequestParam UUID recipientId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<com.pcms.notificationservice.entity.Notification> notifications =
-                notificationRepository.findByRecipientIdAndStatus(
-                        recipientId, NotificationStatus.SENT, pageable);
-        return ResponseEntity.ok(Map.of(
-                "data", notifications.getContent(),
-                "page", notifications.getNumber(),
-                "total", notifications.getTotalElements()
-        ));
+        return ResponseEntity.ok(Map.of("data", senderService.list(recipientId, NotificationStatus.SENT, page, size)));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<NotificationResponse> getById(@PathVariable UUID id) {
-        // Reuse list-by-id via markAsRead? No - we want a GET. Provide a direct
-        // repository lookup for backwards-compat with the previous endpoint.
-        return notificationRepository.findById(id)
-                .map(n -> ResponseEntity.ok(new NotificationResponse(
-                        n.getId(), n.getRecipientId(), n.getChannel(), n.getTemplate(),
-                        n.getTitle(), n.getBody(), n.getStatus(), n.getSentAt(), n.getReadAt(), n.getCreatedAt())))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(senderService.getById(id));
     }
 
     /**
@@ -81,7 +64,7 @@ public class NotificationController {
 
     /** POST /api/v1/notifications/bulk - Compose broadcast (AT1) */
     @PostMapping("/bulk")
-    public ResponseEntity<Map<String, Object>> sendBulk(@Valid @RequestBody BulkRequest request) {
+    public ResponseEntity<Map<String, Object>> sendBulk(@Valid @RequestBody BulkNotificationRequest request) {
         int sent = 0;
         for (UUID recipientId : request.recipientIds()) {
             CreateNotificationRequest single = new CreateNotificationRequest(
@@ -90,8 +73,7 @@ public class NotificationController {
                     request.template(),
                     request.title(),
                     request.body(),
-                    null
-            );
+                    null);
             senderService.createAndSend(single);
             sent++;
         }
@@ -105,6 +87,13 @@ public class NotificationController {
         return ResponseEntity.ok(Map.of("message", "Broadcast queued", "count", count));
     }
 
+    /** POST /api/v1/notifications/compose - template-based compose screen */
+    @PostMapping("/compose")
+    public ResponseEntity<Map<String, Object>> compose(@Valid @RequestBody ComposeNotificationRequest request) {
+        int count = senderService.compose(request);
+        return ResponseEntity.ok(Map.of("message", "Notifications queued", "count", count));
+    }
+
     /** POST /api/v1/notifications/{id}/retry - NSF-09 manual retry */
     @PostMapping("/{id}/retry")
     public ResponseEntity<NotificationResponse> retry(@PathVariable UUID id) {
@@ -116,10 +105,23 @@ public class NotificationController {
         return ResponseEntity.ok(senderService.markAsRead(id));
     }
 
-    public record BulkRequest(List<UUID> recipientIds,
-                              com.pcms.notificationservice.enums.NotificationChannel channel,
-                              String template,
-                              String title,
-                              String body) {
+    @PutMapping("/read-all")
+    public ResponseEntity<Map<String, Object>> markAllRead(@RequestParam UUID recipientId) {
+        int updated = senderService.markAllAsRead(recipientId);
+        return ResponseEntity.ok(Map.of("updated", updated));
     }
+
+    private NotificationStatus resolveStatus(String status) {
+        if (status == null || status.isBlank() || "all".equalsIgnoreCase(status)) {
+            return null;
+        }
+        if ("unread".equalsIgnoreCase(status)) {
+            return NotificationStatus.SENT;
+        }
+        if ("read".equalsIgnoreCase(status)) {
+            return NotificationStatus.READ;
+        }
+        return NotificationStatus.valueOf(status.toUpperCase());
+    }
+
 }

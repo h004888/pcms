@@ -9,17 +9,17 @@ import java.util.function.Function;
  * Generic paginated response wrapper.
  */
 public record PageResponse<T>(
-    List<T> data,
-    int page,
-    int size,
-    long total
-) {
+        List<T> data,
+        int page,
+        int size,
+        long total,
+        int totalPages) {
     public static <S, T> PageResponse<T> of(Page<S> page, Function<S, T> mapper) {
         return new PageResponse<>(
-            page.getContent().stream().map(mapper).toList(),
-            page.getNumber(),
-            page.getSize(),
-            page.getTotalElements()
-        );
+                page.getContent().stream().map(mapper).toList(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages());
     }
 }

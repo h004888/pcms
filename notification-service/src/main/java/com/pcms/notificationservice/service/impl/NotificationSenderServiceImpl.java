@@ -2,21 +2,28 @@ package com.pcms.notificationservice.service.impl;
 
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
-import com.pcms.notificationservice.dto.BroadcastRequest;
-import com.pcms.notificationservice.dto.CreateNotificationRequest;
-import com.pcms.notificationservice.dto.NotificationResponse;
 import com.pcms.common.dto.PageResponse;
+import com.pcms.notificationservice.dto.request.BroadcastRequest;
+import com.pcms.notificationservice.dto.request.ComposeNotificationRequest;
+import com.pcms.notificationservice.dto.request.CreateNotificationRequest;
+import com.pcms.notificationservice.dto.response.ResolvedTemplateResponse;
+import com.pcms.notificationservice.dto.response.NotificationResponse;
 import com.pcms.notificationservice.entity.Notification;
 import com.pcms.notificationservice.enums.NotificationChannel;
 import com.pcms.notificationservice.enums.NotificationStatus;
 import com.pcms.notificationservice.repository.NotificationRepository;
 import com.pcms.notificationservice.service.NotificationSenderService;
+import com.pcms.notificationservice.service.SmsSender;
+import com.pcms.notificationservice.service.TemplateResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
@@ -25,8 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -43,23 +52,29 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     private static final Logger log = LoggerFactory.getLogger(NotificationSenderServiceImpl.class);
 
     private final NotificationRepository notificationRepository;
+    private final TemplateResolver templateResolver;
+    private final SmsSender smsSender;
     private final JavaMailSender mailSender; // may be null when mail is not configured
     private final int maxAttempts;
     private final long backoffMs;
 
     public NotificationSenderServiceImpl(
             NotificationRepository notificationRepository,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) JavaMailSender mailSender,
+            TemplateResolver templateResolver,
+            SmsSender smsSender,
+            ObjectProvider<JavaMailSender> mailSenderProvider,
             @Value("${notification.retry.max-attempts:3}") int maxAttempts,
             @Value("${notification.retry.backoff-ms:1000}") long backoffMs) {
         this.notificationRepository = notificationRepository;
-        this.mailSender = mailSender;
+        this.templateResolver = templateResolver;
+        this.smsSender = smsSender;
+        this.mailSender = mailSenderProvider.getIfAvailable();
         this.maxAttempts = maxAttempts;
         this.backoffMs = backoffMs;
     }
 
     @Override
-    @Async
+    @Async("notificationTaskExecutor")
     public void send(Notification notification) {
         int attempt = 0;
         Exception lastError = null;
@@ -79,7 +94,7 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
                 log.info("Notification {} sent on attempt {} via {}",
                         notification.getId(), attempt, notification.getChannel());
                 return;
-            } catch (Exception e) {
+            } catch (MailException | DataAccessException | IllegalStateException e) {
                 lastError = e;
                 log.warn("Attempt {}/{} failed for notification {}: {}",
                         attempt, maxAttempts, notification.getId(), e.getMessage());
@@ -150,6 +165,39 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     }
 
     @Override
+    public int compose(ComposeNotificationRequest request) {
+        Set<UUID> recipients = resolveComposeRecipients(request);
+        Set<NotificationChannel> channels = resolveComposeChannels(request);
+        if (recipients.isEmpty()) {
+            throw new InvalidOperationException(
+                    "At least one recipient is required",
+                    "Phải chọn ít nhất một người nhận");
+        }
+        if (channels.isEmpty()) {
+            throw new InvalidOperationException(
+                    "At least one channel is required",
+                    "Phải chọn ít nhất một kênh gửi");
+        }
+
+        int queued = 0;
+        for (UUID recipientId : recipients) {
+            for (NotificationChannel channel : channels) {
+                ResolvedTemplateResponse resolved = templateResolver.resolve(
+                        request.template(), channel, request.title(), request.body(), request.variables());
+                createAndSend(new CreateNotificationRequest(
+                        recipientId,
+                        channel,
+                        request.template(),
+                        resolved.title(),
+                        resolved.body(),
+                        null));
+                queued++;
+            }
+        }
+        return queued;
+    }
+
+    @Override
     public NotificationResponse retry(UUID id) {
         Notification n = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification", id));
@@ -172,6 +220,14 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public NotificationResponse getById(UUID id) {
+        return notificationRepository.findById(id)
+                .map(NotificationSenderServiceImpl::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification", id));
+    }
+
+    @Override
     public NotificationResponse markAsRead(UUID id) {
         Notification n = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification", id));
@@ -187,12 +243,22 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<NotificationResponse> list(UUID recipientId, int page, int size) {
+        return list(recipientId, null, page, size);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<NotificationResponse> list(UUID recipientId, NotificationStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<Notification> result = notificationRepository.findByRecipientId(recipientId, pageable);
-        List<NotificationResponse> mapped = result.getContent().stream()
-                .map(NotificationSenderServiceImpl::toResponse)
-                .toList();
+        Page<Notification> result = status == null
+                ? notificationRepository.findByRecipientId(recipientId, pageable)
+                : notificationRepository.findByRecipientIdAndStatus(recipientId, status, pageable);
         return PageResponse.of(result, NotificationSenderServiceImpl::toResponse);
+    }
+
+    @Override
+    public int markAllAsRead(UUID recipientId) {
+        return notificationRepository.markAllAsRead(recipientId, LocalDateTime.now());
     }
 
     private void markSent(Notification n) {
@@ -212,7 +278,29 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     }
 
     private void sendSms(Notification n) {
-        log.info("SMS sent (mock) to recipient {}: {}", n.getRecipientId(), n.getTitle());
+        smsSender.send(String.valueOf(n.getRecipientId()), n.getTitle(), n.getBody());
+    }
+
+    private Set<UUID> resolveComposeRecipients(ComposeNotificationRequest request) {
+        Set<UUID> recipients = new LinkedHashSet<>();
+        if (request.recipientId() != null) {
+            recipients.add(request.recipientId());
+        }
+        if (request.recipientIds() != null) {
+            recipients.addAll(request.recipientIds());
+        }
+        return recipients;
+    }
+
+    private Set<NotificationChannel> resolveComposeChannels(ComposeNotificationRequest request) {
+        Set<NotificationChannel> channels = new LinkedHashSet<>();
+        if (request.channel() != null) {
+            channels.add(request.channel());
+        }
+        if (request.channels() != null) {
+            channels.addAll(request.channels());
+        }
+        return channels;
     }
 
     private static NotificationResponse toResponse(Notification n) {
@@ -226,7 +314,6 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
                 n.getStatus(),
                 n.getSentAt(),
                 n.getReadAt(),
-                n.getCreatedAt()
-        );
+                n.getCreatedAt());
     }
 }

@@ -15,14 +15,18 @@ import java.util.UUID;
 public interface CustomerRepository extends JpaRepository<Customer, UUID> {
 
     Optional<Customer> findByPhone(String phone);
+
     Optional<Customer> findByCode(String code);
+
+    Optional<Customer> findFirstByEmailIgnoreCase(String email);
+
     boolean existsByPhone(String phone);
 
     /** UC08: Search customers by name/phone/code */
     @Query("SELECT c FROM Customer c WHERE " +
-           "(:search IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "  OR c.phone LIKE CONCAT('%', :search, '%') " +
-           "  OR LOWER(c.code) LIKE LOWER(CONCAT('%', :search, '%')))")
+            "(:search IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "  OR c.phone LIKE CONCAT('%', :search, '%') " +
+            "  OR LOWER(c.code) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Customer> search(String search, Pageable pageable);
 
     /** Used for code generation CUST-yyyy#### */

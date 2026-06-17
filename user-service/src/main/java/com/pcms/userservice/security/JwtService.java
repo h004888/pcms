@@ -7,22 +7,27 @@ import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 /**
  * UC01 - JWT Token generation/validation (FR1.2).
  *
- * <p>Issues and validates JWT tokens using the standard PCMS claim contract
+ * <p>
+ * Issues and validates JWT tokens using the standard PCMS claim contract
  * (see {@link JwtClaims}). Backed by {@link JwtUtils} for the actual
  * signing/parsing logic.
  *
  * <ul>
- *   <li>Access token: 15 minutes</li>
- *   <li>Refresh token: 7 days</li>
- *   <li>Algorithm: HS256 (per STANDARDS.md §12.2)</li>
+ * <li>Access token: 15 minutes</li>
+ * <li>Refresh token: 7 days</li>
+ * <li>Algorithm: HS256 (per STANDARDS.md §12.2)</li>
  * </ul>
  *
- * <p>The signing secret is loaded from {@code app.jwt.secret} via Config Server.
+ * <p>
+ * The signing secret is loaded from {@code app.jwt.secret} via Config Server.
  */
 @Service
 public class JwtService {
@@ -44,8 +49,7 @@ public class JwtService {
                 user.getBranchId(),
                 JwtClaims.TYPE_ACCESS,
                 accessTokenExpirationMs,
-                jwtSecret
-        );
+                jwtSecret);
     }
 
     public String generateRefreshToken(User user) {
@@ -56,8 +60,7 @@ public class JwtService {
                 user.getBranchId(),
                 JwtClaims.TYPE_REFRESH,
                 refreshTokenExpirationMs,
-                jwtSecret
-        );
+                jwtSecret);
     }
 
     /**
@@ -65,6 +68,22 @@ public class JwtService {
      */
     public Claims parseAndValidate(String token) {
         return JwtUtils.parseAndValidate(token, jwtSecret);
+    }
+
+    public boolean isRefreshToken(Claims claims) {
+        return JwtClaims.TYPE_REFRESH.equals(claims.get(JwtClaims.TYPE, String.class));
+    }
+
+    public String extractJti(Claims claims) {
+        return claims.getId();
+    }
+
+    public LocalDateTime extractExpiration(Claims claims) {
+        if (claims.getExpiration() == null) {
+            return null;
+        }
+        Instant instant = claims.getExpiration().toInstant();
+        return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
     }
 
     /**
