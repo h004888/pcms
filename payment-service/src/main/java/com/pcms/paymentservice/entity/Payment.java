@@ -16,7 +16,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "payments", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_payment_invoice", columnNames = "invoice_number")
+        @UniqueConstraint(name = "uk_payment_invoice", columnNames = "invoice_number")
 })
 @EntityListeners(AuditingEntityListener.class)
 public class Payment {
@@ -38,14 +38,23 @@ public class Payment {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "refunded_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal refundedAmount = BigDecimal.ZERO;
+
+    @Column(name = "refund_reason", length = 255)
+    private String refundReason;
+
+    @Column(name = "refunded_at")
+    private LocalDateTime refundedAt;
+
     @Column(name = "tendered_amount", precision = 15, scale = 2)
-    private BigDecimal tenderedAmount;   // For CASH only
+    private BigDecimal tenderedAmount; // For CASH only
 
     @Column(name = "change_amount", precision = 15, scale = 2)
-    private BigDecimal changeAmount;     // For CASH only
+    private BigDecimal changeAmount; // For CASH only
 
     @Column(name = "transaction_ref", length = 100)
-    private String transactionRef;        // For CARD/QR (gateway txn id)
+    private String transactionRef; // For CARD/QR (gateway txn id)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -58,28 +67,118 @@ public class Payment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public Payment() {}
+    public Payment() {
+    }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getOrderId() { return orderId; }
-    public void setOrderId(UUID orderId) { this.orderId = orderId; }
-    public String getInvoiceNumber() { return invoiceNumber; }
-    public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
-    public PaymentMethod getPaymentMethod() { return paymentMethod; }
-    public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
-    public BigDecimal getAmount() { return amount; }
-    public void setAmount(BigDecimal amount) { this.amount = amount; }
-    public BigDecimal getTenderedAmount() { return tenderedAmount; }
-    public void setTenderedAmount(BigDecimal tenderedAmount) { this.tenderedAmount = tenderedAmount; }
-    public BigDecimal getChangeAmount() { return changeAmount; }
-    public void setChangeAmount(BigDecimal changeAmount) { this.changeAmount = changeAmount; }
-    public String getTransactionRef() { return transactionRef; }
-    public void setTransactionRef(String transactionRef) { this.transactionRef = transactionRef; }
-    public PaymentStatus getStatus() { return status; }
-    public void setStatus(PaymentStatus status) { this.status = status; }
-    public UUID getStaffId() { return staffId; }
-    public void setStaffId(UUID staffId) { this.staffId = staffId; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(UUID orderId) {
+        this.orderId = orderId;
+    }
+
+    public String getInvoiceNumber() {
+        return invoiceNumber;
+    }
+
+    public void setInvoiceNumber(String invoiceNumber) {
+        this.invoiceNumber = invoiceNumber;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public BigDecimal getRefundedAmount() {
+        return refundedAmount;
+    }
+
+    public void setRefundedAmount(BigDecimal refundedAmount) {
+        this.refundedAmount = refundedAmount;
+    }
+
+    public String getRefundReason() {
+        return refundReason;
+    }
+
+    public void setRefundReason(String refundReason) {
+        this.refundReason = refundReason;
+    }
+
+    public LocalDateTime getRefundedAt() {
+        return refundedAt;
+    }
+
+    public void setRefundedAt(LocalDateTime refundedAt) {
+        this.refundedAt = refundedAt;
+    }
+
+    public BigDecimal getTenderedAmount() {
+        return tenderedAmount;
+    }
+
+    public void setTenderedAmount(BigDecimal tenderedAmount) {
+        this.tenderedAmount = tenderedAmount;
+    }
+
+    public BigDecimal getChangeAmount() {
+        return changeAmount;
+    }
+
+    public void setChangeAmount(BigDecimal changeAmount) {
+        this.changeAmount = changeAmount;
+    }
+
+    public String getTransactionRef() {
+        return transactionRef;
+    }
+
+    public void setTransactionRef(String transactionRef) {
+        this.transactionRef = transactionRef;
+    }
+
+    public PaymentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(PaymentStatus status) {
+        this.status = status;
+    }
+
+    public UUID getStaffId() {
+        return staffId;
+    }
+
+    public void setStaffId(UUID staffId) {
+        this.staffId = staffId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }

@@ -10,6 +10,7 @@ import com.pcms.reportservice.dto.RevenueReportResponse;
 import com.pcms.reportservice.dto.StaffReportRequest;
 import com.pcms.reportservice.dto.StaffReportResponse;
 import com.pcms.reportservice.service.ReportService;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -34,9 +35,9 @@ public class ReportServiceImpl implements ReportService {
     private final com.pcms.reportservice.service.impl.PdfExportService pdfExportService;
 
     public ReportServiceImpl(OrderClient orderClient,
-                              InventoryClient inventoryClient,
-                              com.pcms.reportservice.service.impl.ExcelExportService excelExportService,
-                              com.pcms.reportservice.service.impl.PdfExportService pdfExportService) {
+            InventoryClient inventoryClient,
+            com.pcms.reportservice.service.impl.ExcelExportService excelExportService,
+            com.pcms.reportservice.service.impl.PdfExportService pdfExportService) {
         this.orderClient = orderClient;
         this.inventoryClient = inventoryClient;
         this.excelExportService = excelExportService;
@@ -53,26 +54,27 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public RevenueReportResponse revenue(LocalDate from, LocalDate to, UUID branchId, String groupBy) {
         validateRange(from, to);
-        Map<String, Object> ordersResp = orderClient.getOrders(null, 0, 1000);
+        Map<String, Object> ordersResp = orderClient.getOrders(null, "PAID", branchId, from, to, 0, 1000);
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> orders =
-                (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
+        List<Map<String, Object>> orders = (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
 
         Map<String, Map<String, Object>> grouped = new LinkedHashMap<>();
         for (Map<String, Object> order : orders) {
             String createdAtStr = (String) order.get("createdAt");
-            if (createdAtStr == null) continue;
+            if (createdAtStr == null)
+                continue;
             LocalDateTime created = LocalDateTime.parse(createdAtStr);
             LocalDate date = created.toLocalDate();
-            if (date.isBefore(from) || date.isAfter(to)) continue;
+            if (date.isBefore(from) || date.isAfter(to))
+                continue;
 
             String key = groupBy == null
                     ? date.toString()
                     : "week".equalsIgnoreCase(groupBy)
-                        ? date.getYear() + "-W" + (date.getDayOfYear() / 7)
-                        : "month".equalsIgnoreCase(groupBy)
-                            ? date.getYear() + "-" + String.format("%02d", date.getMonthValue())
-                            : date.toString();
+                            ? date.getYear() + "-W" + (date.getDayOfYear() / 7)
+                            : "month".equalsIgnoreCase(groupBy)
+                                    ? date.getYear() + "-" + String.format("%02d", date.getMonthValue())
+                                    : date.toString();
 
             grouped.computeIfAbsent(key, k -> {
                 Map<String, Object> r = new LinkedHashMap<>();
@@ -99,7 +101,9 @@ public class ReportServiceImpl implements ReportService {
         total.put("to", to);
         total.put("branchId", branchId);
         total.put("groupBy", groupBy);
-        total.put("totalOrders", orders.size());
+        total.put("totalOrders", grouped.values().stream()
+                .mapToInt(row -> ((Number) row.get("orders")).intValue())
+                .sum());
         return new RevenueReportResponse(new ArrayList<>(grouped.values()), total);
     }
 
@@ -137,13 +141,20 @@ public class ReportServiceImpl implements ReportService {
     public StaffReportResponse staff(StaffReportRequest request) {
         validateRange(request.fromDate(), request.toDate());
         // Aggregation by staff is derived from order-service (staffId field).
-        Map<String, Object> ordersResp = orderClient.getOrders(null, 0, 1000);
+        Map<String, Object> ordersResp = orderClient.getOrders(null, "PAID", request.branchId(),
+                request.fromDate(), request.toDate(), 0, 1000);
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> orders =
-                (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
+        List<Map<String, Object>> orders = (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
 
         Map<String, Map<String, Object>> byStaff = new LinkedHashMap<>();
         for (Map<String, Object> order : orders) {
+            String createdAtStr = (String) order.get("createdAt");
+            if (createdAtStr != null) {
+                LocalDate date = LocalDateTime.parse(createdAtStr).toLocalDate();
+                if (date.isBefore(request.fromDate()) || date.isAfter(request.toDate())) {
+                    continue;
+                }
+            }
             String staffId = String.valueOf(order.getOrDefault("staffId", "unknown"));
             byStaff.computeIfAbsent(staffId, k -> {
                 Map<String, Object> r = new LinkedHashMap<>();
@@ -166,9 +177,38 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
+    @Cacheable(value = "realtimeStats", key = "#branchId == null ? 'ALL' : #branchId.toString()")
+    public Map<String, Object> realtimeStats(UUID branchId) {
+        LocalDate today = LocalDate.now();
+        RevenueReportResponse revenue = revenue(today, today, branchId, "day");
+        InventoryReportResponse inventory = inventory(branchId);
+        List<Map<String, Object>> recentOrders = recentOrders(branchId, 5);
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("branchId", branchId);
+        stats.put("todayRevenue", revenue.data().stream()
+                .mapToDouble(row -> ((Number) row.getOrDefault("net", 0)).doubleValue())
+                .sum());
+        stats.put("todayOrders", revenue.data().stream()
+                .mapToInt(row -> ((Number) row.getOrDefault("orders", 0)).intValue())
+                .sum());
+        stats.put("lowStockCount", inventory.total().getOrDefault("lowStockCount", 0));
+        stats.put("totalBatches", inventory.total().getOrDefault("totalBatches", 0));
+        stats.put("recentOrders", recentOrders);
+        return stats;
+    }
+
+    @Override
+    public List<Map<String, Object>> recentOrders(UUID branchId, int limit) {
+        Map<String, Object> ordersResp = orderClient.getOrders(null, null, branchId, null, null, 0,
+                Math.min(limit, 20));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> orders = (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
+        return orders.stream().limit(Math.max(limit, 0)).toList();
+    }
+
+    @Override
     public Object export(String type, String format, LocalDate from, LocalDate to) {
         validateRange(from, to);
-        // B-12: Aggregate data and build the report rows
         java.util.List<String> headers = new java.util.ArrayList<>();
         java.util.List<java.util.Map<String, Object>> rows = new java.util.ArrayList<>();
         String title = String.format("%s Report (%s to %s)",
@@ -176,25 +216,39 @@ public class ReportServiceImpl implements ReportService {
 
         if ("revenue".equalsIgnoreCase(type)) {
             headers.add("Date");
-            headers.add("Branch");
             headers.add("Orders");
+            headers.add("Gross");
+            headers.add("Discount");
             headers.add("Revenue (VND)");
-            headers.add("Avg Order Value");
-            // Aggregate from order-service (simplified for now)
-            rows.add(java.util.Map.of("Date", from, "Branch", "ALL", "Orders", 0, "Revenue (VND)", 0, "Avg Order Value", 0));
+            RevenueReportResponse response = revenue(from, to, null, "day");
+            for (Map<String, Object> row : response.data()) {
+                Map<String, Object> exportRow = new LinkedHashMap<>();
+                exportRow.put("Date", valueOrBlank(row.get("date")));
+                exportRow.put("Orders", valueOrZero(row.get("orders")));
+                exportRow.put("Gross", valueOrZero(row.get("gross")));
+                exportRow.put("Discount", valueOrZero(row.get("discount")));
+                exportRow.put("Revenue (VND)", valueOrZero(row.get("net")));
+                rows.add(exportRow);
+            }
         } else if ("inventory".equalsIgnoreCase(type)) {
             headers.add("Medicine");
             headers.add("Branch");
             headers.add("Stock");
             headers.add("Min Level");
             headers.add("Status");
-            rows.add(java.util.Map.of("Medicine", "Sample", "Branch", "ALL", "Stock", 0, "Min Level", 10, "Status", "OK"));
+            appendInventoryRowsFromReport(inventoryClient.getStockLevelReport(null), rows);
         } else if ("staff".equalsIgnoreCase(type)) {
             headers.add("Staff ID");
-            headers.add("Name");
             headers.add("Orders");
             headers.add("Revenue (VND)");
-            rows.add(java.util.Map.of("Staff ID", "N/A", "Name", "N/A", "Orders", 0, "Revenue (VND)", 0));
+            StaffReportResponse response = staff(new StaffReportRequest(from, to, null));
+            for (Map<String, Object> row : response.data()) {
+                Map<String, Object> exportRow = new LinkedHashMap<>();
+                exportRow.put("Staff ID", valueOrBlank(row.get("staffId")));
+                exportRow.put("Orders", valueOrZero(row.get("orders")));
+                exportRow.put("Revenue (VND)", valueOrZero(row.get("revenue")));
+                rows.add(exportRow);
+            }
         } else {
             throw new com.pcms.common.exception.InvalidOperationException(
                     "Unknown report type: " + type,
@@ -224,5 +278,50 @@ public class ReportServiceImpl implements ReportService {
                     "fromDate must be before toDate",
                     "Ngày bắt đầu phải trước ngày kết thúc");
         }
+    }
+
+    private void appendInventoryRows(InventoryReportResponse response, List<Map<String, Object>> rows) {
+        for (Map<String, Object> section : response.data()) {
+            if (!"stockDetails".equals(section.get("section"))) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> stockItems = (List<Map<String, Object>>) section.getOrDefault("items", List.of());
+            for (Map<String, Object> item : stockItems) {
+                Number qty = (Number) item.getOrDefault("qtyOnHand", 0);
+                Number min = (Number) item.getOrDefault("minStockLevel", 0);
+                String status = qty.intValue() < min.intValue() ? "LOW" : "OK";
+                Map<String, Object> exportRow = new LinkedHashMap<>();
+                exportRow.put("Medicine", valueOrBlank(item.get("medicineId")));
+                exportRow.put("Branch", valueOrBlank(item.get("branchId")));
+                exportRow.put("Stock", qty);
+                exportRow.put("Min Level", min);
+                exportRow.put("Status", status);
+                rows.add(exportRow);
+            }
+        }
+    }
+
+    private void appendInventoryRowsFromReport(List<Map<String, Object>> stockItems, List<Map<String, Object>> rows) {
+        for (Map<String, Object> item : stockItems) {
+            Number qty = (Number) item.getOrDefault("qtyOnHand", 0);
+            Number min = (Number) item.getOrDefault("minStockLevel", 0);
+            Map<String, Object> exportRow = new LinkedHashMap<>();
+            exportRow.put("Medicine", valueOrBlank(item.get("medicineId")));
+            exportRow.put("Branch", valueOrBlank(item.get("branchId")));
+            exportRow.put("Stock", qty);
+            exportRow.put("Min Level", min);
+            exportRow.put("Status",
+                    valueOrBlank(item.getOrDefault("status", qty.intValue() < min.intValue() ? "LOW" : "OK")));
+            rows.add(exportRow);
+        }
+    }
+
+    private Object valueOrBlank(Object value) {
+        return value == null ? "" : value;
+    }
+
+    private Object valueOrZero(Object value) {
+        return value == null ? 0 : value;
     }
 }

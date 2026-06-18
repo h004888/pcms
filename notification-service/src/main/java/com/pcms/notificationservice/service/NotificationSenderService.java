@@ -1,10 +1,12 @@
 package com.pcms.notificationservice.service;
 
-import com.pcms.notificationservice.dto.BroadcastRequest;
-import com.pcms.notificationservice.dto.CreateNotificationRequest;
-import com.pcms.notificationservice.dto.NotificationResponse;
 import com.pcms.common.dto.PageResponse;
+import com.pcms.notificationservice.dto.request.BroadcastRequest;
+import com.pcms.notificationservice.dto.request.ComposeNotificationRequest;
+import com.pcms.notificationservice.dto.request.CreateNotificationRequest;
+import com.pcms.notificationservice.dto.response.NotificationResponse;
 import com.pcms.notificationservice.entity.Notification;
+import com.pcms.notificationservice.enums.NotificationStatus;
 
 import java.util.UUID;
 
@@ -34,10 +36,14 @@ public interface NotificationSenderService {
      */
     int broadcast(BroadcastRequest request);
 
+    int compose(ComposeNotificationRequest request);
+
     /**
      * NSF-09: Retry a previously FAILED notification up to maxAttempts.
      */
     NotificationResponse retry(UUID id);
+
+    NotificationResponse getById(UUID id);
 
     /**
      * Mark a notification as READ and persist the timestamp.
@@ -48,4 +54,8 @@ public interface NotificationSenderService {
      * List notifications for a recipient with paging.
      */
     PageResponse<NotificationResponse> list(UUID recipientId, int page, int size);
+
+    PageResponse<NotificationResponse> list(UUID recipientId, NotificationStatus status, int page, int size);
+
+    int markAllAsRead(UUID recipientId);
 }

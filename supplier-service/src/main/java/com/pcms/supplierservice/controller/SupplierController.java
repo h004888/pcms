@@ -3,6 +3,7 @@ package com.pcms.supplierservice.controller;
 import com.pcms.supplierservice.dto.request.CreateSupplierRequest;
 import com.pcms.supplierservice.dto.request.UpdateSupplierRequest;
 import com.pcms.supplierservice.dto.response.PageResponse;
+import com.pcms.supplierservice.dto.response.SupplierHistoryResponse;
 import com.pcms.supplierservice.dto.response.SupplierResponse;
 import com.pcms.supplierservice.service.SupplierService;
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -47,8 +49,13 @@ public class SupplierController {
 
     @PutMapping("/{id}")
     public ResponseEntity<SupplierResponse> update(@PathVariable UUID id,
-                                                   @Valid @RequestBody UpdateSupplierRequest request) {
+            @Valid @RequestBody UpdateSupplierRequest request) {
         return ResponseEntity.ok(supplierService.update(id, request));
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<SupplierHistoryResponse>> history(@PathVariable UUID id) {
+        return ResponseEntity.ok(supplierService.history(id));
     }
 
     @DeleteMapping("/{id}")

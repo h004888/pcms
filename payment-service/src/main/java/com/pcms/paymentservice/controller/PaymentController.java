@@ -4,6 +4,8 @@ import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.paymentservice.dto.CreatePaymentRequest;
 import com.pcms.common.dto.PageResponse;
 import com.pcms.paymentservice.dto.PaymentResponse;
+import com.pcms.paymentservice.dto.RefundHistoryResponse;
+import com.pcms.paymentservice.dto.RefundPaymentRequest;
 import com.pcms.paymentservice.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -41,10 +43,10 @@ public class PaymentController {
     @GetMapping("/invoice/{invoiceNumber}")
     public ResponseEntity<PaymentResponse> getByInvoice(@PathVariable String invoiceNumber) {
         return paymentService.list(0, Integer.MAX_VALUE).getContent().stream()
-            .filter(p -> invoiceNumber.equals(p.invoiceNumber()))
-            .findFirst()
-            .map(ResponseEntity::ok)
-            .orElseThrow(() -> new ResourceNotFoundException("Payment with invoice", invoiceNumber));
+                .filter(p -> invoiceNumber.equals(p.invoiceNumber()))
+                .findFirst()
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment with invoice", invoiceNumber));
     }
 
     @GetMapping("/order/{orderId}")
@@ -60,8 +62,20 @@ public class PaymentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.create(request));
     }
 
+    @PostMapping("/{id}/refund")
+    public ResponseEntity<PaymentResponse> refund(@PathVariable UUID id,
+            @Valid @RequestBody(required = false) RefundPaymentRequest request) {
+        RefundPaymentRequest normalizedRequest = request == null ? new RefundPaymentRequest(null, null) : request;
+        return ResponseEntity.ok(paymentService.refund(id, normalizedRequest));
+    }
+
     @PutMapping("/{id}/refund")
-    public ResponseEntity<PaymentResponse> refund(@PathVariable UUID id) {
+    public ResponseEntity<PaymentResponse> refundLegacy(@PathVariable UUID id) {
         return ResponseEntity.ok(paymentService.softCancel(id));
+    }
+
+    @GetMapping("/{id}/refund-history")
+    public ResponseEntity<RefundHistoryResponse> refundHistory(@PathVariable UUID id) {
+        return ResponseEntity.ok(paymentService.refundHistory(id));
     }
 }

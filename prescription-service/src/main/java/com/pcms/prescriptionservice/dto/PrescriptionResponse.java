@@ -7,15 +7,15 @@ import java.util.List;
 import java.util.UUID;
 
 public record PrescriptionResponse(
-        UUID id,
-        String code,
-        UUID patientId,
-        UUID doctorId,
-        String diagnosis,
-        String notes,
-        String signatureHash,
-        PrescriptionStatus status,
-        LocalDateTime issuedAt,
-        List<PrescriptionItemRequest> items
-) {
+                UUID id,
+                String code,
+                UUID patientId,
+                UUID doctorId,
+                UUID orderId,
+                String diagnosis,
+                String notes,
+                String signatureHash,
+                PrescriptionStatus status,
+                LocalDateTime issuedAt,
+                List<PrescriptionItemRequest> items) {
 }

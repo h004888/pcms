@@ -4,6 +4,7 @@ import com.pcms.branchservice.dto.request.CreateBranchRequest;
 import com.pcms.branchservice.dto.request.UpdateBranchRequest;
 import com.pcms.branchservice.dto.response.BranchResponse;
 import com.pcms.branchservice.dto.response.PageResponse;
+import com.pcms.branchservice.dto.response.BranchStaffResponse;
 import com.pcms.branchservice.service.BranchService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -50,6 +52,11 @@ public class BranchController {
         return ResponseEntity.ok(branchService.getByCode(code));
     }
 
+    @GetMapping("/{id}/staff")
+    public ResponseEntity<List<BranchStaffResponse>> getStaff(@PathVariable UUID id) {
+        return ResponseEntity.ok(branchService.getStaff(id));
+    }
+
     @PostMapping
     public ResponseEntity<BranchResponse> create(@Valid @RequestBody CreateBranchRequest request) {
         return ResponseEntity.ok(branchService.create(request));
@@ -57,14 +64,14 @@ public class BranchController {
 
     @PutMapping("/{id}")
     public ResponseEntity<BranchResponse> update(@PathVariable UUID id,
-                                                 @Valid @RequestBody UpdateBranchRequest request) {
+            @Valid @RequestBody UpdateBranchRequest request) {
         return ResponseEntity.ok(branchService.update(id, request));
     }
 
     /** AT2: Reassign manager */
     @PutMapping("/{id}/manager")
     public ResponseEntity<BranchResponse> assignManager(@PathVariable UUID id,
-                                                        @RequestBody Map<String, UUID> body) {
+            @RequestBody Map<String, UUID> body) {
         return ResponseEntity.ok(branchService.assignManager(id, body.get("managerId")));
     }
 

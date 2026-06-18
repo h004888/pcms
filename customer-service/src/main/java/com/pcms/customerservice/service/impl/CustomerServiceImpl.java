@@ -3,11 +3,18 @@ package com.pcms.customerservice.service.impl;
 import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
-import com.pcms.customerservice.dto.CreateCustomerRequest;
-import com.pcms.customerservice.dto.CustomerResponse;
-import com.pcms.customerservice.dto.UpdateCustomerRequest;
+import com.pcms.common.dto.PageResponse;
+import com.pcms.customerservice.client.OrderClient;
+import com.pcms.customerservice.dto.request.CreateCustomerRequest;
+import com.pcms.customerservice.dto.request.CustomerPortalRegisterRequest;
+import com.pcms.customerservice.dto.request.UpdateCustomerRequest;
+import com.pcms.customerservice.dto.response.CustomerHistoryResponse;
+import com.pcms.customerservice.dto.response.CustomerOrderSummaryResponse;
+import com.pcms.customerservice.dto.response.CustomerResponse;
+import com.pcms.customerservice.dto.response.LoyaltyTransactionResponse;
 import com.pcms.customerservice.entity.Customer;
 import com.pcms.customerservice.entity.LoyaltyTransaction;
+import com.pcms.customerservice.enums.LoyaltyTier;
 import com.pcms.customerservice.repository.CustomerRepository;
 import com.pcms.customerservice.repository.LoyaltyTransactionRepository;
 import com.pcms.customerservice.service.CustomerService;
@@ -27,15 +34,19 @@ import java.util.UUID;
  * FR8.2: auto-generates code CUST-yyyy####.
  */
 @Service
+@Transactional
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
     private final LoyaltyTransactionRepository loyaltyRepository;
+    private final OrderClient orderClient;
 
     public CustomerServiceImpl(CustomerRepository customerRepository,
-                              LoyaltyTransactionRepository loyaltyRepository) {
+            LoyaltyTransactionRepository loyaltyRepository,
+            OrderClient orderClient) {
         this.customerRepository = customerRepository;
         this.loyaltyRepository = loyaltyRepository;
+        this.orderClient = orderClient;
     }
 
     @Override
@@ -49,16 +60,65 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional(readOnly = true)
     public CustomerResponse getById(UUID id) {
         return customerRepository.findById(id)
-            .map(CustomerResponse::from)
-            .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
+                .map(CustomerResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public CustomerResponse getByCode(String code) {
         return customerRepository.findByCode(code)
-            .map(CustomerResponse::from)
-            .orElseThrow(() -> new ResourceNotFoundException("Customer", code));
+                .map(CustomerResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", code));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerResponse getByPhone(String phone) {
+        return customerRepository.findByPhone(phone)
+                .map(CustomerResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer with phone", phone));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerResponse getByEmail(String email) {
+        return customerRepository.findFirstByEmailIgnoreCase(email)
+                .map(CustomerResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer with email", email));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getTier(UUID id) {
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
+        return resolveTier(customer).name();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<CustomerOrderSummaryResponse> getOrders(UUID id, int page, int size) {
+        ensureCustomerExists(id);
+        return orderClient.getOrdersByCustomer(id, null, null, null, null, page, Math.min(size, 100));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<LoyaltyTransactionResponse> getPoints(UUID id, int page, int size) {
+        ensureCustomerExists(id);
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by("createdAt").descending());
+        return PageResponse.of(loyaltyRepository.findByCustomerId(id, pageable), LoyaltyTransactionResponse::from);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerHistoryResponse getHistory(UUID id, int page, int size) {
+        CustomerResponse customer = getById(id);
+        return new CustomerHistoryResponse(
+                customer,
+                getOrders(id, page, size),
+                getPoints(id, page, size));
     }
 
     @Override
@@ -75,6 +135,7 @@ public class CustomerServiceImpl implements CustomerService {
         c.setDob(request.dob());
         c.setGender(request.gender());
         c.setPoints(0);
+        c.setTier(LoyaltyTier.BRONZE);
         c.setCode(generateCode());
         return CustomerResponse.from(customerRepository.save(c));
     }
@@ -83,7 +144,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public CustomerResponse update(UUID id, UpdateCustomerRequest request) {
         Customer c = customerRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
         // Phone uniqueness: if changed, check collision
         if (!c.getPhone().equals(request.phone()) && customerRepository.existsByPhone(request.phone())) {
             throw new DuplicateResourceException("Phone", request.phone());
@@ -99,11 +160,41 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    public CustomerResponse register(CustomerPortalRegisterRequest request) {
+        return create(new CreateCustomerRequest(
+                request.name(),
+                request.phone(),
+                request.email(),
+                request.address(),
+                request.dob(),
+                request.gender()));
+    }
+
+    @Override
+    public CustomerResponse updatePortalProfile(UUID id, CustomerPortalRegisterRequest request) {
+        return update(id, new UpdateCustomerRequest(
+                request.name(),
+                request.phone(),
+                request.email(),
+                request.address(),
+                request.dob(),
+                request.gender()));
+    }
+
+    @Override
+    public CustomerResponse updatePortalProfileByEmail(String email, CustomerPortalRegisterRequest request) {
+        Customer customer = customerRepository.findFirstByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer with email", email));
+        return updatePortalProfile(customer.getId(), request);
+    }
+
+    @Override
     @Transactional
     public void softDelete(UUID id) {
         Customer c = customerRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
-        // B-15: Soft delete — set status INACTIVE instead of physical delete (preserves audit trail).
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
+        // B-15: Soft delete — set status INACTIVE instead of physical delete (preserves
+        // audit trail).
         c.setStatus(com.pcms.customerservice.enums.CustomerStatus.INACTIVE);
         customerRepository.save(c);
     }
@@ -113,8 +204,8 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerResponse addPoints(UUID id, int points, UUID refOrderId, String reason) {
         if (points < 0) {
             throw new InvalidOperationException(
-                "Points to add must be non-negative",
-                "Số điểm cần cộng phải không âm");
+                    "Points to add must be non-negative",
+                    "Số điểm cần cộng phải không âm");
         }
 
         // Idempotency: if a transaction with the same refOrderId already exists, skip
@@ -122,15 +213,16 @@ public class CustomerServiceImpl implements CustomerService {
             var existing = loyaltyRepository.findByRefOrderId(refOrderId);
             if (existing.isPresent()) {
                 Customer c = customerRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
+                        .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
                 return CustomerResponse.from(c);
             }
         }
 
         Customer c = customerRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
         int newBalance = (c.getPoints() == null ? 0 : c.getPoints()) + points;
         c.setPoints(newBalance);
+        c.setTier(LoyaltyTier.fromPoints(newBalance));
         Customer saved = customerRepository.save(c);
 
         // Audit + idempotency record
@@ -139,6 +231,20 @@ public class CustomerServiceImpl implements CustomerService {
         loyaltyRepository.save(tx);
 
         return CustomerResponse.from(saved);
+    }
+
+    private LoyaltyTier resolveTier(Customer customer) {
+        LoyaltyTier tier = LoyaltyTier.fromPoints(customer.getPoints());
+        if (customer.getTier() != tier) {
+            customer.setTier(tier);
+        }
+        return tier;
+    }
+
+    private void ensureCustomerExists(UUID id) {
+        if (!customerRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Customer", id);
+        }
     }
 
     /**
@@ -153,7 +259,10 @@ public class CustomerServiceImpl implements CustomerService {
         if (!latest.isEmpty()) {
             String latestCode = latest.get(0).getCode();
             String numPart = latestCode.substring(latestCode.lastIndexOf('-') + 1);
-            try { nextNum = Integer.parseInt(numPart) + 1; } catch (NumberFormatException ignored) {}
+            try {
+                nextNum = Integer.parseInt(numPart) + 1;
+            } catch (NumberFormatException ignored) {
+            }
         }
         return String.format("CUST-%s%04d", year, nextNum);
     }

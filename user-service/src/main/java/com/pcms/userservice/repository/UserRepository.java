@@ -20,6 +20,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmail(String email);
 
+    long countByStatus(UserStatus status);
+
+    long countByRole(Role role);
+
     Page<User> findByStatus(UserStatus status, Pageable pageable);
 
     List<User> findByStatus(UserStatus status);
@@ -28,10 +32,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     List<User> findByBranchId(UUID branchId);
 
+    Page<User> findByLastLoginAtIsNotNullOrderByLastLoginAtDesc(Pageable pageable);
+
     @Query("SELECT u FROM User u WHERE " +
-           "(:search IS NULL OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "  OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-           "AND (:role IS NULL OR u.role = :role) " +
-           "AND (:branchId IS NULL OR u.branchId = :branchId)")
-    Page<User> searchUsers(String search, Role role, UUID branchId, Pageable pageable);
+            "(:search IS NULL OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "  OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "AND (:role IS NULL OR u.role = :role) " +
+            "AND (:branchId IS NULL OR u.branchId = :branchId) " +
+            "AND (:status IS NULL OR u.status = :status)")
+    Page<User> searchUsers(String search, Role role, UUID branchId, UserStatus status, Pageable pageable);
 }

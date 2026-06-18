@@ -11,7 +11,8 @@ public interface SearchService {
     List<MedicineResponse> autocomplete(String q);
 
     List<MedicineResponse> fullSearch(String q,
-                                      UUID categoryId,
-                                      BigDecimal minPrice,
-                                      BigDecimal maxPrice);
+            UUID categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean inStock);
 }

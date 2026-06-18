@@ -5,6 +5,8 @@ import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.orderservice.client.CatalogClient;
 import com.pcms.orderservice.client.CustomerClient;
 import com.pcms.orderservice.client.InventoryClient;
+import com.pcms.orderservice.client.PrescriptionClient;
+import com.pcms.orderservice.entity.Coupon;
 import com.pcms.orderservice.dto.CreateOrderRequest;
 import com.pcms.orderservice.dto.OrderItemRequest;
 import com.pcms.orderservice.dto.OrderResponse;
@@ -16,6 +18,7 @@ import com.pcms.orderservice.enums.OrderStatus;
 import com.pcms.orderservice.repository.OrderRepository;
 import com.pcms.orderservice.repository.OrderSequenceRepository;
 import com.pcms.orderservice.service.OrderService;
+import com.pcms.orderservice.service.CouponService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,10 +41,14 @@ import java.util.UUID;
 /**
  * Implementation of {@link OrderService}.
  *
- * <p>BR04: 5% discount when qty >= 10 same medicine.
- * <br>BR01: Auto-cancel pending orders after 24h.
- * <br>NSF-05: FIFO batch consumption via inventory-service.
- * <br>NSF-12: Generate order number ORD-yyyymmdd-####.
+ * <p>
+ * BR04: 5% discount when qty >= 10 same medicine.
+ * <br>
+ * BR01: Auto-cancel pending orders after 24h.
+ * <br>
+ * NSF-05: FIFO batch consumption via inventory-service.
+ * <br>
+ * NSF-12: Generate order number ORD-yyyymmdd-####.
  */
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -53,9 +60,11 @@ public class OrderServiceImpl implements OrderService {
     private final CatalogClient catalogClient;
     private final InventoryClient inventoryClient;
     private final CustomerClient customerClient;
+    private final PrescriptionClient prescriptionClient;
     private final com.pcms.orderservice.client.BranchClient branchClient;
     private final com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository;
     private final com.pcms.orderservice.repository.OutboxEventRepository outboxRepo;
+    private final CouponService couponService;
 
     @Value("${order.bulk-discount-threshold:10}")
     private int bulkDiscountThreshold;
@@ -64,33 +73,44 @@ public class OrderServiceImpl implements OrderService {
     private BigDecimal bulkDiscountRate;
 
     public OrderServiceImpl(OrderRepository orderRepository,
-                            CatalogClient catalogClient,
-                            InventoryClient inventoryClient,
-                            CustomerClient customerClient,
-                            com.pcms.orderservice.client.BranchClient branchClient,
-                            com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository,
-                            com.pcms.orderservice.repository.OutboxEventRepository outboxRepo) {
+            CatalogClient catalogClient,
+            InventoryClient inventoryClient,
+            CustomerClient customerClient,
+            PrescriptionClient prescriptionClient,
+            com.pcms.orderservice.client.BranchClient branchClient,
+            com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository,
+            com.pcms.orderservice.repository.OutboxEventRepository outboxRepo,
+            CouponService couponService) {
         this.orderRepository = orderRepository;
         this.catalogClient = catalogClient;
         this.inventoryClient = inventoryClient;
         this.customerClient = customerClient;
+        this.prescriptionClient = prescriptionClient;
         this.branchClient = branchClient;
         this.sequenceRepository = sequenceRepository;
         this.outboxRepo = outboxRepo;
+        this.couponService = couponService;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<OrderResponse> list(UUID customerId, OrderStatus status, int page, int size) {
+        return list(customerId, status, null, null, null, page, size);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> list(UUID customerId, OrderStatus status, UUID branchId,
+            LocalDate dateFrom, LocalDate dateTo, int page, int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by("createdAt").descending());
-        Page<Order> orders;
-        if (customerId != null) {
-            orders = orderRepository.findByCustomerId(customerId, pageable);
-        } else if (status != null) {
-            orders = orderRepository.findByStatus(status, pageable);
-        } else {
-            orders = orderRepository.findAll(pageable);
+        if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
+            throw new InvalidOperationException(
+                    "dateFrom must be before dateTo",
+                    "Ngày bắt đầu phải trước ngày kết thúc");
         }
+        var fromDateTime = dateFrom == null ? null : dateFrom.atStartOfDay();
+        var toDateTime = dateTo == null ? null : dateTo.plusDays(1).atStartOfDay().minusNanos(1);
+        Page<Order> orders = orderRepository.search(customerId, status, branchId, fromDateTime, toDateTime, pageable);
         return orders.map(OrderResponse::from);
     }
 
@@ -98,16 +118,16 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public OrderResponse getById(UUID id) {
         return orderRepository.findById(id)
-            .map(OrderResponse::from)
-            .orElseThrow(() -> new ResourceNotFoundException("Order", id));
+                .map(OrderResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getByNumber(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
-            .map(OrderResponse::from)
-            .orElseThrow(() -> new ResourceNotFoundException("Order", orderNumber));
+                .map(OrderResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderNumber));
     }
 
     @Override
@@ -115,8 +135,8 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse create(CreateOrderRequest request) {
         if (request.items() == null || request.items().isEmpty()) {
             throw new InvalidOperationException(
-                "Order must contain at least one item",
-                "Đơn hàng phải có ít nhất một sản phẩm");
+                    "Order must contain at least one item",
+                    "Đơn hàng phải có ít nhất một sản phẩm");
         }
 
         // B-20: Validate customer exists via customer-service
@@ -144,11 +164,13 @@ public class OrderServiceImpl implements OrderService {
         order.setCustomerId(request.customerId());
         order.setBranchId(request.branchId());
         order.setStaffId(request.staffId());
+        order.setPrescriptionId(request.prescriptionId());
         order.setCouponCode(request.couponCode());
         order.setStatus(OrderStatus.PENDING_PAYMENT);
 
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal totalDiscount = BigDecimal.ZERO;
+        boolean requiresPrescription = false;
 
         for (OrderItemRequest itemReq : request.items()) {
             // Call catalog-service to get medicine info
@@ -161,6 +183,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new ResourceNotFoundException("Medicine", itemReq.medicineId());
             }
             BigDecimal price = new BigDecimal(medicine.get("price").toString());
+            requiresPrescription = requiresPrescription || isPrescriptionRequired(medicine);
 
             OrderItem item = new OrderItem();
             item.setOrder(order);
@@ -183,28 +206,78 @@ public class OrderServiceImpl implements OrderService {
             totalDiscount = totalDiscount.add(lineDiscount);
         }
 
+        if (requiresPrescription) {
+            validatePrescription(request.prescriptionId(), request.customerId());
+        } else if (request.prescriptionId() != null) {
+            validatePrescription(request.prescriptionId(), request.customerId());
+        }
+
+        BigDecimal baseTotal = subtotal.subtract(totalDiscount);
+        Coupon appliedCoupon = couponService.findApplicableCoupon(request.couponCode());
+        BigDecimal couponDiscount = couponService.calculateDiscount(appliedCoupon, baseTotal);
+
         order.setSubtotal(subtotal);
-        order.setDiscount(totalDiscount);
-        order.setTotal(subtotal.subtract(totalDiscount));
+        order.setDiscount(totalDiscount.add(couponDiscount));
+        order.setTotal(baseTotal.subtract(couponDiscount));
         order.setOrderNumber(generateOrderNumber());
 
+        if (appliedCoupon != null) {
+            order.setCouponCode(appliedCoupon.getCode());
+            couponService.incrementUsage(appliedCoupon);
+        }
+
         return OrderResponse.from(orderRepository.save(order));
+    }
+
+    private boolean isPrescriptionRequired(Map<String, Object> medicine) {
+        Object value = medicine.get("prescriptionRequired");
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        return value instanceof String text && Boolean.parseBoolean(text);
+    }
+
+    private void validatePrescription(UUID prescriptionId, UUID customerId) {
+        if (prescriptionId == null) {
+            throw new InvalidOperationException(
+                    "Prescription is required for at least one medicine",
+                    "Đơn thuốc là bắt buộc vì có thuốc cần kê đơn");
+        }
+        try {
+            Map<String, Object> prescription = prescriptionClient.getPrescriptionById(prescriptionId);
+            if (prescription == null || "UNREACHABLE".equals(prescription.get("status"))) {
+                throw new ResourceNotFoundException("Prescription", prescriptionId);
+            }
+            if (!"SIGNED".equalsIgnoreCase(String.valueOf(prescription.get("status")))) {
+                throw new InvalidOperationException(
+                        "Prescription must be signed",
+                        "Đơn thuốc phải được ký trước khi tạo đơn hàng");
+            }
+            Object patientId = prescription.get("patientId");
+            if (patientId != null && !customerId.toString().equalsIgnoreCase(String.valueOf(patientId))) {
+                throw new InvalidOperationException(
+                        "Prescription patient does not match order customer",
+                        "Bệnh nhân trong đơn thuốc không khớp với khách hàng của đơn hàng");
+            }
+        } catch (feign.FeignException.NotFound e) {
+            throw new ResourceNotFoundException("Prescription", prescriptionId);
+        }
     }
 
     @Override
     @Transactional
     public OrderResponse update(UUID id, UpdateOrderRequest request) {
         Order order = orderRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Order", id));
+                .orElseThrow(() -> new ResourceNotFoundException("Order", id));
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw new InvalidOperationException(
-                "Order can only be updated while PENDING_PAYMENT",
-                "Đơn hàng chỉ có thể cập nhật khi đang chờ thanh toán");
+                    "Order can only be updated while PENDING_PAYMENT",
+                    "Đơn hàng chỉ có thể cập nhật khi đang chờ thanh toán");
         }
         if (request.items() == null || request.items().isEmpty()) {
             throw new InvalidOperationException(
-                "Order must contain at least one item",
-                "Đơn hàng phải có ít nhất một sản phẩm");
+                    "Order must contain at least one item",
+                    "Đơn hàng phải có ít nhất một sản phẩm");
         }
         // Replace items and recompute totals
         order.getItems().clear();
@@ -249,10 +322,10 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse markAsPaid(UUID orderId, UUID actorId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT && order.getStatus() != OrderStatus.APPROVED) {
             throw new InvalidOperationException(
-                "Order can only be marked paid while PENDING_PAYMENT",
-                "Đơn hàng chỉ có thể chuyển PAID khi đang chờ thanh toán");
+                    "Order can only be marked paid while PENDING_PAYMENT or APPROVED",
+                    "Đơn hàng chỉ có thể chuyển PAID khi đang chờ thanh toán hoặc đã duyệt");
         }
         order.setStatus(OrderStatus.PAID);
         orderRepository.save(order);
@@ -261,25 +334,62 @@ public class OrderServiceImpl implements OrderService {
         // OutboxPublisher will dispatch asynchronously with retry.
         for (OrderItem item : order.getItems()) {
             String payload = String.format(
-                "{\"medicineId\":\"%s\",\"branchId\":\"%s\",\"qty\":%d,\"orderId\":\"%s\",\"actorId\":\"%s\"}",
-                item.getMedicineId(), order.getBranchId(), item.getQty(), order.getId(), actorId);
+                    "{\"medicineId\":\"%s\",\"branchId\":\"%s\",\"qty\":%d,\"orderId\":\"%s\",\"actorId\":\"%s\"}",
+                    item.getMedicineId(), order.getBranchId(), item.getQty(), order.getId(), actorId);
             outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
-                "Order", order.getId(), "STOCK_CONSUMED",
-                "inventory-service", "/inventory/consume", payload));
+                    "Order", order.getId(), "STOCK_CONSUMED",
+                    "inventory-service", "/inventory/orders/" + order.getId() + "/paid", payload));
         }
 
         // BR07: Award loyalty points (idempotent on orderId) via outbox
         int points = order.getTotal().divide(BigDecimal.valueOf(1000), 0, RoundingMode.FLOOR).intValue();
         if (points > 0) {
             String payload = String.format(
-                "{\"points\":%d,\"refOrderId\":\"%s\",\"reason\":\"ORDER_PAID:%s\"}",
-                points, order.getId(), order.getOrderNumber());
+                    "{\"points\":%d,\"refOrderId\":\"%s\",\"reason\":\"ORDER_PAID:%s\"}",
+                    points, order.getId(), order.getOrderNumber());
             outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
-                "Order", order.getId(), "POINTS_AWARDED",
-                "customer-service", "/customers/" + order.getCustomerId() + "/points/add", payload));
+                    "Order", order.getId(), "POINTS_AWARDED",
+                    "customer-service", "/customers/" + order.getCustomerId() + "/points/add", payload));
         }
 
+        String notificationPayload = String.format(
+                "{\"orderId\":\"%s\",\"orderNumber\":\"%s\",\"customerId\":\"%s\","
+                        + "\"branchId\":\"%s\",\"staffId\":\"%s\",\"total\":%s,\"paidAt\":\"%s\"}",
+                order.getId(), order.getOrderNumber(), order.getCustomerId(), order.getBranchId(), actorId,
+                order.getTotal(), java.time.LocalDateTime.now());
+        outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
+                "Order", order.getId(), "ORDER_PAID_NOTIFICATION",
+                "notification-service", "/notifications/orders/paid", notificationPayload));
+
         return OrderResponse.from(order);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse approve(UUID orderId, UUID actorId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidOperationException(
+                    "Only pending-payment orders can be approved",
+                    "Chỉ có thể duyệt đơn hàng đang chờ thanh toán");
+        }
+        order.setStatus(OrderStatus.APPROVED);
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse reject(UUID orderId, UUID actorId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT && order.getStatus() != OrderStatus.APPROVED) {
+            throw new InvalidOperationException(
+                    "Only pending or approved orders can be rejected",
+                    "Chỉ có thể từ chối đơn hàng đang chờ hoặc đã duyệt");
+        }
+        order.setStatus(OrderStatus.REJECTED);
+        return OrderResponse.from(orderRepository.save(order));
     }
 
     @Override
@@ -289,29 +399,31 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         if (order.getStatus() == OrderStatus.COMPLETED) {
             throw new InvalidOperationException(
-                "Cannot cancel completed order",
-                "Không thể hủy đơn hàng đã hoàn tất");
+                    "Cannot cancel completed order",
+                    "Không thể hủy đơn hàng đã hoàn tất");
         }
         OrderStatus previousStatus = order.getStatus();
         order.setStatus(OrderStatus.CANCELLED);
         // BR06: Restore stock only if previously PAID
         if (previousStatus == OrderStatus.PAID) {
             for (OrderItem item : order.getItems()) {
-                try {
-                    inventoryClient.consumeStock(new InventoryClient.ConsumeRequest(
-                        item.getMedicineId(), order.getBranchId(), -item.getQty(), actorId, order.getId()));
-                } catch (Exception e) {
-                    log.warn("Failed to restore stock for order {}: {}", order.getId(), e.getMessage());
-                }
+                String payload = String.format(
+                        "{\"medicineId\":\"%s\",\"branchId\":\"%s\",\"qty\":%d,\"orderId\":\"%s\",\"actorId\":\"%s\"}",
+                        item.getMedicineId(), order.getBranchId(), item.getQty(), order.getId(), actorId);
+                outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
+                        "Order", order.getId(), "STOCK_RESTORED",
+                        "inventory-service", "/inventory/orders/" + order.getId() + "/cancelled", payload));
             }
         }
         return OrderResponse.from(orderRepository.save(order));
     }
 
     /**
-     * B-08: Generate next order number using a dedicated sequence table to avoid race condition.
+     * B-08: Generate next order number using a dedicated sequence table to avoid
+     * race condition.
      * Falls back to the legacy scan-based method if sequence table not present.
-     * <p>Sequence row is locked with PESSIMISTIC_WRITE so concurrent calls serialize.
+     * <p>
+     * Sequence row is locked with PESSIMISTIC_WRITE so concurrent calls serialize.
      */
     private String generateOrderNumber() {
         String datePrefix = LocalDate.now().format(DATE_FMT);
@@ -328,7 +440,10 @@ public class OrderServiceImpl implements OrderService {
             if (!latest.isEmpty()) {
                 String numPart = latest.get(0).getOrderNumber()
                         .substring(latest.get(0).getOrderNumber().lastIndexOf('-') + 1);
-                try { next = Integer.parseInt(numPart) + 1; } catch (NumberFormatException ignored) {}
+                try {
+                    next = Integer.parseInt(numPart) + 1;
+                } catch (NumberFormatException ignored) {
+                }
             }
             seq = new OrderSequence(datePrefix, next);
         }

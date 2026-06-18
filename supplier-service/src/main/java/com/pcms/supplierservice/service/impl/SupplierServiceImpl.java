@@ -2,6 +2,7 @@ package com.pcms.supplierservice.service.impl;
 
 import com.pcms.supplierservice.dto.request.CreateSupplierRequest;
 import com.pcms.supplierservice.dto.request.UpdateSupplierRequest;
+import com.pcms.supplierservice.dto.response.SupplierHistoryResponse;
 import com.pcms.supplierservice.dto.response.SupplierResponse;
 import com.pcms.supplierservice.entity.Supplier;
 import com.pcms.supplierservice.enums.SupplierStatus;
@@ -9,11 +10,14 @@ import com.pcms.supplierservice.repository.SupplierRepository;
 import com.pcms.supplierservice.service.SupplierService;
 import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.ResourceNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -28,6 +32,7 @@ public class SupplierServiceImpl implements SupplierService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "supplierSearch", key = "#search == null ? '' : #search.toLowerCase()")
     public Page<SupplierResponse> list(String search, Pageable pageable) {
         return repository.search(search, pageable).map(this::toResponse);
     }
@@ -41,6 +46,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
+    @CacheEvict(value = "supplierSearch", allEntries = true)
     public SupplierResponse create(CreateSupplierRequest request) {
         if (repository.existsByTaxCode(request.taxCode())) {
             throw new DuplicateResourceException("taxCode", request.taxCode());
@@ -59,10 +65,19 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
+    @CacheEvict(value = "supplierSearch", allEntries = true)
     public SupplierResponse update(UUID id, UpdateSupplierRequest request) {
         Supplier supplier = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier", id));
+        if (request.taxCode() != null && !request.taxCode().isBlank()
+                && !request.taxCode().equals(supplier.getTaxCode())
+                && repository.existsByTaxCodeAndIdNot(request.taxCode(), id)) {
+            throw new DuplicateResourceException("taxCode", request.taxCode());
+        }
         supplier.setName(request.name());
+        if (request.taxCode() != null && !request.taxCode().isBlank()) {
+            supplier.setTaxCode(request.taxCode());
+        }
         supplier.setContactPerson(request.contactPerson());
         supplier.setPhone(request.phone());
         supplier.setEmail(request.email());
@@ -74,6 +89,25 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<SupplierHistoryResponse> history(UUID id) {
+        Supplier supplier = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier", id));
+        return List.of(
+                new SupplierHistoryResponse(
+                        supplier.getId(),
+                        "CREATED",
+                        "Nhà cung cấp được tạo trong hệ thống",
+                        supplier.getCreatedAt()),
+                new SupplierHistoryResponse(
+                        supplier.getId(),
+                        "LAST_UPDATED",
+                        "Thông tin nhà cung cấp được cập nhật gần nhất",
+                        supplier.getUpdatedAt()));
+    }
+
+    @Override
+    @CacheEvict(value = "supplierSearch", allEntries = true)
     public void softDelete(UUID id) {
         Supplier supplier = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier", id));
@@ -94,7 +128,6 @@ public class SupplierServiceImpl implements SupplierService {
                 entity.getBankAccount(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 }

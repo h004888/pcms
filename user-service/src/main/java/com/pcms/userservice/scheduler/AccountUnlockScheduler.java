@@ -5,7 +5,6 @@ import com.pcms.userservice.enums.UserStatus;
 import com.pcms.userservice.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,10 +21,13 @@ public class AccountUnlockScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(AccountUnlockScheduler.class);
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Scheduled(fixedRate = 300_000)  // 5 min = 300_000 ms
+    public AccountUnlockScheduler(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Scheduled(fixedRate = 300_000) // 5 min = 300_000 ms
     @Transactional
     public void unlockExpiredAccounts() {
         LocalDateTime now = LocalDateTime.now();
