@@ -2,7 +2,7 @@
 
 ## Status
 
-Sprint 1 ✅ Done | Sprint 2 ✅ Done | Sprint 3 🔄 In Progress | Sprint 4-10 ⏳ Pending
+Sprint 1 ✅ Done | Sprint 2 ✅ Done | Sprint 3 ✅ Done | Sprint 4 ✅ Done | Sprint 5-10 ⏳ Pending
 
 ## Tasks
 
@@ -26,7 +26,7 @@ Sprint 1 ✅ Done | Sprint 2 ✅ Done | Sprint 3 🔄 In Progress | Sprint 4-10 
 - [x] TICKET-206: POST /payments/webhook (alias for /webhooks/payment-gateway)
 - Report: `docs/agents/sprint2-report.md`
 
-### Sprint 3 - B2B Prescription/Notif/Report (Worker 3) 🔄 In Progress
+### Sprint 3 - B2B Prescription/Notif/Report (Worker 3) ✅ 2026-06-19
 
 - Started 11:10:37 AM 2026-06-19
 - [ ] TICKET-301: POST /prescriptions/{id}/sign (alias)
@@ -122,3 +122,15 @@ Sprint 1 worker done: Fri, Jun 19, 2026 11:16:XX AM (this update)
 
 - mvn clean compile -o: BUILD SUCCESS (all 16 modules)
 - mvn -pl prescription-service,notification-service,report-service -am test -o: BUILD SUCCESS (1 test pass)
+
+### Sprint 4 - customer-portal-service scaffold (Worker 4) ✅ 2026-06-19
+
+- [x] TICKET-401: Service scaffold (pom, application, Dockerfile, Security, OpenAPI, parent pom, gateway routes, init-databases, config-server)
+- [x] TICKET-402: GET /shop/home (hero banners + categories + videos teaser)
+- [x] TICKET-403: GET /shop/pdp/{id} (catalog + reviews + inventory Feign)
+- [x] TICKET-404: GET /shop/search (catalog-service Feign)
+- [x] TICKET-405: GET /store/locator + /locator/{id} (branch-service Feign)
+- [x] TICKET-406: GET /shop/lookup/{drug,ingredient,herb} (catalog + 2 local tables)
+- Report: `docs/agents/sprint4-report.md`
+
+**Total: 33 files created, 8 endpoints, 5 entities, 4 Feign clients, 1 new microservice**

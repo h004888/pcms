@@ -97,6 +97,13 @@ spring:
                 - Path=/api/v1/reports/**
               filters:
                 - StripPrefix=2
+            # Customer Portal B2C (UC14, UC18, UC19) - Sprint 4
+            - id: customer-portal-service
+              uri: lb://customer-portal-service
+              predicates:
+                - Path=/api/v1/shop/**,/api/v1/store/**,/api/v1/vaccine/**,/api/v1/health-articles/**,/api/v1/videos/**,/api/v1/lookup/**,/api/v1/verify-origin/**
+              filters:
+                - StripPrefix=2
 
 eureka:
   client:

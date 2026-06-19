@@ -1,0 +1,18 @@
+# Customer Portal Service (B2C) - Sprint 4
+# UC14 Customer Portal, UC18 Health Tools, UC19 E-commerce Operations
+server:
+  port: 8093
+spring:
+  application:
+    name: customer-portal-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_customer_portal?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${MYSQL_USER:pcms_user}
+    password: ${MYSQL_PASSWORD:pcms_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect

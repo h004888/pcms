@@ -38,6 +38,8 @@
         <module>prescription-service</module>
         <module>notification-service</module>
         <module>report-service</module>
+        <!-- B2C Customer Portal (NEW Sprint 4) -->
+        <module>customer-portal-service</module>
     </modules>
 
     <properties>
