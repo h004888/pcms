@@ -39,6 +39,31 @@ services:
       timeout: 5s
       retries: 10
 
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: pcms-postgres
+    environment:
+      POSTGRES_USER: pcms_user
+      POSTGRES_PASSWORD: pcms_pass
+      POSTGRES_DB: pcms_ai_engine
+    ports:
+      - "5432:5432"
+    networks:
+      - pcms-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pcms_user -d pcms_ai_engine"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: pcms-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - pcms-net
+
   config-server:
     build: ./config-server
     container_name: pcms-config-server

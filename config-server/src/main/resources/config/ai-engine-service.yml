@@ -1,0 +1,16 @@
+# ai-engine-service config
+service:
+  name: ai-engine
+  port: 8094
+
+openai:
+  model: gpt-4o-mini
+  embedding_model: text-embedding-3-small
+
+postgres:
+  host: localhost
+  port: 5432
+  database: pcms_ai_engine
+
+redis:
+  url: redis://localhost:6379/0
