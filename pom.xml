@@ -40,6 +40,14 @@
         <module>report-service</module>
         <!-- B2C Customer Portal (NEW Sprint 4) -->
         <module>customer-portal-service</module>
+        <!-- Pharmacist Workbench (NEW Sprint 9) -->
+        <module>pharmacist-workbench-service</module>
+        <!-- Mobile BFF (NEW Sprint 10) -->
+        <module>mobile-bff</module>
+        <!-- Health Tools (NEW Sprint 10) -->
+        <module>health-tools-service</module>
+        <!-- E-commerce Ops (NEW Sprint 10) -->
+        <module>ecom-ops-service</module>
     </modules>
 
     <properties>

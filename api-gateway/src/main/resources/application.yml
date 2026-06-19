@@ -104,6 +104,41 @@ spring:
                 - Path=/api/v1/shop/**,/api/v1/store/**,/api/v1/vaccine/**,/api/v1/health-articles/**,/api/v1/videos/**,/api/v1/lookup/**,/api/v1/verify-origin/**
               filters:
                 - StripPrefix=2
+            # Pharmacist Workbench (UC16) - Sprint 9
+            - id: pharmacist-workbench-service
+              uri: lb://pharmacist-workbench-service
+              predicates:
+                - Path=/api/v1/rx/**,/api/v1/consultations/**,/api/v1/follow-ups/**,/api/v1/vip-marks/**
+              filters:
+                - StripPrefix=2
+            # Mobile BFF (UC17) - Sprint 10
+            - id: mobile-bff
+              uri: lb://mobile-bff
+              predicates:
+                - Path=/api/v1/mobile/**
+              filters:
+                - StripPrefix=2
+            # Health Tools (UC18) - Sprint 10
+            - id: health-tools-service
+              uri: lb://health-tools-service
+              predicates:
+                - Path=/api/v1/health/**
+              filters:
+                - StripPrefix=2
+            # E-commerce Ops (UC19) - Sprint 10
+            - id: ecom-ops-service
+              uri: lb://ecom-ops-service
+              predicates:
+                - Path=/api/v1/ecom-ops/**,/api/v1/admin/vouchers/**,/api/v1/admin/flash-sales/**,/api/v1/admin/reviews/**
+              filters:
+                - StripPrefix=2
+            # AI Engine (UC15) - Sprint 8 (Python FastAPI)
+            - id: ai-engine-service
+              uri: lb://ai-engine-service
+              predicates:
+                - Path=/api/v1/ai/**
+              filters:
+                - StripPrefix=2
 
 eureka:
   client:

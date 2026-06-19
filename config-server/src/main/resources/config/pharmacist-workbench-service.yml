@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: pharmacist-workbench-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/pcms_pharmacist_workbench
+    username: pcms_user
+    password: pcms_pass
