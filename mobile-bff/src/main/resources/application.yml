@@ -1,0 +1,21 @@
+server:
+  port: 8096
+spring:
+  application:
+    name: mobile-bff
+  datasource:
+    url: jdbc:mysql://localhost:3306/pcms_mobile_bff
+    username: pcms_user
+    password: pcms_pass
+  jpa:
+    hibernate:
+      ddl-auto: update
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
