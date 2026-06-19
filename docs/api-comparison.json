@@ -1,0 +1,910 @@
+{
+  "matched": [
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "group": "auth",
+      "screen": "SCR-LOGIN",
+      "javaMethod": "login",
+      "service": "user-service"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "group": "auth",
+      "screen": "SCR-LOGIN",
+      "javaMethod": "logout",
+      "service": "user-service"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/refresh",
+      "group": "auth",
+      "screen": "SCR-LOGIN",
+      "javaMethod": "refresh",
+      "service": "user-service"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/forgot-password",
+      "group": "auth",
+      "screen": "SCR-LOGIN",
+      "javaMethod": "forgotPassword",
+      "service": "user-service"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/reset-password",
+      "group": "auth",
+      "screen": "SCR-LOGIN",
+      "javaMethod": "resetPassword",
+      "service": "user-service"
+    },
+    {
+      "method": "GET",
+      "path": "/users",
+      "group": "user",
+      "screen": "SCR-USER-LIST",
+      "javaMethod": "list",
+      "service": "user-service"
+    },
+    {
+      "method": "GET",
+      "path": "/users/{id}",
+      "group": "user",
+      "screen": "SCR-USER-FORM",
+      "javaMethod": "getById",
+      "service": "user-service"
+    },
+    {
+      "method": "POST",
+      "path": "/users",
+      "group": "user",
+      "screen": "SCR-USER-FORM",
+      "javaMethod": "create",
+      "service": "user-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/{id}",
+      "group": "user",
+      "screen": "SCR-USER-FORM",
+      "javaMethod": "update",
+      "service": "user-service"
+    },
+    {
+      "method": "DELETE",
+      "path": "/users/{id}",
+      "group": "user",
+      "screen": "SCR-USER-LIST",
+      "javaMethod": "softDelete",
+      "service": "user-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/{id}/role",
+      "group": "user",
+      "screen": "SCR-USER-FORM",
+      "javaMethod": "changeRole",
+      "service": "user-service"
+    },
+    {
+      "method": "POST",
+      "path": "/users/{id}/unlock",
+      "group": "user",
+      "screen": "SCR-USER-FORM",
+      "javaMethod": "unlock",
+      "service": "user-service"
+    },
+    {
+      "method": "GET",
+      "path": "/users/export",
+      "group": "user",
+      "screen": "SCR-USER-LIST",
+      "javaMethod": "export",
+      "service": "user-service"
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "group": "branch",
+      "screen": "SCR-BRANCH-LIST",
+      "javaMethod": "list",
+      "service": "branch-service"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/{id}",
+      "group": "branch",
+      "screen": "SCR-BRANCH-FORM",
+      "javaMethod": "getById",
+      "service": "branch-service"
+    },
+    {
+      "method": "POST",
+      "path": "/branches",
+      "group": "branch",
+      "screen": "SCR-BRANCH-FORM",
+      "javaMethod": "create",
+      "service": "branch-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/branches/{id}",
+      "group": "branch",
+      "screen": "SCR-BRANCH-FORM",
+      "javaMethod": "update",
+      "service": "branch-service"
+    },
+    {
+      "method": "DELETE",
+      "path": "/branches/{id}",
+      "group": "branch",
+      "screen": "SCR-BRANCH-LIST",
+      "javaMethod": "softDelete",
+      "service": "branch-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/branches/{id}/manager",
+      "group": "branch",
+      "screen": "SCR-BRANCH-LIST",
+      "javaMethod": "assignManager",
+      "service": "branch-service"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/{id}/staff",
+      "group": "branch",
+      "screen": "SCR-BRANCH-LIST",
+      "javaMethod": "getStaff",
+      "service": "branch-service"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/code/{code}",
+      "group": "branch",
+      "screen": "SCR-BRANCH-LIST",
+      "javaMethod": "getByCode",
+      "service": "branch-service"
+    },
+    {
+      "method": "GET",
+      "path": "/medicines",
+      "group": "medicine",
+      "screen": "SCR-MED-LIST",
+      "javaMethod": "list",
+      "service": "catalog-service"
+    },
+    {
+      "method": "GET",
+      "path": "/medicines/{id}",
+      "group": "medicine",
+      "screen": "SCR-MED-FORM",
+      "javaMethod": "getById",
+      "service": "catalog-service"
+    },
+    {
+      "method": "GET",
+      "path": "/medicines/sku/{sku}",
+      "group": "medicine",
+      "screen": "SCR-MED-LIST",
+      "javaMethod": "getBySku",
+      "service": "catalog-service"
+    },
+    {
+      "method": "POST",
+      "path": "/medicines",
+      "group": "medicine",
+      "screen": "SCR-MED-FORM",
+      "javaMethod": "create",
+      "service": "catalog-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/medicines/{id}",
+      "group": "medicine",
+      "screen": "SCR-MED-FORM",
+      "javaMethod": "update",
+      "service": "catalog-service"
+    },
+    {
+      "method": "DELETE",
+      "path": "/medicines/{id}",
+      "group": "medicine",
+      "screen": "SCR-MED-LIST",
+      "javaMethod": "softDelete",
+      "service": "catalog-service"
+    },
+    {
+      "method": "POST",
+      "path": "/inventory/import",
+      "group": "inventory",
+      "screen": "SCR-INV-IMPORT",
+      "javaMethod": "importStock",
+      "service": "inventory-service"
+    },
+    {
+      "method": "POST",
+      "path": "/inventory/export",
+      "group": "inventory",
+      "screen": "SCR-INV-EXPORT",
+      "javaMethod": "exportStock",
+      "service": "inventory-service"
+    },
+    {
+      "method": "POST",
+      "path": "/inventory/transfer",
+      "group": "inventory",
+      "screen": "SCR-INV-TRANSFER",
+      "javaMethod": "transfer",
+      "service": "inventory-service"
+    },
+    {
+      "method": "GET",
+      "path": "/inventory/transactions",
+      "group": "inventory",
+      "screen": "SCR-INV-LIST",
+      "javaMethod": "getTransactions",
+      "service": "inventory-service"
+    },
+    {
+      "method": "GET",
+      "path": "/inventory/alerts/low-stock",
+      "group": "inventory",
+      "screen": "SCR-INV-LIST",
+      "javaMethod": "lowStockAlerts",
+      "service": "inventory-service"
+    },
+    {
+      "method": "GET",
+      "path": "/inventory/alerts/expiry",
+      "group": "inventory",
+      "screen": "SCR-INV-LIST",
+      "javaMethod": "expiryAlerts",
+      "service": "inventory-service"
+    },
+    {
+      "method": "GET",
+      "path": "/orders",
+      "group": "order",
+      "screen": "SCR-ORDER-LIST",
+      "javaMethod": "list",
+      "service": "order-service"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{id}",
+      "group": "order",
+      "screen": "SCR-ORDER-DETAIL",
+      "javaMethod": "getById",
+      "service": "order-service"
+    },
+    {
+      "method": "GET",
+      "path": "/orders/number/{orderNumber}",
+      "group": "order",
+      "screen": "SCR-ORDER-DETAIL",
+      "javaMethod": "getByNumber",
+      "service": "order-service"
+    },
+    {
+      "method": "POST",
+      "path": "/orders",
+      "group": "order",
+      "screen": "SCR-ORDER-NEW",
+      "javaMethod": "create",
+      "service": "order-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/orders/{id}",
+      "group": "order",
+      "screen": "SCR-ORDER-DETAIL",
+      "javaMethod": "update",
+      "service": "order-service"
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{id}/approve",
+      "group": "order",
+      "screen": "SCR-ORDER-LIST",
+      "javaMethod": "approve",
+      "service": "order-service"
+    },
+    {
+      "method": "GET",
+      "path": "/payments",
+      "group": "payment",
+      "screen": "SCR-PAYMENT",
+      "javaMethod": "list",
+      "service": "payment-service"
+    },
+    {
+      "method": "GET",
+      "path": "/payments/{id}",
+      "group": "payment",
+      "screen": "SCR-PAYMENT",
+      "javaMethod": "getById",
+      "service": "payment-service"
+    },
+    {
+      "method": "POST",
+      "path": "/payments",
+      "group": "payment",
+      "screen": "SCR-PAYMENT",
+      "javaMethod": "processPayment",
+      "service": "payment-service"
+    },
+    {
+      "method": "GET",
+      "path": "/payments/order/{orderId}",
+      "group": "payment",
+      "screen": "SCR-PAYMENT",
+      "javaMethod": "getByOrder",
+      "service": "payment-service"
+    },
+    {
+      "method": "POST",
+      "path": "/payments/{id}/refund",
+      "group": "payment",
+      "screen": "SCR-PAYMENT",
+      "javaMethod": "refund",
+      "service": "payment-service"
+    },
+    {
+      "method": "GET",
+      "path": "/customers",
+      "group": "customer",
+      "screen": "SCR-CUST-LIST",
+      "javaMethod": "list",
+      "service": "customer-service"
+    },
+    {
+      "method": "GET",
+      "path": "/customers/{id}",
+      "group": "customer",
+      "screen": "SCR-CUST-FORM",
+      "javaMethod": "getById",
+      "service": "customer-service"
+    },
+    {
+      "method": "POST",
+      "path": "/customers",
+      "group": "customer",
+      "screen": "SCR-CUST-FORM",
+      "javaMethod": "create",
+      "service": "customer-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/customers/{id}",
+      "group": "customer",
+      "screen": "SCR-CUST-FORM",
+      "javaMethod": "update",
+      "service": "customer-service"
+    },
+    {
+      "method": "GET",
+      "path": "/customers/{id}/orders",
+      "group": "customer",
+      "screen": "SCR-CUST-HISTORY",
+      "javaMethod": "getOrders",
+      "service": "customer-service"
+    },
+    {
+      "method": "GET",
+      "path": "/customers/{id}/points",
+      "group": "customer",
+      "screen": "SCR-CUST-HISTORY",
+      "javaMethod": "getPoints",
+      "service": "customer-service"
+    },
+    {
+      "method": "GET",
+      "path": "/customers/{id}/history",
+      "group": "customer",
+      "screen": "SCR-CUST-HISTORY",
+      "javaMethod": "getHistory",
+      "service": "customer-service"
+    },
+    {
+      "method": "GET",
+      "path": "/customers/phone/{phone}",
+      "group": "customer",
+      "screen": "SCR-CUST-LIST",
+      "javaMethod": "getByPhone",
+      "service": "customer-service"
+    },
+    {
+      "method": "GET",
+      "path": "/reports/revenue",
+      "group": "report",
+      "screen": "SCR-REPORT",
+      "javaMethod": "revenue",
+      "service": "report-service"
+    },
+    {
+      "method": "GET",
+      "path": "/reports/inventory",
+      "group": "report",
+      "screen": "SCR-REPORT",
+      "javaMethod": "inventory",
+      "service": "report-service"
+    },
+    {
+      "method": "GET",
+      "path": "/reports/staff",
+      "group": "report",
+      "screen": "SCR-REPORT",
+      "javaMethod": "staffGet",
+      "service": "report-service"
+    },
+    {
+      "method": "POST",
+      "path": "/reports/schedule",
+      "group": "report",
+      "screen": "SCR-REPORT",
+      "javaMethod": "schedule",
+      "service": "report-service"
+    },
+    {
+      "method": "GET",
+      "path": "/reports/schedules",
+      "group": "report",
+      "screen": "SCR-REPORT",
+      "javaMethod": "schedules",
+      "service": "report-service"
+    },
+    {
+      "method": "GET",
+      "path": "/search/medicines",
+      "group": "search",
+      "screen": "SCR-SEARCH",
+      "javaMethod": "searchMedicines",
+      "service": "catalog-service"
+    },
+    {
+      "method": "GET",
+      "path": "/search/medicines/autocomplete",
+      "group": "search",
+      "screen": "SCR-SEARCH",
+      "javaMethod": "autocomplete",
+      "service": "catalog-service"
+    },
+    {
+      "method": "GET",
+      "path": "/suppliers",
+      "group": "supplier",
+      "screen": "SCR-SUPPLIER-LIST",
+      "javaMethod": "list",
+      "service": "supplier-service"
+    },
+    {
+      "method": "GET",
+      "path": "/suppliers/{id}",
+      "group": "supplier",
+      "screen": "SCR-SUPPLIER-FORM",
+      "javaMethod": "getById",
+      "service": "supplier-service"
+    },
+    {
+      "method": "POST",
+      "path": "/suppliers",
+      "group": "supplier",
+      "screen": "SCR-SUPPLIER-FORM",
+      "javaMethod": "create",
+      "service": "supplier-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/suppliers/{id}",
+      "group": "supplier",
+      "screen": "SCR-SUPPLIER-FORM",
+      "javaMethod": "update",
+      "service": "supplier-service"
+    },
+    {
+      "method": "DELETE",
+      "path": "/suppliers/{id}",
+      "group": "supplier",
+      "screen": "SCR-SUPPLIER-LIST",
+      "javaMethod": "softDelete",
+      "service": "supplier-service"
+    },
+    {
+      "method": "GET",
+      "path": "/suppliers/{id}/history",
+      "group": "supplier",
+      "screen": "SCR-SUPPLIER-LIST",
+      "javaMethod": "history",
+      "service": "supplier-service"
+    },
+    {
+      "method": "GET",
+      "path": "/prescriptions",
+      "group": "prescription",
+      "screen": "SCR-RX",
+      "javaMethod": "list",
+      "service": "prescription-service"
+    },
+    {
+      "method": "GET",
+      "path": "/prescriptions/{id}",
+      "group": "prescription",
+      "screen": "SCR-RX",
+      "javaMethod": "getById",
+      "service": "prescription-service"
+    },
+    {
+      "method": "GET",
+      "path": "/prescriptions/code/{code}",
+      "group": "prescription",
+      "screen": "SCR-RX",
+      "javaMethod": "getByCode",
+      "service": "prescription-service"
+    },
+    {
+      "method": "POST",
+      "path": "/prescriptions",
+      "group": "prescription",
+      "screen": "SCR-RX",
+      "javaMethod": "create",
+      "service": "prescription-service"
+    },
+    {
+      "method": "POST",
+      "path": "/prescriptions/draft",
+      "group": "prescription",
+      "screen": "SCR-RX",
+      "javaMethod": "saveDraft",
+      "service": "prescription-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/prescriptions/{id}",
+      "group": "prescription",
+      "screen": "SCR-RX",
+      "javaMethod": "update",
+      "service": "prescription-service"
+    },
+    {
+      "method": "POST",
+      "path": "/prescriptions/{id}/link-order",
+      "group": "prescription",
+      "screen": "SCR-RX",
+      "javaMethod": "linkOrder",
+      "service": "prescription-service"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "group": "notification",
+      "screen": "SCR-NOTIF-LIST",
+      "javaMethod": "list",
+      "service": "notification-service"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications/{id}",
+      "group": "notification",
+      "screen": "SCR-NOTIF-LIST",
+      "javaMethod": "getById",
+      "service": "notification-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/notifications/{id}/read",
+      "group": "notification",
+      "screen": "SCR-NOTIF-LIST",
+      "javaMethod": "markRead",
+      "service": "notification-service"
+    },
+    {
+      "method": "PUT",
+      "path": "/notifications/read-all",
+      "group": "notification",
+      "screen": "SCR-NOTIF-LIST",
+      "javaMethod": "markAllRead",
+      "service": "notification-service"
+    },
+    {
+      "method": "POST",
+      "path": "/notifications/compose",
+      "group": "notification",
+      "screen": "SCR-NOTIF-COMPOSE",
+      "javaMethod": "compose",
+      "service": "notification-service"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications/templates",
+      "group": "notification",
+      "screen": "SCR-NOTIF-COMPOSE",
+      "javaMethod": "list",
+      "service": "notification-service"
+    }
+  ],
+  "missing": [
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "group": "auth",
+      "screen": "SCR-HOME"
+    },
+    {
+      "method": "PUT",
+      "path": "/auth/password",
+      "group": "auth",
+      "screen": "SCR-USER-FORM"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/verify-email",
+      "group": "auth",
+      "screen": "SCR-LOGIN"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/resend-verification",
+      "group": "auth",
+      "screen": "SCR-LOGIN"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/{id}/branch",
+      "group": "user",
+      "screen": "SCR-USER-FORM"
+    },
+    {
+      "method": "GET",
+      "path": "/medicines/categories",
+      "group": "category",
+      "screen": "SCR-MED-FORM"
+    },
+    {
+      "method": "POST",
+      "path": "/medicines/categories",
+      "group": "category",
+      "screen": "SCR-MED-FORM"
+    },
+    {
+      "method": "PUT",
+      "path": "/medicines/categories/{id}",
+      "group": "category",
+      "screen": "SCR-MED-FORM"
+    },
+    {
+      "method": "DELETE",
+      "path": "/medicines/categories/{id}",
+      "group": "category",
+      "screen": "SCR-MED-FORM"
+    },
+    {
+      "method": "GET",
+      "path": "/inventory/batches",
+      "group": "inventory",
+      "screen": "SCR-INV-LIST"
+    },
+    {
+      "method": "GET",
+      "path": "/inventory/batches/{id}",
+      "group": "inventory",
+      "screen": "SCR-INV-LIST"
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{id}/cancel",
+      "group": "order",
+      "screen": "SCR-ORDER-LIST"
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{id}/recompute",
+      "group": "order",
+      "screen": "SCR-ORDER-NEW"
+    },
+    {
+      "method": "GET",
+      "path": "/payments/{id}/invoice",
+      "group": "payment",
+      "screen": "SCR-INVOICE"
+    },
+    {
+      "method": "POST",
+      "path": "/payments/{id}/print",
+      "group": "payment",
+      "screen": "SCR-INVOICE"
+    },
+    {
+      "method": "POST",
+      "path": "/payments/webhook",
+      "group": "payment",
+      "screen": "SCR-PAYMENT"
+    },
+    {
+      "method": "GET",
+      "path": "/customers/code/{code}",
+      "group": "customer",
+      "screen": "SCR-CUST-FORM"
+    },
+    {
+      "method": "POST",
+      "path": "/reports/export/excel",
+      "group": "report",
+      "screen": "SCR-REPORT-EXPORT"
+    },
+    {
+      "method": "POST",
+      "path": "/reports/export/pdf",
+      "group": "report",
+      "screen": "SCR-REPORT-EXPORT"
+    },
+    {
+      "method": "DELETE",
+      "path": "/reports/schedules/{id}",
+      "group": "report",
+      "screen": "SCR-REPORT"
+    },
+    {
+      "method": "GET",
+      "path": "/search/medicines/{id}",
+      "group": "search",
+      "screen": "SCR-SEARCH"
+    },
+    {
+      "method": "POST",
+      "path": "/prescriptions/{id}/sign",
+      "group": "prescription",
+      "screen": "SCR-RX"
+    },
+    {
+      "method": "POST",
+      "path": "/prescriptions/{id}/print",
+      "group": "prescription",
+      "screen": "SCR-RX"
+    },
+    {
+      "method": "DELETE",
+      "path": "/prescriptions/{id}",
+      "group": "prescription",
+      "screen": "SCR-RX"
+    },
+    {
+      "method": "DELETE",
+      "path": "/notifications/{id}",
+      "group": "notification",
+      "screen": "SCR-NOTIF-LIST"
+    }
+  ],
+  "extra": [
+    {
+      "service": "category-service",
+      "controller": "CategoryController",
+      "httpMethod": "Get",
+      "path": "/categories",
+      "javaMethod": "list",
+      "key": "GET /categories"
+    },
+    {
+      "service": "category-service",
+      "controller": "CategoryController",
+      "httpMethod": "Get",
+      "path": "/categories/{id}",
+      "javaMethod": "getById",
+      "key": "GET /categories/{id}"
+    },
+    {
+      "service": "category-service",
+      "controller": "CategoryController",
+      "httpMethod": "Post",
+      "path": "/categories",
+      "javaMethod": "create",
+      "key": "POST /categories"
+    },
+    {
+      "service": "category-service",
+      "controller": "CategoryController",
+      "httpMethod": "Put",
+      "path": "/categories/{id}",
+      "javaMethod": "update",
+      "key": "PUT /categories/{id}"
+    },
+    {
+      "service": "category-service",
+      "controller": "CategoryController",
+      "httpMethod": "Delete",
+      "path": "/categories/{id}",
+      "javaMethod": "delete",
+      "key": "DELETE /categories/{id}"
+    },
+    {
+      "service": "customer-service",
+      "controller": "CustomerController",
+      "httpMethod": "Delete",
+      "path": "/customers/{id}",
+      "javaMethod": "delete",
+      "key": "DELETE /customers/{id}"
+    },
+    {
+      "service": "notification-service",
+      "controller": "NotificationController",
+      "httpMethod": "Post",
+      "path": "/notifications",
+      "javaMethod": "send",
+      "key": "POST /notifications"
+    },
+    {
+      "service": "notification-service",
+      "controller": "NotificationTemplateController",
+      "httpMethod": "Post",
+      "path": "/notifications/templates",
+      "javaMethod": "create",
+      "key": "POST /notifications/templates"
+    },
+    {
+      "service": "order-service",
+      "controller": "CouponController",
+      "httpMethod": "Put",
+      "path": "/coupons/{id}",
+      "javaMethod": "update",
+      "key": "PUT /coupons/{id}"
+    },
+    {
+      "service": "order-service",
+      "controller": "CouponController",
+      "httpMethod": "Delete",
+      "path": "/coupons/{id}",
+      "javaMethod": "deactivate",
+      "key": "DELETE /coupons/{id}"
+    },
+    {
+      "service": "order-service",
+      "controller": "OrderController",
+      "httpMethod": "Delete",
+      "path": "/orders/{id}",
+      "javaMethod": "cancel",
+      "key": "DELETE /orders/{id}"
+    },
+    {
+      "service": "prescription-service",
+      "controller": "PrescriptionController",
+      "httpMethod": "Put",
+      "path": "/prescriptions/{id}/sign",
+      "javaMethod": "sign",
+      "key": "PUT /prescriptions/{id}/sign"
+    },
+    {
+      "service": "report-service",
+      "controller": "ReportController",
+      "httpMethod": "Post",
+      "path": "/reports/revenue",
+      "javaMethod": "revenuePost",
+      "key": "POST /reports/revenue"
+    },
+    {
+      "service": "report-service",
+      "controller": "ReportController",
+      "httpMethod": "Post",
+      "path": "/reports/inventory",
+      "javaMethod": "inventoryPost",
+      "key": "POST /reports/inventory"
+    },
+    {
+      "service": "report-service",
+      "controller": "ReportController",
+      "httpMethod": "Post",
+      "path": "/reports/staff",
+      "javaMethod": "staff",
+      "key": "POST /reports/staff"
+    }
+  ],
+  "stats": {
+    "expectedB2B": 103,
+    "actual": 146,
+    "matched": 78,
+    "missing": 25,
+    "extra": 15,
+    "coveragePercent": 76
+  }
+}
