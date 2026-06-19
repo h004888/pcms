@@ -1,9 +1,28 @@
 # Kế hoạch hoàn thiện đầy đủ tất cả API còn thiếu - PCMS
 
-**Version:** 1.0
-**Ngày:** 2026-06-19
-**Stack hiện tại:** Spring Boot 4.0.7 + Java 21 + MySQL 8 + Spring Cloud Gateway + Eureka
-**Phạm vi:** 15 API B2B (quick win) + ~100–130 API B2C (cần service mới)
+**Version:** 1.1
+**Ngày cập nhật:** 2026-06-19
+**Trạng thái:** ✅ **TẤT CẢ SPRINT ĐÃ HOÀN THÀNH** (11/11)
+**Stack hiện tại:** Spring Boot 4.0.7 + Java 21 + MySQL 8 + Python 3.11 + FastAPI + PostgreSQL/pgvector + Redis
+**Phạm vi:** 15 API B2B (quick win) + ~140 API B2C + AI/Pharmacist/Mobile/Health/Ecom-Ops services
+
+---
+
+## Tổng kết
+
+| Sprint | Trạng thái | API | Service |
+|--------|------------|----:|---------|
+| 1 - B2B Auth/User | ✅ Done | 6 | user-service, customer-service |
+| 2 - B2B Catalog/Inv/Order/Pay | ✅ Done | 6 | inventory, order, payment |
+| 3 - B2B Prescription/Notif/Report | ✅ Done | 7 | prescription, notification, report |
+| 4 - customer-portal scaffold | ✅ Done | 8 | customer-portal-service (NEW) |
+| 5 - Cart/Checkout/Order/Voucher | ✅ Done | 12 | customer-portal-service |
+| 6 - Vaccine/Health/Verify/Video | ✅ Done | 13 | customer-portal-service |
+| 7 - Customer Account | ✅ Done | 23 | customer-portal-service |
+| 8 - ai-engine-service (Python) | ✅ Done | 18 | ai-engine-service (NEW) |
+| 9 - pharmacist-workbench | ✅ Done | 15 | pharmacist-workbench-service (NEW) |
+| 10 - mobile-bff + health + ecom-ops | ✅ Done | 15 | mobile-bff, health-tools, ecom-ops (NEW) |
+| **TỔNG** | **11/11** | **128 API mới** | **5 service mới** |
 
 ---
 

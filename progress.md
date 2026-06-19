@@ -1,54 +1,64 @@
 # Progress - PCMS API Completion Plan
 
 ## Status
+
 **Sprint 1-11 ✅ ALL DONE** (11/11 sprints complete)
 
 ## Final Summary
 
 ### Sprint 1 - B2B Auth/User ✅ (15/15 endpoints)
+
 - 6 new APIs: /auth/me, /auth/password, /auth/verify-email, /auth/resend-verification, /customers/code/{code}, /users/{id}/branch
 - EmailVerificationToken entity + repository + service
 - 10 new files + 6 modified controllers
 
 ### Sprint 2 - B2B Catalog/Inv/Order/Pay ✅ (16/16 endpoints)
+
 - 6 new APIs: /inventory/batches, /orders/{id}/cancel, /orders/{id}/recompute, /payments/{id}/invoice, /payments/{id}/print, /payments/webhook
 - 3 new DTOs (OrderRecomputeResponse, InvoiceResponse, PaymentsWebhookAliasController)
 - 8 modified files
 - BR04 + BR06 logic + circuit breaker
 
 ### Sprint 3 - B2B Prescription/Notif/Report ✅ (17/17 endpoints)
+
 - 7 new endpoints: /prescriptions/{id}/sign, /print, DELETE; /notifications/{id} DELETE; /reports/export/{excel,pdf}; /reports/schedules/{id} DELETE
 - 3 new services (Excel/PDF export stubs) + 9 modified files
 - Soft-delete pattern, audit, error handling
 
 ### Sprint 4 - customer-portal-service scaffold ✅ (8/8 endpoints)
+
 - New microservice on port 8093 with DB pcms_customer_portal
 - 5 entities, 5 repos, 4 Feign clients, 2 controllers, 3 services, 33 files
 - 8 B2C APIs: /shop/home, /shop/pdp, /shop/search, /store/locator, /shop/lookup/{drug,ingredient,herb}
 
 ### Sprint 5 - Cart/Checkout/Order/Voucher/Installment ✅ (12/12 endpoints)
+
 - 4 entities: Cart, CartItem, Voucher, VoucherUsage
 - 4 controllers, 5 service impls, 1 Feign client (PaymentClient)
 - BR04 logic, voucher validation, installment PMT formula
 
 ### Sprint 6 - Vaccine/Health/Verify/Video ✅ (13/13 endpoints)
+
 - 6 entities (Vaccine*, HealthArticle, DiseaseInfo, BatchVerification)
 - 2 new controllers: HealthContentController, VideoAdminController
 - 2 new service impls
 - 7 new DTOs
 
 ### Sprint 7 - Customer Account ✅ (23/23 endpoints)
+
 - 6 entities: CustomerAddress, CustomerFamily, CustomerFavorite, CustomerNotificationSetting, WalletTier, WalletTransaction
 - 6 controllers, 5 service impls, 6 repos
 - Auth/ownership check, transactional default address, wallet redeem
 
 ### Sprint 8 - ai-engine-service (Python FastAPI) ✅ (18/18 endpoints)
+
 - New Python service on port 8094 with PostgreSQL+pgvector + Redis
 - 10 API routers, 20+ Pydantic models
 - 12 AI features: chatbot RAG, OCR, drug-check, semantic-search, forecast, anomaly, summary, moderation, dosage, cross-sell
 - Chat sessions, escalation to human
 
 ### Sprint 9 - pharmacist-workbench-service ✅ (15/15 endpoints)
+
 - New service on port 8095 with DB pcms_pharmacist_workbench
 - 3 entities: Consultation, FollowUpTask, VipMark
 - 5 controllers: Customer360Controller, ConsultationController, FollowUpController, VipMarkController, RxAiController
@@ -57,6 +67,7 @@
 - Scheduled cron for follow-up dispatch
 
 ### Sprint 10 - mobile-bff + health-tools + ecom-ops ✅ (15/15 endpoints)
+
 - **mobile-bff** (port 8096): 8 endpoints (mobile home, nearby-pharmacies, medication reminders)
 - **health-tools-service** (port 8097): 5 endpoints (8 health quizzes with risk-level scoring)
 - **ecom-ops-service** (port 8098): 7 endpoints (admin + public flash sales)
@@ -113,6 +124,7 @@
 | UC19 | E-commerce Operations | ecom-ops-service | **100%** (4 screens) |
 
 ## Notes
+
 - All 19 Use Cases (UC01-UC19) from SRS now have at least one operational endpoint
 - All code follows existing project conventions (BaseEntity, BusinessException+MSG, PageResponse, Feign+CircuitBreaker, OpenAPI annotations)
 - Maven not available - cannot run `mvn clean verify` to verify Java compilation
