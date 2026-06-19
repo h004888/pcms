@@ -5,6 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
@@ -60,5 +63,77 @@ public interface OrderClient {
             log.warn("estimateLifetimeSpend failed for {}: {}", customerId, e.getMessage());
         }
         return BigDecimal.ZERO;
+    }
+
+    /**
+     * POST /orders — create a new order.
+     * Used by CheckoutService to create an order from the B2C cart.
+     */
+    @PostMapping("/orders")
+    @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackCreateOrder")
+    Map<String, Object> createOrder(@RequestBody Map<String, Object> orderRequest);
+
+    default Map<String, Object> fallbackCreateOrder(Map<String, Object> orderRequest, Throwable t) {
+        log.error("order-service unavailable while creating order: {}", t.getMessage());
+        return Map.of("id", "",
+                      "orderNumber", "",
+                      "status", "FAILED",
+                      "message", "Order service temporarily unavailable");
+    }
+
+    /**
+     * GET /orders/{id} — get order by ID.
+     * Used by OrderTrackingService to fetch order details for tracking.
+     */
+    @GetMapping("/orders/{id}")
+    @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackGetById")
+    Map<String, Object> getById(@PathVariable("id") String orderId);
+
+    default Map<String, Object> fallbackGetById(String orderId, Throwable t) {
+        log.warn("order-service unavailable while fetching order {}: {}", orderId, t.getMessage());
+        return Map.of();
+    }
+
+    /**
+     * GET /orders/number/{orderNumber} — get order by number.
+     * Used by OrderTrackingService to fetch order details by order number.
+     */
+    @GetMapping("/orders/number/{orderNumber}")
+    @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackGetByNumber")
+    Map<String, Object> getByNumber(@PathVariable("orderNumber") String orderNumber);
+
+    default Map<String, Object> fallbackGetByNumber(String orderNumber, Throwable t) {
+        log.warn("order-service unavailable while fetching order {}: {}", orderNumber, t.getMessage());
+        return Map.of();
+    }
+
+    /**
+     * GET /orders?customerId=...&status=...&page=0&size=20
+     * Used by OrderTrackingService to list order history with pagination.
+     */
+    @GetMapping("/orders")
+    @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackListForHistory")
+    Map<String, Object> listForHistory(
+            @RequestParam(name = "customerId") String customerId,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size);
+
+    default Map<String, Object> fallbackListForHistory(String customerId, int page, int size, Throwable t) {
+        log.warn("order-service unavailable while listing orders for {}: {}", customerId, t.getMessage());
+        return Map.of("data", java.util.List.of(),
+                      "page", page, "size", size, "total", 0, "totalPages", 0);
+    }
+
+    /**
+     * GET /payments/order/{orderId} — get payment by order ID.
+     * Used to get paymentUrl for checkout confirm response.
+     */
+    @GetMapping("/payments/order/{orderId}")
+    @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackGetPaymentByOrder")
+    Map<String, Object> getPaymentByOrder(@PathVariable("orderId") String orderId);
+
+    default Map<String, Object> fallbackGetPaymentByOrder(String orderId, Throwable t) {
+        log.warn("order-service unavailable while fetching payment for order {}: {}", orderId, t.getMessage());
+        return Map.of();
     }
 }
