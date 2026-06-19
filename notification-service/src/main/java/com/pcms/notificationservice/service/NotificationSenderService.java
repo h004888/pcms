@@ -58,4 +58,19 @@ public interface NotificationSenderService {
     PageResponse<NotificationResponse> list(UUID recipientId, NotificationStatus status, int page, int size);
 
     int markAllAsRead(UUID recipientId);
+
+    /**
+     * TICKET-304: Soft-delete a notification for the given current user.
+     * Only the recipient can delete their own notification; other callers
+     * receive an {@code AccessDeniedException} (mapped to 403 by the
+     * GlobalExceptionHandler).
+     *
+     * @param id            notification id
+     * @param currentUserId id of the user performing the delete (from JWT)
+     * @return updated {@link NotificationResponse}
+     * @throws ResourceNotFoundException if the notification does not exist
+     * @throws org.springframework.security.access.AccessDeniedException if the
+     *         current user is not the recipient
+     */
+    NotificationResponse softDelete(UUID id, UUID currentUserId);
 }

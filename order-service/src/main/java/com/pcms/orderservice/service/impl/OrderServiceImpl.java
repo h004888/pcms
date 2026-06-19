@@ -9,6 +9,7 @@ import com.pcms.orderservice.client.PrescriptionClient;
 import com.pcms.orderservice.entity.Coupon;
 import com.pcms.orderservice.dto.CreateOrderRequest;
 import com.pcms.orderservice.dto.OrderItemRequest;
+import com.pcms.orderservice.dto.OrderRecomputeResponse;
 import com.pcms.orderservice.dto.OrderResponse;
 import com.pcms.orderservice.dto.UpdateOrderRequest;
 import com.pcms.orderservice.entity.Order;
@@ -33,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -416,6 +418,88 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         return OrderResponse.from(orderRepository.save(order));
+    }
+
+    /**
+     * TICKET-203: SDD §6.8 POST /orders/{id}/recompute.
+     * Re-applies BR04 bulk discount (5% when qty >= 10 same medicine)
+     * and checks stock availability via inventory-service.
+     *
+     * <p>Only recomputes for PENDING_PAYMENT orders (other states are
+     * frozen — recompute is a pre-place helper).
+     *
+     * <p>Does NOT persist the new totals; the caller is expected to call
+     * update() to materialize them, or simply place the order via create().
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public OrderRecomputeResponse recompute(UUID orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidOperationException(
+                    "Only PENDING_PAYMENT orders can be recomputed",
+                    "Chỉ có thể tính lại đơn hàng đang chờ thanh toán");
+        }
+
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+        List<OrderRecomputeResponse.StockWarning> stockWarnings = new ArrayList<>();
+
+        for (OrderItem item : order.getItems()) {
+            // Line discount: BR04 5% when qty >= 10
+            BigDecimal lineSubtotal = item.getUnitPrice()
+                    .multiply(BigDecimal.valueOf(item.getQty()));
+            BigDecimal lineDiscount = BigDecimal.ZERO;
+            if (item.getQty() >= bulkDiscountThreshold) {
+                lineDiscount = lineSubtotal.multiply(bulkDiscountRate)
+                        .setScale(2, RoundingMode.HALF_UP);
+            }
+            subtotal = subtotal.add(lineSubtotal);
+            totalDiscount = totalDiscount.add(lineDiscount);
+
+            // Stock check via inventory-service (best-effort; tolerant of unavailable service)
+            try {
+                Map<String, Object> stock = inventoryClient.getAvailableStock(
+                        item.getMedicineId(), order.getBranchId());
+                if (stock != null && stock.get("availableQty") != null) {
+                    int available = ((Number) stock.get("availableQty")).intValue();
+                    if (available < item.getQty()) {
+                        String severity = available == 0 ? "BLOCK"
+                                : (available < item.getQty() / 2 ? "WARNING" : "INFO");
+                        stockWarnings.add(new OrderRecomputeResponse.StockWarning(
+                                item.getMedicineId(),
+                                item.getMedicineName(),
+                                item.getQty(),
+                                available,
+                                severity));
+                    }
+                }
+            } catch (Exception e) {
+                // Inventory service unavailable — emit INFO warning so caller knows
+                log.warn("Inventory check failed for medicine {}: {}",
+                        item.getMedicineId(), e.getMessage());
+                stockWarnings.add(new OrderRecomputeResponse.StockWarning(
+                        item.getMedicineId(),
+                        item.getMedicineName(),
+                        item.getQty(),
+                        -1, // unknown
+                        "INFO"));
+            }
+        }
+
+        // Apply coupon on top of BR04 (matches create() flow)
+        BigDecimal baseTotal = subtotal.subtract(totalDiscount);
+        Coupon appliedCoupon = couponService.findApplicableCoupon(order.getCouponCode());
+        BigDecimal couponDiscount = couponService.calculateDiscount(appliedCoupon, baseTotal);
+        BigDecimal finalDiscount = totalDiscount.add(couponDiscount);
+
+        // Update in-memory entity for the response (not persisted)
+        order.setSubtotal(subtotal);
+        order.setDiscount(finalDiscount);
+        order.setTotal(baseTotal.subtract(couponDiscount));
+
+        return OrderRecomputeResponse.from(order, stockWarnings);
     }
 
     /**

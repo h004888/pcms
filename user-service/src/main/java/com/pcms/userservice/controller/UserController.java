@@ -1,5 +1,6 @@
 package com.pcms.userservice.controller;
 
+import com.pcms.userservice.dto.request.AssignBranchRequest;
 import com.pcms.userservice.dto.request.ChangeUserRoleRequest;
 import com.pcms.userservice.dto.request.ChangeUserStatusRequest;
 import com.pcms.userservice.dto.request.CreateUserRequest;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -129,6 +131,19 @@ public class UserController {
     public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
         userService.softDelete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * PUT /api/v1/users/{id}/branch - TICKET-106 (FR2.3).
+     * Assigns a user to a branch. Requires Admin role - enforced at the
+     * API Gateway via JWT claims. The actor id (admin performing the
+     * change) is captured from {@code X-User-Id} for the audit trail.
+     */
+    @PutMapping("/{id}/branch")
+    public ResponseEntity<UserResponse> assignBranch(@PathVariable UUID id,
+            @Valid @RequestBody AssignBranchRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) String actorIdHeader) {
+        return ResponseEntity.ok(userService.assignBranch(id, request, actorIdHeader));
     }
 
     /** GET /api/v1/users/role/{role} - Get users by role */

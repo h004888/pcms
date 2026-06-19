@@ -3,6 +3,7 @@ package com.pcms.paymentservice.controller;
 import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.paymentservice.dto.CreatePaymentRequest;
 import com.pcms.common.dto.PageResponse;
+import com.pcms.paymentservice.dto.InvoiceResponse;
 import com.pcms.paymentservice.dto.PaymentResponse;
 import com.pcms.paymentservice.dto.RefundHistoryResponse;
 import com.pcms.paymentservice.dto.RefundPaymentRequest;
@@ -77,5 +78,33 @@ public class PaymentController {
     @GetMapping("/{id}/refund-history")
     public ResponseEntity<RefundHistoryResponse> refundHistory(@PathVariable UUID id) {
         return ResponseEntity.ok(paymentService.refundHistory(id));
+    }
+
+    /**
+     * TICKET-204: GET /api/v1/payments/{id}/invoice (SDD §6.9 / SCR-INVOICE).
+     * Aggregate Payment + Order + Customer + Branch into a printable invoice.
+     */
+    @GetMapping("/{id}/invoice")
+    public ResponseEntity<InvoiceResponse> getInvoice(@PathVariable UUID id) {
+        return ResponseEntity.ok(paymentService.getInvoice(id));
+    }
+
+    /**
+     * TICKET-205: POST /api/v1/payments/{id}/print (SDD §6.9 / SCR-INVOICE).
+     * Stub: queues a print job on the default printer. In production this
+     * would call the printer gateway (LAN/IPP) or return a PDF blob.
+     */
+    @PostMapping("/{id}/print")
+    public ResponseEntity<java.util.Map<String, String>> printInvoice(
+            @PathVariable UUID id,
+            @RequestParam(value = "printerId", required = false) String printerId) {
+        // Validate payment exists
+        paymentService.getById(id);
+        String resolvedPrinter = printerId == null || printerId.isBlank() ? "default" : printerId;
+        // TODO: integrate with printer gateway (IPP/CUPS) in follow-up sprint
+        return ResponseEntity.accepted().body(java.util.Map.of(
+                "status", "queued",
+                "printerId", resolvedPrinter,
+                "paymentId", id.toString()));
     }
 }

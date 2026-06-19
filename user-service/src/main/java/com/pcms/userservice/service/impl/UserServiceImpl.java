@@ -7,12 +7,17 @@ import com.pcms.common.exception.InvalidCredentialsException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.common.security.JwtClaims;
+import com.pcms.userservice.dto.request.AssignBranchRequest;
+import com.pcms.userservice.dto.request.ChangePasswordRequest;
 import com.pcms.userservice.dto.request.CreateUserRequest;
 import com.pcms.userservice.dto.request.ForgotPasswordRequest;
 import com.pcms.userservice.dto.request.LoginRequest;
+import com.pcms.userservice.dto.request.ResendVerificationRequest;
 import com.pcms.userservice.dto.request.ResetPasswordRequest;
 import com.pcms.userservice.dto.request.UpdateUserRequest;
+import com.pcms.userservice.dto.request.VerifyEmailRequest;
 import com.pcms.userservice.dto.response.AuditLogResponse;
+import com.pcms.userservice.dto.response.CurrentUserResponse;
 import com.pcms.userservice.dto.response.DashboardStatsResponse;
 import com.pcms.userservice.dto.response.LoginResponse;
 import com.pcms.userservice.dto.response.PasswordResetResponse;
@@ -30,6 +35,7 @@ import com.pcms.userservice.repository.UserRepository;
 import com.pcms.userservice.enums.Role;
 import com.pcms.userservice.enums.UserStatus;
 import com.pcms.userservice.security.JwtService;
+import com.pcms.userservice.service.EmailVerificationService;
 import com.pcms.userservice.service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -68,6 +74,7 @@ public class UserServiceImpl implements UserService {
     private final AuditLogRepository auditLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final EmailVerificationService emailVerificationService;
 
     public UserServiceImpl(UserRepository repository,
             RefreshTokenRepository refreshTokenRepository,
@@ -75,7 +82,8 @@ public class UserServiceImpl implements UserService {
             PasswordResetTokenRepository passwordResetTokenRepository,
             AuditLogRepository auditLogRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+            JwtService jwtService,
+            EmailVerificationService emailVerificationService) {
         this.repository = repository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.tokenBlacklistRepository = tokenBlacklistRepository;
@@ -83,6 +91,7 @@ public class UserServiceImpl implements UserService {
         this.auditLogRepository = auditLogRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Override
@@ -404,6 +413,123 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public Page<AuditLogResponse> auditLogs(UUID userId, String action, Pageable pageable) {
         return auditLogRepository.search(userId, action, pageable).map(AuditLogResponse::from);
+    }
+
+    // ====================================================================
+    // Sprint 1 - new auth/user APIs (TICKET-101/102/106 + email verify)
+    // ====================================================================
+
+    /**
+     * TICKET-101: Return the profile of the currently authenticated user
+     * along with their effective permission list (derived from role).
+     *
+     * <p>Called by the frontend right after login (SCR-HOME bootstrap) and
+     * on app reload to refresh the auth context.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public CurrentUserResponse me(UUID userId) {
+        if (userId == null) {
+            throw new InvalidCredentialsException();
+        }
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        return new CurrentUserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getPhone(),
+                user.getRole(),
+                user.getBranchId(),
+                user.getStatus(),
+                Boolean.TRUE.equals(user.getEmailVerified()),
+                user.getLastLoginAt(),
+                user.getCreatedAt(),
+                CurrentUserResponse.permissionsFor(user.getRole()));
+    }
+
+    /**
+     * TICKET-102: Change the currently authenticated user's password
+     * (FR1.3, BR05). On success the failure counter is reset, the lock
+     * window is cleared, and all active refresh tokens are revoked
+     * (forces re-login on other devices).
+     */
+    @Override
+    public void changePassword(UUID userId, ChangePasswordRequest request, String ipAddress) {
+        if (userId == null) {
+            throw new InvalidCredentialsException();
+        }
+        if (!Objects.equals(request.newPassword(), request.confirmPassword())) {
+            throw new InvalidOperationException(
+                    "Password confirmation does not match",
+                    "Mật khẩu xác nhận không khớp");
+        }
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException();
+        }
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new InvalidOperationException(
+                    "New password must be different from the current one",
+                    "Mật khẩu mới phải khác mật khẩu hiện tại");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setFailedLoginCount(0);
+        user.setLockedUntil(null);
+        if (user.getStatus() == UserStatus.LOCKED) {
+            user.setStatus(UserStatus.ACTIVE);
+        }
+        repository.save(user);
+        // Revoke outstanding refresh tokens (force re-login on other devices)
+        refreshTokenRepository.revokeAllActiveByUserId(user.getId(), LocalDateTime.now());
+        audit("PASSWORD_CHANGE", user.getId(), user.getId(), ipAddress,
+                "Password changed by user");
+    }
+
+    /**
+     * TICKET-106: Assign a user to a branch (FR2.3). The branchId is
+     * expected to have been validated upstream by the API gateway
+     * (which routes to branch-service); here we just persist the value
+     * and write an audit log entry.
+     */
+    @Override
+    public UserResponse assignBranch(UUID userId, AssignBranchRequest request, String actorId) {
+        if (request == null || request.branchId() == null) {
+            throw new InvalidOperationException(
+                    "branchId is required",
+                    "branchId không được để trống");
+        }
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        UUID previous = user.getBranchId();
+        user.setBranchId(request.branchId());
+        User saved = repository.save(user);
+        UUID actor = parseUuidOrNull(actorId);
+        audit("USER_BRANCH_ASSIGNED", actor, userId, null,
+                "Assigned branch " + request.branchId() + " (was " + previous + ")");
+        return toResponse(saved);
+    }
+
+    @Override
+    public void verifyEmail(VerifyEmailRequest request, String ipAddress) {
+        emailVerificationService.verifyEmail(request.token(), ipAddress);
+    }
+
+    @Override
+    public void resendVerification(ResendVerificationRequest request, String ipAddress) {
+        emailVerificationService.resendVerification(request.email(), ipAddress);
+    }
+
+    private static UUID parseUuidOrNull(String value) {
+        if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     private void ensureUserCanReceiveToken(User user) {

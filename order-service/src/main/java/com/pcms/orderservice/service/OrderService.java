@@ -1,6 +1,7 @@
 package com.pcms.orderservice.service;
 
 import com.pcms.orderservice.dto.CreateOrderRequest;
+import com.pcms.orderservice.dto.OrderRecomputeResponse;
 import com.pcms.orderservice.dto.OrderResponse;
 import com.pcms.orderservice.dto.UpdateOrderRequest;
 import com.pcms.orderservice.enums.OrderStatus;
@@ -50,4 +51,15 @@ public interface OrderService {
 
     /** AT2 of UC06: Cancel order; restore stock if previously PAID (BR06). */
     OrderResponse cancel(UUID orderId, UUID actorId);
+
+    /**
+     * Re-apply BR04 bulk discount and check stock availability for a
+     * PENDING_PAYMENT order (SDD §6.8 POST /orders/{id}/recompute).
+     *
+     * <p>
+     * Does NOT persist. Returns recomputed totals plus per-line stock
+     * warnings so the caller can decide whether to adjust quantities
+     * before placing the order.
+     */
+    OrderRecomputeResponse recompute(UUID orderId);
 }

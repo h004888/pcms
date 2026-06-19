@@ -4,5 +4,7 @@ public enum NotificationStatus {
     PENDING,
     SENT,
     FAILED,
-    READ
+    READ,
+    /** TICKET-304: soft-deleted by the recipient. Excluded from list queries. */
+    DELETED
 }

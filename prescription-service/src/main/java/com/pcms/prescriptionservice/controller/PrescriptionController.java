@@ -76,6 +76,16 @@ public class PrescriptionController {
         return ResponseEntity.ok(prescriptionService.sign(id));
     }
 
+    /**
+     * TICKET-301: POST alias for sign - aligns with SDD §6.14 (POST /sign).
+     * Some HTTP clients/sdks generate POST by default; keeping both avoids
+     * 405 errors.
+     */
+    @PostMapping("/{id}/sign")
+    public ResponseEntity<PrescriptionResponse> signPost(@PathVariable UUID id) {
+        return ResponseEntity.ok(prescriptionService.sign(id));
+    }
+
     /** POST /api/v1/prescriptions/{id}/link-order?orderId=... - B-16 */
     @PostMapping("/{id}/link-order")
     public ResponseEntity<PrescriptionResponse> linkOrder(@PathVariable UUID id,
@@ -86,5 +96,33 @@ public class PrescriptionController {
     @GetMapping("/{id}/print")
     public ResponseEntity<PrescriptionResponse> print(@PathVariable UUID id) {
         return ResponseEntity.ok(prescriptionService.print(id));
+    }
+
+    /**
+     * TICKET-302: POST alias for print - aligns with SDD §6.14 (POST /print).
+     * Frontend sometimes triggers print via POST when generating a downloadable
+     * artifact.
+     */
+    @PostMapping("/{id}/print")
+    public ResponseEntity<PrescriptionResponse> printPost(@PathVariable UUID id) {
+        return ResponseEntity.ok(prescriptionService.print(id));
+    }
+
+    /**
+     * TICKET-303: DELETE /prescriptions/{id} - cancel a prescription.
+     * Allowed only when:
+     *   - status = DRAFT (anytime), OR
+     *   - status = SIGNED and {@code orderId} is null (i.e. not yet linked
+     *     to a paid order).
+     * Throws {@code BusinessException} (409) if the prescription is linked
+     * to an order.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<PrescriptionResponse> cancel(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
+            @RequestHeader(value = "X-Actor-Id", required = false) UUID actorHeader) {
+        UUID actor = userId != null ? userId : actorHeader;
+        return ResponseEntity.ok(prescriptionService.cancel(id, actor));
     }
 }

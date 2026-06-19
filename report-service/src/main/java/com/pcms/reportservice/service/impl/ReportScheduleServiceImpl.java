@@ -1,6 +1,7 @@
 package com.pcms.reportservice.service.impl;
 
 import com.pcms.common.exception.InvalidOperationException;
+import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.reportservice.dto.CreateReportScheduleRequest;
 import com.pcms.reportservice.dto.ReportScheduleResponse;
 import com.pcms.reportservice.entity.ReportSchedule;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -66,6 +68,21 @@ public class ReportScheduleServiceImpl implements ReportScheduleService {
                 .stream()
                 .map(ReportScheduleResponse::from)
                 .toList();
+    }
+
+    @Override
+    public ReportScheduleResponse cancel(UUID id) {
+        ReportSchedule schedule = reportScheduleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ReportSchedule", id));
+        if (!schedule.isActive()) {
+            // Idempotent: already cancelled.
+            return ReportScheduleResponse.from(schedule);
+        }
+        schedule.setActive(false);
+        schedule.setLastStatus("CANCELLED");
+        schedule.setLastMessage("Cancelled by user");
+        log.info("Report schedule {} cancelled", id);
+        return ReportScheduleResponse.from(reportScheduleRepository.save(schedule));
     }
 
     @Override

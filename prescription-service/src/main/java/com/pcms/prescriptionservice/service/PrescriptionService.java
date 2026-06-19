@@ -28,4 +28,12 @@ public interface PrescriptionService {
      * Print/export a prescription in printable form (HTML/JSON placeholder).
      */
     PrescriptionResponse print(UUID id);
+
+    /**
+     * TICKET-303: Cancel a prescription (soft-delete).
+     * Allowed only if {@code status = DRAFT} or the prescription has not yet
+     * been linked to a PAID order. Throws {@code BusinessException} with
+     * MSG19 otherwise (caller may need to re-print the underlying message).
+     */
+    PrescriptionResponse cancel(UUID id, UUID actorId);
 }

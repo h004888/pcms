@@ -13,6 +13,8 @@ import com.pcms.prescriptionservice.entity.Prescription;
 import com.pcms.prescriptionservice.enums.PrescriptionStatus;
 import com.pcms.prescriptionservice.repository.PrescriptionRepository;
 import com.pcms.prescriptionservice.service.PrescriptionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class PrescriptionServiceImpl implements PrescriptionService {
+
+    private static final Logger log = LoggerFactory.getLogger(PrescriptionServiceImpl.class);
 
     private final PrescriptionRepository prescriptionRepository;
     private final UserClient userClient;
@@ -162,6 +166,47 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     @Transactional(readOnly = true)
     public PrescriptionResponse print(UUID id) {
         return getById(id);
+    }
+
+    @Override
+    public PrescriptionResponse cancel(UUID id, UUID actorId) {
+        Prescription p = prescriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Prescription", id));
+
+        // Already cancelled - idempotent: return current state.
+        if (p.getStatus() == PrescriptionStatus.CANCELLED) {
+            return toResponse(p);
+        }
+
+        // Allow cancel when still a DRAFT.
+        if (p.getStatus() == PrescriptionStatus.DRAFT) {
+            p.setStatus(PrescriptionStatus.CANCELLED);
+            log.info("Prescription {} cancelled (DRAFT) by actor={}", id, actorId);
+            return toResponse(prescriptionRepository.save(p));
+        }
+
+        // SIGNED prescriptions: only allow cancel if not yet linked to any order.
+        // If an order is linked, refuse to cancel (downstream order may have
+        // already been PAID; cancelling here would break the audit trail).
+        if (p.getStatus() == PrescriptionStatus.SIGNED) {
+            if (p.getOrderId() == null) {
+                p.setStatus(PrescriptionStatus.CANCELLED);
+                log.info("Prescription {} cancelled (SIGNED, no order) by actor={}", id, actorId);
+                return toResponse(prescriptionRepository.save(p));
+            }
+            // Linked to an order - block with MSG19 (re-use the cancel-conflict
+            // message from the order UC). The orderId is included in the message
+            // for the client to display.
+            throw new InvalidOperationException(
+                    "Cannot cancel a prescription linked to an order (orderId=" + p.getOrderId() + ")",
+                    "Không thể huỷ đơn thuốc đã liên kết với đơn hàng (mã đơn: " + p.getOrderId() + "). Vui lòng xử lý qua đơn hàng.",
+                    409);
+        }
+
+        // Defensive fallback (should be unreachable).
+        throw new InvalidOperationException(
+                "Cannot cancel prescription in status " + p.getStatus(),
+                "Không thể huỷ đơn thuốc ở trạng thái " + p.getStatus());
     }
 
     private void validate(CreatePrescriptionRequest request) {

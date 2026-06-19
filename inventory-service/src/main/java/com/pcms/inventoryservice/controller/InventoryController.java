@@ -50,8 +50,29 @@ public class InventoryController {
         return inventoryService.listBatches(resolveBranchId(branchId, currentBranchId));
     }
 
+    /**
+     * GET /api/v1/inventory/batches - SDD §6.7 alias for /inventory.
+     * List stock per branch (paginated when supported).
+     * Used by SCR-INV-LIST to align with SRS screen definition.
+     */
+    @GetMapping("/batches")
+    public List<BatchResponse> listBatches(
+            @RequestParam(required = false) UUID branchId,
+            @RequestHeader(value = "X-Branch-Id", required = false) UUID currentBranchId) {
+        return inventoryService.listBatches(resolveBranchId(branchId, currentBranchId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<BatchResponse> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(inventoryService.getBatchById(id));
+    }
+
+    /**
+     * GET /api/v1/inventory/batches/{id} - SDD §6.7 alias for /inventory/{id}.
+     * Get batch detail.
+     */
+    @GetMapping("/batches/{id}")
+    public ResponseEntity<BatchResponse> getBatchById(@PathVariable UUID id) {
         return ResponseEntity.ok(inventoryService.getBatchById(id));
     }
 

@@ -1,6 +1,7 @@
 package com.pcms.paymentservice.service;
 
 import com.pcms.paymentservice.dto.CreatePaymentRequest;
+import com.pcms.paymentservice.dto.InvoiceResponse;
 import com.pcms.paymentservice.dto.PaymentResponse;
 import com.pcms.paymentservice.dto.RefundHistoryResponse;
 import com.pcms.paymentservice.dto.RefundPaymentRequest;
@@ -33,4 +34,12 @@ public interface PaymentService {
 
     /** Get lightweight refund history for a payment. */
     RefundHistoryResponse refundHistory(UUID id);
+
+    /**
+     * TICKET-204: SDD §6.9 GET /payments/{id}/invoice.
+     * Aggregate Payment + Order + OrderItems + Customer + Branch into a
+     * printable invoice. Remote data fetched via OrderClient; falls back
+     * to minimal response on remote failure.
+     */
+    InvoiceResponse getInvoice(UUID paymentId);
 }

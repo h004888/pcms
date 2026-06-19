@@ -49,6 +49,17 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.getByPhone(phone));
     }
 
+    /**
+     * GET /api/v1/customers/code/{code} - TICKET-105 (FR8.2).
+     * Looks up a customer by the auto-generated CUST-yyyy#### code
+     * (displayed on membership cards and printed receipts). Returns 404
+     * with MSG31 if the code is unknown.
+     */
+    @GetMapping("/code/{code}")
+    public ResponseEntity<CustomerResponse> getByCode(@PathVariable String code) {
+        return ResponseEntity.ok(customerService.getByCode(code));
+    }
+
     @GetMapping("/{id}/tier")
     public ResponseEntity<Map<String, Object>> getTier(@PathVariable UUID id) {
         return ResponseEntity.ok(Map.of("customerId", id, "tier", customerService.getTier(id)));

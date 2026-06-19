@@ -261,6 +261,34 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
         return notificationRepository.markAllAsRead(recipientId, LocalDateTime.now());
     }
 
+    @Override
+    public NotificationResponse softDelete(UUID id, UUID currentUserId) {
+        if (currentUserId == null) {
+            // Defensive: gateway should always forward a user id. If not, treat
+            // as forbidden (don't trust an unauthenticated delete).
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Current user id is required");
+        }
+        Notification n = notificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification", id));
+
+        // Already soft-deleted - idempotent return.
+        if (n.getStatus() == NotificationStatus.DELETED) {
+            return toResponse(n);
+        }
+
+        // Authorization check: only the recipient can delete their own notification.
+        if (!currentUserId.equals(n.getRecipientId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Only the recipient can delete this notification");
+        }
+
+        n.setStatus(NotificationStatus.DELETED);
+        Notification saved = notificationRepository.save(n);
+        log.info("Notification {} soft-deleted by user {}", id, currentUserId);
+        return toResponse(saved);
+    }
+
     private void markSent(Notification n) {
         log.info("In-app notification persisted: {}", n.getTitle());
     }

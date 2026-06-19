@@ -4,11 +4,14 @@ import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.reportservice.dto.InventoryReportRequest;
 import com.pcms.reportservice.dto.InventoryReportResponse;
 import com.pcms.reportservice.dto.CreateReportScheduleRequest;
+import com.pcms.reportservice.dto.ReportExportRequest;
 import com.pcms.reportservice.dto.ReportScheduleResponse;
 import com.pcms.reportservice.dto.RevenueReportRequest;
 import com.pcms.reportservice.dto.RevenueReportResponse;
 import com.pcms.reportservice.dto.StaffReportRequest;
 import com.pcms.reportservice.dto.StaffReportResponse;
+import com.pcms.reportservice.service.ExcelExportService;
+import com.pcms.reportservice.service.PdfExportService;
 import com.pcms.reportservice.service.ReportScheduleService;
 import com.pcms.reportservice.service.ReportService;
 import jakarta.validation.Valid;
@@ -33,10 +36,17 @@ public class ReportController {
 
     private final ReportService reportService;
     private final ReportScheduleService reportScheduleService;
+    private final ExcelExportService excelExportService;
+    private final PdfExportService pdfExportService;
 
-    public ReportController(ReportService reportService, ReportScheduleService reportScheduleService) {
+    public ReportController(ReportService reportService,
+                            ReportScheduleService reportScheduleService,
+                            ExcelExportService excelExportService,
+                            PdfExportService pdfExportService) {
         this.reportService = reportService;
         this.reportScheduleService = reportScheduleService;
+        this.excelExportService = excelExportService;
+        this.pdfExportService = pdfExportService;
     }
 
     /**
@@ -157,6 +167,37 @@ public class ReportController {
     @GetMapping("/schedules")
     public ResponseEntity<List<ReportScheduleResponse>> schedules() {
         return ResponseEntity.ok(reportScheduleService.list());
+    }
+
+    /**
+     * TICKET-305: POST /reports/export/excel - queue an Excel export.
+     * Returns a job descriptor ({@code status=queued}) instead of the file
+     * itself; the future async job will materialise the .xlsx and serve it
+     * at {@code /reports/export/download/{jobId}}.
+     */
+    @PostMapping("/export/excel")
+    public ResponseEntity<Map<String, Object>> exportExcel(
+            @Valid @RequestBody ReportExportRequest request) {
+        return ResponseEntity.accepted().body(excelExportService.queueExcelExport(request));
+    }
+
+    /**
+     * TICKET-306: POST /reports/export/pdf - queue a PDF export. Same
+     * contract as {@link #exportExcel(ReportExportRequest)} but format=pdf.
+     */
+    @PostMapping("/export/pdf")
+    public ResponseEntity<Map<String, Object>> exportPdf(
+            @Valid @RequestBody ReportExportRequest request) {
+        return ResponseEntity.accepted().body(pdfExportService.queuePdfExport(request));
+    }
+
+    /**
+     * TICKET-306: DELETE /reports/schedules/{id} - cancel a scheduled report
+     * by flipping {@code active=false}. Idempotent.
+     */
+    @DeleteMapping("/schedules/{id}")
+    public ResponseEntity<ReportScheduleResponse> cancelSchedule(@PathVariable UUID id) {
+        return ResponseEntity.ok(reportScheduleService.cancel(id));
     }
 
     private UUID resolveBranchId(UUID requestedBranchId, UUID currentBranchId) {

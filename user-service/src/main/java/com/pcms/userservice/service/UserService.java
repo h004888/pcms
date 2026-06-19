@@ -1,11 +1,16 @@
 package com.pcms.userservice.service;
 
+import com.pcms.userservice.dto.request.AssignBranchRequest;
+import com.pcms.userservice.dto.request.ChangePasswordRequest;
 import com.pcms.userservice.dto.request.CreateUserRequest;
 import com.pcms.userservice.dto.request.ForgotPasswordRequest;
 import com.pcms.userservice.dto.request.LoginRequest;
+import com.pcms.userservice.dto.request.ResendVerificationRequest;
 import com.pcms.userservice.dto.request.ResetPasswordRequest;
 import com.pcms.userservice.dto.request.UpdateUserRequest;
+import com.pcms.userservice.dto.request.VerifyEmailRequest;
 import com.pcms.userservice.dto.response.AuditLogResponse;
+import com.pcms.userservice.dto.response.CurrentUserResponse;
 import com.pcms.userservice.dto.response.DashboardStatsResponse;
 import com.pcms.userservice.dto.response.LoginResponse;
 import com.pcms.userservice.dto.response.PasswordResetResponse;
@@ -50,4 +55,20 @@ public interface UserService {
     Page<UserResponse> recentLogins(Pageable pageable);
 
     Page<AuditLogResponse> auditLogs(UUID userId, String action, Pageable pageable);
+
+    // ===== Sprint 1 - new auth/user APIs =====
+
+    /** TICKET-101: Return current user profile + permissions (FR1.4, SCR-HOME). */
+    CurrentUserResponse me(UUID userId);
+
+    /** TICKET-102: Change the currently authenticated user's password (FR1.3, BR05). */
+    void changePassword(UUID userId, ChangePasswordRequest request, String ipAddress);
+
+    /** TICKET-106: Assign a user to a branch (FR2.3). */
+    UserResponse assignBranch(UUID userId, AssignBranchRequest request, String actorId);
+
+    // Email verification (TICKET-103, TICKET-104) - delegate to EmailVerificationService
+    void verifyEmail(VerifyEmailRequest request, String ipAddress);
+
+    void resendVerification(ResendVerificationRequest request, String ipAddress);
 }

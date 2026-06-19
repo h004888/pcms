@@ -16,10 +16,16 @@ import java.util.UUID;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
+    /**
+     * TICKET-304: exclude DELETED (soft-deleted) notifications from listings.
+     */
+    @Query("SELECT n FROM Notification n WHERE n.recipientId = :recipientId AND n.status <> com.pcms.notificationservice.enums.NotificationStatus.DELETED")
     Page<Notification> findByRecipientId(UUID recipientId, Pageable pageable);
 
+    @Query("SELECT n FROM Notification n WHERE n.recipientId = :recipientId AND n.status = :status AND n.status <> com.pcms.notificationservice.enums.NotificationStatus.DELETED")
     Page<Notification> findByRecipientIdAndStatus(UUID recipientId, NotificationStatus status, Pageable pageable);
 
+    @Query("SELECT n FROM Notification n WHERE n.status = :status AND n.status <> com.pcms.notificationservice.enums.NotificationStatus.DELETED")
     List<Notification> findByStatus(NotificationStatus status);
 
     @Modifying

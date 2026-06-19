@@ -111,6 +111,22 @@ public class NotificationController {
         return ResponseEntity.ok(Map.of("updated", updated));
     }
 
+    /**
+     * TICKET-304: DELETE /notifications/{id} - soft-delete a notification.
+     * Only the recipient can delete their own notification. Anonymous
+     * deletes are rejected with 403.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<NotificationResponse> delete(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
+        if (userId == null) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "X-User-Id header is required to delete a notification");
+        }
+        return ResponseEntity.ok(senderService.softDelete(id, userId));
+    }
+
     private NotificationStatus resolveStatus(String status) {
         if (status == null || status.isBlank() || "all".equalsIgnoreCase(status)) {
             return null;
