@@ -15,4 +15,8 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
     Page<Video> findByStatusOrderByViewCountDesc(String status, Pageable pageable);
 
     List<Video> findTop6ByStatusOrderByCreatedAtDesc(String status);
+
+    // Admin methods (VideoAdminService)
+    Page<Video> findByStatus(String status, Pageable pageable);
+    Page<Video> findByCategoryAndStatus(String category, String status, Pageable pageable);
 }
