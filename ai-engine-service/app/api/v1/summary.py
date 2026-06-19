@@ -1,4 +1,5 @@
 """Medical record summary endpoint (AI-08)."""
+
 from datetime import datetime, timezone
 from fastapi import APIRouter
 

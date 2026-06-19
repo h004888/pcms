@@ -1,4 +1,5 @@
 """OCR Prescription endpoints (UC15-AI-02)."""
+
 import uuid
 from fastapi import APIRouter, HTTPException
 
@@ -13,7 +14,9 @@ router = APIRouter()
 async def ocr_prescription(request: OcrRequest):
     """Process prescription image via OCR (Google Vision)."""
     if not request.image_url and not request.image_base64:
-        raise HTTPException(status_code=400, detail="image_url or image_base64 required")
+        raise HTTPException(
+            status_code=400, detail="image_url or image_base64 required"
+        )
 
     job_id = uuid.uuid4()
     image_url = request.image_url or f"inline://ocr/{job_id}"
@@ -28,7 +31,7 @@ async def ocr_prescription(request: OcrRequest):
                 dosage="1 viên",
                 frequency="3 lần/ngày",
                 duration="5 ngày",
-                notes="Sau ăn"
+                notes="Sau ăn",
             ),
             ExtractedMedicine(
                 name="Vitamin C 1000mg",

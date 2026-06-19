@@ -1,4 +1,5 @@
 """Cross-sell endpoint (called by pharmacist-workbench)."""
+
 from fastapi import APIRouter
 from typing import List, Dict, Any
 
@@ -18,8 +19,18 @@ async def cross_sell_suggestions(request: Dict[str, Any]):
         # For MVP, return stub suggestions
         medicine_ids = request.get("medicineIds", [])
         return [
-            {"medicineId": "stub-1", "name": "Vitamin C 1000mg", "confidence": 0.85, "reason": "Bổ sung khi dùng kháng sinh"},
-            {"medicineId": "stub-2", "name": "Probiotic", "confidence": 0.78, "reason": "Cân bằng hệ vi sinh đường ruột"},
+            {
+                "medicineId": "stub-1",
+                "name": "Vitamin C 1000mg",
+                "confidence": 0.85,
+                "reason": "Bổ sung khi dùng kháng sinh",
+            },
+            {
+                "medicineId": "stub-2",
+                "name": "Probiotic",
+                "confidence": 0.78,
+                "reason": "Cân bằng hệ vi sinh đường ruột",
+            },
         ]
     except Exception as e:
         logger.error("Cross-sell failed: %s", e)

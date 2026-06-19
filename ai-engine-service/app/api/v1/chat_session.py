@@ -1,4 +1,5 @@
 """Chat session endpoints (escalation to human pharmacist)."""
+
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException

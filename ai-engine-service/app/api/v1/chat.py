@@ -1,4 +1,5 @@
 """Chat endpoints (UC15-AI-01)."""
+
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
@@ -16,7 +17,9 @@ router = APIRouter()
 async def chat(request: ChatRequest):
     """Send a chat message to AI Pharmacist (RAG)."""
     if not request.consent_ai:
-        raise HTTPException(status_code=403, detail="User has not consented to AI processing")
+        raise HTTPException(
+            status_code=403, detail="User has not consented to AI processing"
+        )
 
     session_id = request.session_id or uuid.uuid4()
 

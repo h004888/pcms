@@ -1,4 +1,5 @@
 """Drug interaction check endpoints (UC15-AI-03)."""
+
 from fastapi import APIRouter
 
 from app.core.logger import setup_logger

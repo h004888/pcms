@@ -1,4 +1,5 @@
 """Dosage check endpoint (AI-12, FR15.18)."""
+
 from fastapi import APIRouter
 
 from app.core.logger import setup_logger

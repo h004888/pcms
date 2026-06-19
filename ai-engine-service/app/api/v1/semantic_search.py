@@ -1,4 +1,5 @@
 """Semantic search endpoints (UC15-AI-05)."""
+
 from fastapi import APIRouter
 
 from app.core.openai_client import get_client

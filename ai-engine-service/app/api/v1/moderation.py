@@ -1,4 +1,5 @@
 """Content moderation endpoint (FR19.6 - auto-AI moderation)."""
+
 from fastapi import APIRouter
 
 from app.core.openai_client import get_client
@@ -23,7 +24,9 @@ async def moderate_content(request: ModerationRequest):
                 result.category_scores.hate,
                 result.category_scores.violence,
                 result.category_scores.harassment,
-            ) if result.flagged else 0.0,
+            )
+            if result.flagged
+            else 0.0,
             spam_score=0.0,  # OpenAI doesn't detect spam - use custom classifier
             pii_detected=[],  # TODO: regex-based PII detection (email, phone, etc.)
             reason="Violated content policy" if result.flagged else None,

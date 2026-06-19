@@ -1,4 +1,5 @@
 """OpenAI client wrapper."""
+
 from openai import AsyncOpenAI
 from app.core.config import settings
 from app.core.logger import setup_logger

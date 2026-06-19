@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 # =====================================================
 # PCMS - Pharmacy Chain Management System
@@ -15,7 +15,6 @@ volumes:
     driver: local
 
 services:
-
   # ============== Infrastructure ==============
   mysql:
     image: mysql:8.0

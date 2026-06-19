@@ -16,15 +16,23 @@ UC15 - AI-Powered Assistance (12 features)
 
 Tech stack: Python 3.11+ / FastAPI / LangChain / pgvector / OpenAI
 """
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from app.api.v1 import (
-    chat, ocr, drug_check, semantic_search,
-    forecast, anomaly, summary, moderation,
-    chat_session, dosage
+    chat,
+    ocr,
+    drug_check,
+    semantic_search,
+    forecast,
+    anomaly,
+    summary,
+    moderation,
+    chat_session,
+    dosage,
 )
 from app.core.config import settings
 from app.core.logger import setup_logger
@@ -57,14 +65,36 @@ app.add_middleware(
 # Mount v1 routers
 app.include_router(chat.router, prefix="/api/v1/ai/chat", tags=["UC15 - AI Chatbot"])
 app.include_router(ocr.router, prefix="/api/v1/ai/ocr", tags=["UC15 - AI OCR"])
-app.include_router(drug_check.router, prefix="/api/v1/ai/drug-check", tags=["UC15 - Drug Interaction"])
-app.include_router(semantic_search.router, prefix="/api/v1/ai/semantic-search", tags=["UC15 - Semantic Search"])
-app.include_router(forecast.router, prefix="/api/v1/ai/forecast", tags=["UC15 - Demand Forecast"])
-app.include_router(anomaly.router, prefix="/api/v1/ai/anomaly", tags=["UC15 - Anomaly Detection"])
-app.include_router(summary.router, prefix="/api/v1/ai/summary", tags=["UC15 - Medical Summary"])
-app.include_router(moderation.router, prefix="/api/v1/ai/moderation", tags=["UC15 - Content Moderation"])
-app.include_router(chat_session.router, prefix="/api/v1/ai/chat/sessions", tags=["UC15 - Chat Sessions"])
-app.include_router(dosage.router, prefix="/api/v1/ai/dosage", tags=["UC15 - Dosage Check"])
+app.include_router(
+    drug_check.router, prefix="/api/v1/ai/drug-check", tags=["UC15 - Drug Interaction"]
+)
+app.include_router(
+    semantic_search.router,
+    prefix="/api/v1/ai/semantic-search",
+    tags=["UC15 - Semantic Search"],
+)
+app.include_router(
+    forecast.router, prefix="/api/v1/ai/forecast", tags=["UC15 - Demand Forecast"]
+)
+app.include_router(
+    anomaly.router, prefix="/api/v1/ai/anomaly", tags=["UC15 - Anomaly Detection"]
+)
+app.include_router(
+    summary.router, prefix="/api/v1/ai/summary", tags=["UC15 - Medical Summary"]
+)
+app.include_router(
+    moderation.router,
+    prefix="/api/v1/ai/moderation",
+    tags=["UC15 - Content Moderation"],
+)
+app.include_router(
+    chat_session.router,
+    prefix="/api/v1/ai/chat/sessions",
+    tags=["UC15 - Chat Sessions"],
+)
+app.include_router(
+    dosage.router, prefix="/api/v1/ai/dosage", tags=["UC15 - Dosage Check"]
+)
 
 
 @app.get("/healthz")
@@ -78,6 +108,7 @@ async def readyz():
     """Readiness probe - check OpenAI / pgvector connectivity"""
     try:
         from app.core.openai_client import check_openai
+
         await check_openai()
         return {"status": "READY"}
     except Exception as e:
