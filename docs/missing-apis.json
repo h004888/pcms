@@ -1,0 +1,1147 @@
+[
+  {
+    "screen": "SCR-LOGIN",
+    "api": "POST /auth/login",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-LOGIN",
+    "api": "POST /auth/forgot-password",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-LOGIN",
+    "api": "POST /auth/reset-password",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-LOGIN",
+    "api": "POST /auth/refresh",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-HOME",
+    "api": "GET /auth/me",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-HOME",
+    "api": "GET /dashboard/stats",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-HOME",
+    "api": "GET /dashboard/recent-logins",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-LIST",
+    "api": "GET /users",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-LIST",
+    "api": "GET /users/export",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-LIST",
+    "api": "GET /users/role/{role}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-FORM",
+    "api": "GET /users/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-FORM",
+    "api": "POST /users",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-FORM",
+    "api": "PUT /users/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-FORM",
+    "api": "PUT /users/{id}/role",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-FORM",
+    "api": "PUT /users/{id}/branch",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-FORM",
+    "api": "PUT /auth/password",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-FORM",
+    "api": "POST /users/{id}/unlock",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-USER-FORM",
+    "api": "PUT /users/{id}/status",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-BRANCH-LIST",
+    "api": "GET /branches",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-BRANCH-LIST",
+    "api": "GET /branches/code/{code}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-BRANCH-FORM",
+    "api": "GET /branches/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-BRANCH-FORM",
+    "api": "POST /branches",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-BRANCH-FORM",
+    "api": "PUT /branches/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-BRANCH-FORM",
+    "api": "PUT /branches/{id}/manager",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-BRANCH-FORM",
+    "api": "GET /branches/{id}/staff",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-LIST",
+    "api": "GET /medicines",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-LIST",
+    "api": "GET /medicines/sku/{sku}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-LIST",
+    "api": "GET /medicines/export",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-LIST",
+    "api": "GET /medicines/count",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-FORM",
+    "api": "GET /medicines/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-FORM",
+    "api": "POST /medicines",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-FORM",
+    "api": "PUT /medicines/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-FORM",
+    "api": "POST /medicines/{id}/image",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-MED-FORM",
+    "api": "GET /medicines/{id}/image",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-LIST",
+    "api": "GET /inventory",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-LIST",
+    "api": "GET /inventory/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-LIST",
+    "api": "GET /inventory/branch/{branchId}/medicine/{medicineId}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-LIST",
+    "api": "GET /inventory/transactions",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-LIST",
+    "api": "GET /inventory/low-stock",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-LIST",
+    "api": "GET /inventory/expiring",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-LIST",
+    "api": "GET /inventory/alerts/low-stock",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-LIST",
+    "api": "GET /inventory/alerts/expiry",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-IMPORT",
+    "api": "POST /inventory/import",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-IMPORT",
+    "api": "GET /inventory/batches/scan/{code}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-EXPORT",
+    "api": "POST /inventory/export",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INV-TRANSFER",
+    "api": "POST /inventory/transfer",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-LIST",
+    "api": "GET /orders",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-LIST",
+    "api": "GET /coupons",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-LIST",
+    "api": "POST /orders/{id}/approve",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-LIST",
+    "api": "POST /orders/{id}/reject",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-LIST",
+    "api": "DELETE /orders/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-LIST",
+    "api": "POST /orders/{id}/cancel",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-NEW",
+    "api": "POST /orders",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-NEW",
+    "api": "PUT /orders/{id}/recompute",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-DETAIL",
+    "api": "GET /orders/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-DETAIL",
+    "api": "GET /orders/number/{orderNumber}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-DETAIL",
+    "api": "PUT /orders/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-ORDER-DETAIL",
+    "api": "PUT /orders/{id}/pay",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-PAYMENT",
+    "api": "POST /payments",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-PAYMENT",
+    "api": "GET /payments/order/{orderId}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-PAYMENT",
+    "api": "POST /payments/{id}/refund",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INVOICE",
+    "api": "GET /payments/{id}/invoice",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-INVOICE",
+    "api": "POST /payments/{id}/print",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-LIST",
+    "api": "GET /customers",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-LIST",
+    "api": "GET /customers/code/{code}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-LIST",
+    "api": "GET /customers/phone/{phone}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-FORM",
+    "api": "GET /customers/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-FORM",
+    "api": "POST /customers",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-FORM",
+    "api": "PUT /customers/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-FORM",
+    "api": "POST /customers/register",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-HISTORY",
+    "api": "GET /customers/{id}/orders",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-HISTORY",
+    "api": "GET /customers/{id}/points",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-HISTORY",
+    "api": "GET /customers/{id}/history",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-HISTORY",
+    "api": "PUT /customers/{id}/points/add",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-CUST-HISTORY",
+    "api": "GET /customers/{id}/tier",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT",
+    "api": "GET /reports/revenue",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT",
+    "api": "GET /reports/inventory",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT",
+    "api": "GET /reports/staff",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT",
+    "api": "POST /reports/schedule",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT",
+    "api": "GET /reports/schedules",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT",
+    "api": "GET /reports/realtime/stats",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT",
+    "api": "GET /reports/realtime/recent-orders",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT-EXPORT",
+    "api": "POST /reports/export/excel",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT-EXPORT",
+    "api": "POST /reports/export/pdf",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT-EXPORT",
+    "api": "DELETE /reports/schedules/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-REPORT-EXPORT",
+    "api": "GET /reports/export",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SEARCH",
+    "api": "GET /search/medicines",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SEARCH",
+    "api": "GET /search/medicines/autocomplete",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SEARCH",
+    "api": "GET /search/medicines/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SEARCH",
+    "api": "GET /search/full",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SUPPLIER-LIST",
+    "api": "GET /suppliers",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SUPPLIER-LIST",
+    "api": "GET /suppliers/{id}/history",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SUPPLIER-FORM",
+    "api": "GET /suppliers/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SUPPLIER-FORM",
+    "api": "POST /suppliers",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-SUPPLIER-FORM",
+    "api": "PUT /suppliers/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "GET /prescriptions",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "GET /prescriptions/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "GET /prescriptions/code/{code}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "POST /prescriptions",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "POST /prescriptions/draft",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "PUT /prescriptions/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "PUT /prescriptions/{id}/sign",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "POST /prescriptions/{id}/link-order",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "POST /prescriptions/{id}/print",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "GET /prescriptions/{id}/print",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-RX",
+    "api": "DELETE /prescriptions/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-LIST",
+    "api": "GET /notifications",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-LIST",
+    "api": "GET /notifications/unread",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-LIST",
+    "api": "GET /notifications/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-LIST",
+    "api": "PUT /notifications/{id}/read",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-LIST",
+    "api": "PUT /notifications/read-all",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-LIST",
+    "api": "DELETE /notifications/{id}",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-COMPOSE",
+    "api": "POST /notifications/compose",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-COMPOSE",
+    "api": "POST /notifications",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-COMPOSE",
+    "api": "POST /notifications/bulk",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-COMPOSE",
+    "api": "POST /notifications/broadcast",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-COMPOSE",
+    "api": "GET /notifications/templates",
+    "type": "B2B"
+  },
+  {
+    "screen": "SCR-NOTIF-COMPOSE",
+    "api": "POST /notifications/templates",
+    "type": "B2B"
+  },
+  {
+    "screen": "SHOP-HOME",
+    "api": "GET /shop/home",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CAT-1",
+    "api": "GET /medicines?category=...",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CAT-2",
+    "api": "GET /medicines?subCategory=...",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-PDP",
+    "api": "GET /shop/pdp/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-SEARCH",
+    "api": "GET /shop/search",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-SEARCH",
+    "api": "GET /search/medicines",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CART",
+    "api": "GET /cart",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CART",
+    "api": "POST /cart/items",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CART",
+    "api": "PUT /cart/items/{itemId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CART",
+    "api": "DELETE /cart/items/{itemId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CART",
+    "api": "DELETE /cart",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CHECKOUT",
+    "api": "POST /cart/checkout/preview",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CHECKOUT",
+    "api": "POST /cart/checkout/confirm",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-ORDER-HISTORY",
+    "api": "GET /orders/history",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-ORDER-TRACK",
+    "api": "GET /orders/{id}/track",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-RX-UPLOAD",
+    "api": "POST /ai/ocr/prescription",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-RX-UPLOAD",
+    "api": "GET /ai/ocr/prescription/{jobId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-RX-UPLOAD",
+    "api": "POST /ai/drug-check",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-INSTALLMENT",
+    "api": "POST /installment/quote",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-INSTALLMENT",
+    "api": "POST /installment/confirm",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-LOOKUP-DRUG",
+    "api": "GET /medicines?q=...",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-LOOKUP-INGREDIENT",
+    "api": "GET /shop/lookup/ingredient",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-LOOKUP-HERB",
+    "api": "GET /shop/lookup/herb",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-VERIFY-ORIGIN",
+    "api": "POST /verify-origin/scan",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-HEALTH-ARTICLE",
+    "api": "GET /health-articles",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-HEALTH-ARTICLE",
+    "api": "GET /health-articles/{slug}",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-DISEASE-INFO",
+    "api": "GET /diseases",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-CANCER-INFO",
+    "api": "GET /health-articles?category=UNG_THU",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-VIDEO",
+    "api": "GET /shop/home (videosTeaser section)",
+    "type": "B2C"
+  },
+  {
+    "screen": "STORE-LOCATOR",
+    "api": "GET /store/locator",
+    "type": "B2C"
+  },
+  {
+    "screen": "STORE-LIST-PROVINCE",
+    "api": "GET /store/locator?province=...",
+    "type": "B2C"
+  },
+  {
+    "screen": "STORE-DETAIL",
+    "api": "GET /store/locator/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "STORE-CONSULT",
+    "api": "POST /consultations",
+    "type": "B2C"
+  },
+  {
+    "screen": "STORE-CONSULT",
+    "api": "GET /consultations/by-customer/{customerId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "VACCINE-HOME",
+    "api": "GET /vaccines",
+    "type": "B2C"
+  },
+  {
+    "screen": "VACCINE-BOOKING",
+    "api": "GET /vaccines/{id}/slots",
+    "type": "B2C"
+  },
+  {
+    "screen": "VACCINE-BOOKING",
+    "api": "POST /vaccine-bookings",
+    "type": "B2C"
+  },
+  {
+    "screen": "VACCINE-BOOKING",
+    "api": "GET /vaccine-bookings/me",
+    "type": "B2C"
+  },
+  {
+    "screen": "VACCINE-BOOKING",
+    "api": "DELETE /vaccine-bookings/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "VACCINE-LEDGER",
+    "api": "GET /vaccination-ledger/me",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-LOGIN",
+    "api": "POST /customers/register",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-LOGIN",
+    "api": "GET /auth/me",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-PROFILE",
+    "api": "GET /customers/me",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-PROFILE",
+    "api": "PUT /customers/me",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-ADDRESS",
+    "api": "GET /addresses",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-ADDRESS",
+    "api": "POST /addresses",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-ADDRESS",
+    "api": "PUT /addresses/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-ADDRESS",
+    "api": "DELETE /addresses/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-ADDRESS",
+    "api": "PUT /addresses/{id}/default",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-ADDRESS",
+    "api": "GET /addresses/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAMILY",
+    "api": "GET /family",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAMILY",
+    "api": "POST /family",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAMILY",
+    "api": "PUT /family/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAMILY",
+    "api": "DELETE /family/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAMILY",
+    "api": "GET /family/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-HEALTH-WALLET",
+    "api": "GET /wallet",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-HEALTH-WALLET",
+    "api": "GET /wallet/transactions",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-HEALTH-WALLET",
+    "api": "POST /wallet/redeem",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-RX-HISTORY",
+    "api": "GET /prescriptions/me",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-RX-HISTORY",
+    "api": "GET /prescriptions/{id}/re-download",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-POINTS",
+    "api": "GET /wallet",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAVORITES",
+    "api": "GET /favorites",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAVORITES",
+    "api": "POST /favorites",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAVORITES",
+    "api": "DELETE /favorites/{medicineId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-FAVORITES",
+    "api": "GET /favorites/{medicineId}/check",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-NOTIF-SETTINGS",
+    "api": "GET /notif-settings",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-NOTIF-SETTINGS",
+    "api": "PUT /notif-settings",
+    "type": "B2C"
+  },
+  {
+    "screen": "CUST-NOTIF-SETTINGS",
+    "api": "PATCH /notif-settings",
+    "type": "B2C"
+  },
+  {
+    "screen": "CHAT-AI",
+    "api": "POST /ai/chat",
+    "type": "B2C"
+  },
+  {
+    "screen": "CHAT-AI",
+    "api": "GET /ai/chat/sessions/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "CHAT-AI",
+    "api": "POST /ai/chat/sessions/{id}/escalate",
+    "type": "B2C"
+  },
+  {
+    "screen": "CHAT-AI",
+    "api": "POST /ai/chat/sessions/{id}/end",
+    "type": "B2C"
+  },
+  {
+    "screen": "AI-RX-OCR",
+    "api": "POST /ai/ocr/prescription",
+    "type": "B2C"
+  },
+  {
+    "screen": "AI-RX-OCR",
+    "api": "GET /ai/ocr/prescription/{jobId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "AI-DRUG-CHECK",
+    "api": "POST /ai/drug-check",
+    "type": "B2C"
+  },
+  {
+    "screen": "AI-SEMANTIC-SEARCH",
+    "api": "GET /ai/semantic-search",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-CONSULT",
+    "api": "POST /consultations",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-CONSULT",
+    "api": "GET /consultations/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-CONSULT",
+    "api": "POST /consultations/{id}/end",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-CONSULT",
+    "api": "POST /consultations/{id}/messages",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-CONSULT",
+    "api": "GET /consultations/by-customer/{customerId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-CUST-PROFILE-360",
+    "api": "GET /rx/customers/{id}/profile-360",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-CROSS-SELL",
+    "api": "POST /rx/cross-sell",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-CROSS-SELL",
+    "api": "POST /rx/drug-check",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-FOLLOW-UP",
+    "api": "POST /follow-ups",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-FOLLOW-UP",
+    "api": "GET /follow-ups/by-customer/{customerId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-FOLLOW-UP",
+    "api": "POST /follow-ups/{id}/response",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-FOLLOW-UP",
+    "api": "DELETE /follow-ups/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-VIP-MARK",
+    "api": "POST /vip-marks",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-VIP-MARK",
+    "api": "GET /vip-marks/by-customer/{customerId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-VIP-MARK",
+    "api": "GET /vip-marks/by-tier/{tier}",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-VIP-MARK",
+    "api": "GET /vip-marks",
+    "type": "B2C"
+  },
+  {
+    "screen": "RX-VIP-MARK",
+    "api": "DELETE /vip-marks/{customerId}",
+    "type": "B2C"
+  },
+  {
+    "screen": "HEALTH-QUIZ-LIST",
+    "api": "GET /health/quizzes",
+    "type": "B2C"
+  },
+  {
+    "screen": "HEALTH-QUIZ-LIST",
+    "api": "GET /health/quizzes/{slug}",
+    "type": "B2C"
+  },
+  {
+    "screen": "HEALTH-QUIZ-RESULT",
+    "api": "POST /health/quizzes/{slug}/submit",
+    "type": "B2C"
+  },
+  {
+    "screen": "HEALTH-QUIZ-RESULT",
+    "api": "GET /health/quiz-results/me",
+    "type": "B2C"
+  },
+  {
+    "screen": "MOBILE-HOME",
+    "api": "GET /mobile/home",
+    "type": "B2C"
+  },
+  {
+    "screen": "MOBILE-HOME",
+    "api": "GET /mobile/nearby-pharmacies",
+    "type": "B2C"
+  },
+  {
+    "screen": "MOBILE-MED-REMINDER",
+    "api": "POST /mobile/medication-reminders",
+    "type": "B2C"
+  },
+  {
+    "screen": "MOBILE-MED-REMINDER",
+    "api": "GET /mobile/medication-reminders",
+    "type": "B2C"
+  },
+  {
+    "screen": "MOBILE-MED-REMINDER",
+    "api": "PUT /mobile/medication-reminders/{id}/deactivate",
+    "type": "B2C"
+  },
+  {
+    "screen": "MOBILE-MED-REMINDER",
+    "api": "DELETE /mobile/medication-reminders/{id}",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-VOUCHER",
+    "api": "GET /vouchers",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-VOUCHER",
+    "api": "POST /vouchers/apply",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-VOUCHER",
+    "api": "GET /vouchers/history",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-REVIEW",
+    "api": "POST /reviews",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-REVIEW",
+    "api": "GET /shop/pdp/{id} (reviews)",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-LIVE-CHAT",
+    "api": "POST /consultations",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-FLASH-SALE",
+    "api": "GET /ecom-ops/flash-sales/active",
+    "type": "B2C"
+  },
+  {
+    "screen": "SHOP-FLASH-SALE",
+    "api": "GET /ecom-ops/flash-sales/{id}",
+    "type": "B2C"
+  }
+]
