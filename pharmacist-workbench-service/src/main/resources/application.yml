@@ -1,28 +1,28 @@
 server:
-  port: 8095
-
+  port: 8094
 spring:
   application:
     name: pharmacist-workbench-service
+  config:
+    import: "optional:configserver:http://localhost:8888"
   datasource:
-    url: jdbc:mysql://localhost:3306/pcms_pharmacist_workbench?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=utf8
+    url: jdbc:mysql://localhost:3307/pcms_pharmacist_workbench?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=utf8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: pcms_user
     password: pcms_pass
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
     show-sql: false
+  main:
+    allow-bean-definition-overriding: true
   cloud:
     config:
       enabled: false
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
 
 eureka:
   client:
