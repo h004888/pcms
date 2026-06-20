@@ -17,7 +17,7 @@ VALUES (
     1,
     NOW(),
     NOW()
-) ON DUPLICATE KEY UPDATE updated_at = NOW();
+) ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), updated_at = NOW();
 
 INSERT INTO users (id, email, password_hash, full_name, phone, role, status, email_verified, created_at, updated_at)
 VALUES (
@@ -31,6 +31,6 @@ VALUES (
     1,
     NOW(),
     NOW()
-) ON DUPLICATE KEY UPDATE updated_at = NOW();
+) ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), updated_at = NOW();
 
 SELECT 'Admin user seeded successfully' AS status;
