@@ -1,0 +1,128 @@
+# =====================================================================
+# AI Engine Service - Python / FastAPI / LangChain
+# (Complements repo-root .gitignore; root ignores Java/IDE/logs already)
+# =====================================================================
+
+# ----- Python bytecode & compiled -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+*.egg
+MANIFEST
+.installed.cfg
+*.egg-info/
+
+# ----- Virtual environments -----
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ----- pytest / coverage -----
+.pytest_cache/
+.coverage
+.coverage.*
+.cache
+htmlcov/
+coverage.xml
+*.cover
+.tox/
+.nox/
+.pytest_cache/
+
+# ----- Linters / type checkers -----
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# ----- Jupyter / IPython -----
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# ----- AI / ML artifacts (model weights & caches) -----
+# LangChain / LlamaIndex / OpenAI local caches
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+*.h5
+*.hdf5
+*.tflite
+*.pb
+*.pkl
+*.pickle
+*.joblib
+*.npy
+*.npz
+
+# Vector indexes (FAISS, Chroma, pgvector dump, etc.)
+*.faiss
+*.index
+*.chroma/
+
+# HuggingFace / sentence-transformers cache
+hf_cache/
+.cache/huggingface/
+transformers_cache/
+
+# ----- Local data / databases -----
+*.sqlite3
+*.sqlite
+*.db
+pgdata/
+redis-data/
+chroma_data/
+qdrant_data/
+
+# ----- Celery -----
+celerybeat-schedule
+celerybeat.pid
+celery-worker.pid
+
+# ----- Logs (root .gitignore covers logs/ already; explicit here) -----
+*.log
+logs/
+
+# ----- Environment files (secrets) -----
+.env
+.env.local
+.env.*.local
+.envrc
+.python-version
+.python-version.bak
+
+# ----- IDE / editor overrides (root .gitignore covers these) -----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ----- OS -----
+.DS_Store
+Thumbs.db
+desktop.ini
