@@ -59,7 +59,7 @@ public class BranchController {
 
     @PostMapping
     public ResponseEntity<BranchResponse> create(@Valid @RequestBody CreateBranchRequest request) {
-        return ResponseEntity.ok(branchService.create(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(branchService.create(request));
     }
 
     @PutMapping("/{id}")
