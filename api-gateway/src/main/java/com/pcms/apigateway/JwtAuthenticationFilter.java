@@ -61,6 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/healthz",        "/api/v1/auth/healthz",
             "/auth/readyz",         "/api/v1/auth/readyz",
             "/auth/register",       "/api/v1/auth/register",
+            "/webhooks/payment-gateway", "/api/v1/webhooks/payment-gateway",
             "/actuator",
             "/healthz",
             "/readyz"
