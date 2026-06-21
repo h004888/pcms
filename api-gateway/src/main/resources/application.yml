@@ -114,7 +114,7 @@ spring:
             - id: customer-portal-service
               uri: lb://customer-portal-service
               predicates:
-                - Path=/api/v1/shop/**,/api/v1/store/**,/api/v1/vaccines/**,/api/v1/vaccine-bookings/**,/api/v1/vaccination-ledger/**,/api/v1/health/**,/api/v1/health-articles/**,/api/v1/diseases/**,/api/v1/videos/**,/api/v1/lookup/**,/api/v1/verify-origin/**,/api/v1/addresses/**,/api/v1/favorites/**,/api/v1/family/**,/api/v1/cart/**,/api/v1/notif-settings/**,/api/v1/installment/**,/api/v1/wallet/**,/api/v1/vouchers/**,/api/v1/admin/videos/**
+                - Path=/api/v1/shop/**,/api/v1/store/**,/api/v1/vaccines/**,/api/v1/vaccine-bookings/**,/api/v1/vaccination-ledger/**,/api/v1/health-articles/**,/api/v1/diseases/**,/api/v1/videos/**,/api/v1/lookup/**,/api/v1/verify-origin/**,/api/v1/addresses/**,/api/v1/favorites/**,/api/v1/family/**,/api/v1/cart/**,/api/v1/notif-settings/**,/api/v1/installment/**,/api/v1/wallet/**,/api/v1/vouchers/**,/api/v1/admin/videos/**
               filters:
                 - StripPrefix=2
             # Pharmacist Workbench (UC16) - Sprint 9
