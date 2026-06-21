@@ -50,15 +50,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    /** Path prefixes that bypass JWT validation. */
+    /** Path prefixes that bypass JWT validation.
+     *  Each prefix has 2 variants: with `/api/v1` (incoming) and without (post-rewrite). */
     private static final Set<String> PUBLIC_PREFIXES = Set.of(
-            "/auth/login",
-            "/auth/forgot-password",
-            "/auth/reset-password",
-            "/auth/verify-email",
-            "/auth/resend-verification",
-            "/auth/healthz",
-            "/auth/readyz",
+            "/auth/login",          "/api/v1/auth/login",
+            "/auth/forgot-password", "/api/v1/auth/forgot-password",
+            "/auth/reset-password", "/api/v1/auth/reset-password",
+            "/auth/verify-email",   "/api/v1/auth/verify-email",
+            "/auth/resend-verification", "/api/v1/auth/resend-verification",
+            "/auth/healthz",        "/api/v1/auth/healthz",
+            "/auth/readyz",         "/api/v1/auth/readyz",
+            "/auth/register",       "/api/v1/auth/register",
             "/actuator",
             "/healthz",
             "/readyz"
@@ -172,6 +174,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         public String getHeader(String name) {
             String v = authHeaders.get(name);
             return v != null ? v : super.getHeader(name);
+        }
+
+        @Override
+        public java.util.Enumeration<String> getHeaders(String name) {
+            String override = authHeaders.get(name);
+            if (override != null) {
+                return java.util.Collections.enumeration(java.util.Collections.singletonList(override));
+            }
+            return super.getHeaders(name);
+        }
+
+        @Override
+        public java.util.Enumeration<String> getHeaderNames() {
+            java.util.Set<String> names = new java.util.LinkedHashSet<>(authHeaders.keySet());
+            java.util.Enumeration<String> original = super.getHeaderNames();
+            while (original.hasMoreElements()) {
+                names.add(original.nextElement());
+            }
+            return java.util.Collections.enumeration(names);
         }
     }
 }
