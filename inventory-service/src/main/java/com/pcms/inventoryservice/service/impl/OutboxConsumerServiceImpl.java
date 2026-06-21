@@ -1,5 +1,7 @@
 package com.pcms.inventoryservice.service.impl;
 
+import com.pcms.inventoryservice.dto.BulkConsumeRequest;
+import com.pcms.inventoryservice.dto.BulkRestoreRequest;
 import com.pcms.inventoryservice.dto.request.ConsumeBatchRequest;
 import com.pcms.inventoryservice.dto.response.StockOperationResult;
 import com.pcms.inventoryservice.entity.OutboxLog;
@@ -9,6 +11,7 @@ import com.pcms.inventoryservice.service.OutboxConsumerService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -49,5 +52,38 @@ public class OutboxConsumerServiceImpl implements OutboxConsumerService {
         outboxLogRepository
                 .save(new OutboxLog(effectiveEventId, "ORDER_CANCELLED_STOCK_RESTORE", "PROCESSED", orderId));
         return result;
+    }
+
+    @Override
+    public Object handleOrderPaidBulk(UUID orderId, UUID eventId, BulkConsumeRequest request) {
+        UUID effectiveEventId = eventId != null ? eventId : orderId;
+        if (outboxLogRepository.existsByEventId(effectiveEventId)) {
+            return Map.of("status", "duplicate", "eventId", effectiveEventId);
+        }
+        List<StockOperationResult> results = inventoryService.bulkConsumeStock(request);
+        outboxLogRepository.save(new OutboxLog(effectiveEventId, "ORDER_PAID_STOCK_CONSUME_BULK", "PROCESSED", orderId));
+        return Map.of("status", "processed", "results", results);
+    }
+
+    @Override
+    public Object handleOrderCancelledBulk(UUID orderId, UUID eventId, BulkRestoreRequest request) {
+        UUID effectiveEventId = eventId != null ? eventId : orderId;
+        if (outboxLogRepository.existsByEventId(effectiveEventId)) {
+            return Map.of("status", "duplicate", "eventId", effectiveEventId);
+        }
+        List<StockOperationResult> results = inventoryService.bulkRestoreStock(request);
+        outboxLogRepository.save(new OutboxLog(effectiveEventId, "ORDER_CANCELLED_STOCK_RESTORE_BULK", "PROCESSED", orderId));
+        return Map.of("status", "processed", "results", results);
+    }
+
+    @Override
+    public Object handleOrderCancelledPrecise(UUID orderId, UUID eventId) {
+        UUID effectiveEventId = eventId != null ? eventId : orderId;
+        if (outboxLogRepository.existsByEventId(effectiveEventId)) {
+            return Map.of("status", "duplicate", "eventId", effectiveEventId);
+        }
+        List<StockOperationResult> results = inventoryService.restoreStockByOrder(orderId);
+        outboxLogRepository.save(new OutboxLog(effectiveEventId, "ORDER_CANCELLED_STOCK_RESTORE_PRECISE", "PROCESSED", orderId));
+        return Map.of("status", "processed", "results", results);
     }
 }

@@ -30,6 +30,23 @@ public interface InventoryOutboxClient {
                         @PathVariable("orderId") UUID orderId,
                         @RequestBody Map<String, Object> payload);
 
+        @PostMapping("/inventory/orders/{orderId}/paid-bulk")
+        @CircuitBreaker(name = "inventoryOutboxService", fallbackMethod = "fallbackOrderPaidBulk")
+        ResponseEntity<Object> orderPaidBulk(@RequestHeader("X-Outbox-Event-Id") String eventId,
+                        @PathVariable("orderId") UUID orderId,
+                        @RequestBody Map<String, Object> payload);
+
+        @PostMapping("/inventory/orders/{orderId}/cancelled-bulk")
+        @CircuitBreaker(name = "inventoryOutboxService", fallbackMethod = "fallbackOrderCancelledBulk")
+        ResponseEntity<Object> orderCancelledBulk(@RequestHeader("X-Outbox-Event-Id") String eventId,
+                        @PathVariable("orderId") UUID orderId,
+                        @RequestBody Map<String, Object> payload);
+
+        @PostMapping("/inventory/orders/{orderId}/cancelled-precise")
+        @CircuitBreaker(name = "inventoryOutboxService", fallbackMethod = "fallbackOrderCancelledPrecise")
+        ResponseEntity<Object> orderCancelledPrecise(@RequestHeader("X-Outbox-Event-Id") String eventId,
+                        @PathVariable("orderId") UUID orderId);
+
         default ResponseEntity<Object> fallbackOrderPaid(String eventId, UUID orderId, Map<String, Object> payload,
                         Throwable throwable) {
                 log.warn("Inventory outbox paid fallback for order {}: {}", orderId, throwable.getMessage());
@@ -48,5 +65,34 @@ public interface InventoryOutboxClient {
                                 "eventId", eventId,
                                 "orderId", orderId,
                                 "message", "Inventory service unavailable, stock restore deferred"));
+        }
+
+        default ResponseEntity<Object> fallbackOrderPaidBulk(String eventId, UUID orderId, Map<String, Object> payload,
+                        Throwable throwable) {
+                log.warn("Inventory outbox paid-bulk fallback for order {}: {}", orderId, throwable.getMessage());
+                return ResponseEntity.accepted().body(Map.of(
+                                "status", "DEFERRED",
+                                "eventId", eventId,
+                                "orderId", orderId,
+                                "message", "Inventory service unavailable, bulk stock consumption deferred"));
+        }
+
+        default ResponseEntity<Object> fallbackOrderCancelledBulk(String eventId, UUID orderId, Map<String, Object> payload,
+                        Throwable throwable) {
+                log.warn("Inventory outbox cancelled-bulk fallback for order {}: {}", orderId, throwable.getMessage());
+                return ResponseEntity.accepted().body(Map.of(
+                                "status", "DEFERRED",
+                                "eventId", eventId,
+                                "orderId", orderId,
+                                "message", "Inventory service unavailable, bulk stock restore deferred"));
+        }
+
+        default ResponseEntity<Object> fallbackOrderCancelledPrecise(String eventId, UUID orderId, Throwable throwable) {
+                log.warn("Inventory outbox cancelled-precise fallback for order {}: {}", orderId, throwable.getMessage());
+                return ResponseEntity.accepted().body(Map.of(
+                                "status", "DEFERRED",
+                                "eventId", eventId,
+                                "orderId", orderId,
+                                "message", "Inventory service unavailable, precise stock restore deferred"));
         }
 }

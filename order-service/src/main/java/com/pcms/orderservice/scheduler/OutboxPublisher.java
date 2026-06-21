@@ -11,6 +11,7 @@ import com.pcms.orderservice.entity.DeadLetterEvent;
 import com.pcms.orderservice.entity.OutboxEvent;
 import com.pcms.orderservice.repository.DeadLetterEventRepository;
 import com.pcms.orderservice.repository.OutboxEventRepository;
+import com.pcms.orderservice.saga.SagaStepExecutor;
 import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,19 +46,22 @@ public class OutboxPublisher {
     private final CustomerPointsClient customerPointsClient;
     private final NotificationOutboxClient notificationOutboxClient;
     private final ObjectMapper objectMapper;
+    private final SagaStepExecutor sagaStepExecutor;
 
     public OutboxPublisher(OutboxEventRepository outboxRepo,
             DeadLetterEventRepository deadLetterEventRepository,
             InventoryOutboxClient inventoryOutboxClient,
             CustomerPointsClient customerPointsClient,
             NotificationOutboxClient notificationOutboxClient,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            SagaStepExecutor sagaStepExecutor) {
         this.outboxRepo = outboxRepo;
         this.deadLetterEventRepository = deadLetterEventRepository;
         this.inventoryOutboxClient = inventoryOutboxClient;
         this.customerPointsClient = customerPointsClient;
         this.notificationOutboxClient = notificationOutboxClient;
         this.objectMapper = objectMapper;
+        this.sagaStepExecutor = sagaStepExecutor;
     }
 
     @Scheduled(fixedRate = 30_000) // every 30 seconds
@@ -75,6 +79,8 @@ public class OutboxPublisher {
                 event.setStatus(OutboxEvent.Status.SENT);
                 event.setSentAt(LocalDateTime.now());
                 outboxRepo.save(event);
+                // B-17: Notify saga executor on successful delivery
+                sagaStepExecutor.onStepSuccess(event.getId());
             } catch (FeignException | InvalidOperationException e) {
                 event.setRetryCount(event.getRetryCount() + 1);
                 event.setLastError(e.getMessage());
@@ -83,6 +89,8 @@ public class OutboxPublisher {
                     deadLetterEventRepository.save(new DeadLetterEvent(event));
                     log.error("[outbox] Event {} failed after {} retries: {}",
                             event.getId(), MAX_RETRIES, e.getMessage());
+                    // B-17: Notify saga executor on terminal failure
+                    sagaStepExecutor.onStepFailure(event.getId(), e.getMessage());
                 } else {
                     event.setNextAttemptAt(
                             LocalDateTime.now().plusSeconds(calculateBackoffSeconds(event.getRetryCount())));
@@ -109,7 +117,20 @@ public class OutboxPublisher {
 
     private void dispatchInventory(OutboxEvent event, String eventId, Map<String, Object> payload) {
         UUID orderId = event.getAggregateId();
-        if (event.getEndpoint().endsWith("/cancelled")) {
+        String endpoint = event.getEndpoint();
+        if (endpoint.endsWith("/cancelled-precise")) {
+            inventoryOutboxClient.orderCancelledPrecise(eventId, orderId);
+            return;
+        }
+        if (endpoint.endsWith("/cancelled-bulk")) {
+            inventoryOutboxClient.orderCancelledBulk(eventId, orderId, payload);
+            return;
+        }
+        if (endpoint.endsWith("/paid-bulk")) {
+            inventoryOutboxClient.orderPaidBulk(eventId, orderId, payload);
+            return;
+        }
+        if (endpoint.endsWith("/cancelled")) {
             inventoryOutboxClient.orderCancelled(eventId, orderId, payload);
             return;
         }

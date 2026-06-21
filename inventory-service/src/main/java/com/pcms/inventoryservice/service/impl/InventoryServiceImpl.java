@@ -6,6 +6,8 @@ import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.inventoryservice.client.BranchClient;
 import com.pcms.inventoryservice.client.CatalogClient;
+import com.pcms.inventoryservice.dto.BulkConsumeRequest;
+import com.pcms.inventoryservice.dto.BulkRestoreRequest;
 import com.pcms.inventoryservice.dto.request.ConsumeBatchRequest;
 import com.pcms.inventoryservice.dto.request.BulkImportBatchItemRequest;
 import com.pcms.inventoryservice.dto.request.CreateBatchRequest;
@@ -160,6 +162,44 @@ public class InventoryServiceImpl implements InventoryService {
         transactionRepository.save(txn);
 
         return StockOperationResult.of("Stock restored successfully", request.qty());
+    }
+
+    @Override
+    @Transactional
+    public List<StockOperationResult> bulkConsumeStock(BulkConsumeRequest request) {
+        List<StockOperationResult> results = new ArrayList<>();
+        for (ConsumeBatchRequest item : request.items()) {
+            results.add(consumeStock(item));
+        }
+        return results;
+    }
+
+    @Override
+    @Transactional
+    public List<StockOperationResult> restoreStockByOrder(UUID orderId) {
+        List<InventoryTransaction> consumeTxns = transactionRepository
+                .findByRefIdAndType(orderId, TransactionType.SALE);
+        List<StockOperationResult> results = new ArrayList<>();
+        for (InventoryTransaction txn : consumeTxns) {
+            InventoryBatch batch = batchRepository.findById(txn.getBatchId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Batch", txn.getBatchId()));
+            int restoredQty = Math.abs(txn.getQty());
+            ConsumeBatchRequest restoreReq = new ConsumeBatchRequest(
+                    batch.getMedicineId(), batch.getBranchId(), restoredQty,
+                    txn.getActorId(), orderId);
+            results.add(restoreStock(restoreReq));
+        }
+        return results;
+    }
+
+    @Override
+    @Transactional
+    public List<StockOperationResult> bulkRestoreStock(BulkRestoreRequest request) {
+        List<StockOperationResult> results = new ArrayList<>();
+        for (ConsumeBatchRequest item : request.items()) {
+            results.add(restoreStock(item));
+        }
+        return results;
     }
 
     /**

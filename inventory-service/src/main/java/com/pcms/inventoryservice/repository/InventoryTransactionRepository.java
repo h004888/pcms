@@ -16,4 +16,6 @@ public interface InventoryTransactionRepository extends JpaRepository<InventoryT
     List<InventoryTransaction> findByType(TransactionType type);
 
     List<InventoryTransaction> findByRefId(UUID refId);
+
+    List<InventoryTransaction> findByRefIdAndType(UUID refId, TransactionType type);
 }

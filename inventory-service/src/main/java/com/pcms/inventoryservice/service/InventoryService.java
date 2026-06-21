@@ -1,5 +1,7 @@
 package com.pcms.inventoryservice.service;
 
+import com.pcms.inventoryservice.dto.BulkConsumeRequest;
+import com.pcms.inventoryservice.dto.BulkRestoreRequest;
 import com.pcms.inventoryservice.dto.request.ConsumeBatchRequest;
 import com.pcms.inventoryservice.dto.request.BulkImportBatchItemRequest;
 import com.pcms.inventoryservice.dto.request.CreateBatchRequest;
@@ -32,6 +34,15 @@ public interface InventoryService {
 
     /** Restore previously consumed order stock. */
     StockOperationResult restoreStock(ConsumeBatchRequest request);
+
+    /** Bulk consume stock across multiple line items for a saga step. */
+    List<StockOperationResult> bulkConsumeStock(BulkConsumeRequest request);
+
+    /** Precise restore: look up all SALE transactions for an order and reverse them. */
+    List<StockOperationResult> restoreStockByOrder(UUID orderId);
+
+    /** Bulk restore using provided ConsumeBatchRequest list. */
+    List<StockOperationResult> bulkRestoreStock(BulkRestoreRequest request);
 
     /**
      * Transfer stock atomically - TRANSFER_OUT source + TRANSFER_IN destination.

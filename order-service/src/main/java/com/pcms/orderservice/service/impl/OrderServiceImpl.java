@@ -18,6 +18,9 @@ import com.pcms.orderservice.entity.OrderSequence;
 import com.pcms.orderservice.enums.OrderStatus;
 import com.pcms.orderservice.repository.OrderRepository;
 import com.pcms.orderservice.repository.OrderSequenceRepository;
+import com.pcms.orderservice.repository.SagaInstanceRepository;
+import com.pcms.orderservice.saga.SagaCompensationHandler;
+import com.pcms.orderservice.saga.SagaOrchestrator;
 import com.pcms.orderservice.service.OrderService;
 import com.pcms.orderservice.service.CouponService;
 import org.slf4j.Logger;
@@ -67,6 +70,9 @@ public class OrderServiceImpl implements OrderService {
     private final com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository;
     private final com.pcms.orderservice.repository.OutboxEventRepository outboxRepo;
     private final CouponService couponService;
+    private final SagaOrchestrator sagaOrchestrator;
+    private final SagaCompensationHandler sagaCompensationHandler;
+    private final SagaInstanceRepository sagaRepo;
 
     @Value("${order.bulk-discount-threshold:10}")
     private int bulkDiscountThreshold;
@@ -82,7 +88,10 @@ public class OrderServiceImpl implements OrderService {
             com.pcms.orderservice.client.BranchClient branchClient,
             com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository,
             com.pcms.orderservice.repository.OutboxEventRepository outboxRepo,
-            CouponService couponService) {
+            CouponService couponService,
+            SagaOrchestrator sagaOrchestrator,
+            SagaCompensationHandler sagaCompensationHandler,
+            SagaInstanceRepository sagaRepo) {
         this.orderRepository = orderRepository;
         this.catalogClient = catalogClient;
         this.inventoryClient = inventoryClient;
@@ -92,6 +101,9 @@ public class OrderServiceImpl implements OrderService {
         this.sequenceRepository = sequenceRepository;
         this.outboxRepo = outboxRepo;
         this.couponService = couponService;
+        this.sagaOrchestrator = sagaOrchestrator;
+        this.sagaCompensationHandler = sagaCompensationHandler;
+        this.sagaRepo = sagaRepo;
     }
 
     @Override
@@ -332,36 +344,9 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatus.PAID);
         orderRepository.save(order);
 
-        // B-17: Outbox pattern — persist side-effect events in same TX.
-        // OutboxPublisher will dispatch asynchronously with retry.
-        for (OrderItem item : order.getItems()) {
-            String payload = String.format(
-                    "{\"medicineId\":\"%s\",\"branchId\":\"%s\",\"qty\":%d,\"orderId\":\"%s\",\"actorId\":\"%s\"}",
-                    item.getMedicineId(), order.getBranchId(), item.getQty(), order.getId(), actorId);
-            outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
-                    "Order", order.getId(), "STOCK_CONSUMED",
-                    "inventory-service", "/inventory/orders/" + order.getId() + "/paid", payload));
-        }
-
-        // BR07: Award loyalty points (idempotent on orderId) via outbox
-        int points = order.getTotal().divide(BigDecimal.valueOf(1000), 0, RoundingMode.FLOOR).intValue();
-        if (points > 0) {
-            String payload = String.format(
-                    "{\"points\":%d,\"refOrderId\":\"%s\",\"reason\":\"ORDER_PAID:%s\"}",
-                    points, order.getId(), order.getOrderNumber());
-            outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
-                    "Order", order.getId(), "POINTS_AWARDED",
-                    "customer-service", "/customers/" + order.getCustomerId() + "/points/add", payload));
-        }
-
-        String notificationPayload = String.format(
-                "{\"orderId\":\"%s\",\"orderNumber\":\"%s\",\"customerId\":\"%s\","
-                        + "\"branchId\":\"%s\",\"staffId\":\"%s\",\"total\":%s,\"paidAt\":\"%s\"}",
-                order.getId(), order.getOrderNumber(), order.getCustomerId(), order.getBranchId(), actorId,
-                order.getTotal(), java.time.LocalDateTime.now());
-        outboxRepo.save(new com.pcms.orderservice.entity.OutboxEvent(
-                "Order", order.getId(), "ORDER_PAID_NOTIFICATION",
-                "notification-service", "/notifications/orders/paid", notificationPayload));
+        // B-17: Orchestration saga — replaces 3 separate outbox events with a single
+        // saga that has automatic compensation on failure and stuck-saga detection.
+        sagaOrchestrator.startOrderFulfillment(order, actorId);
 
         return OrderResponse.from(order);
     }
@@ -406,8 +391,16 @@ public class OrderServiceImpl implements OrderService {
         }
         OrderStatus previousStatus = order.getStatus();
         order.setStatus(OrderStatus.CANCELLED);
-        // BR06: Restore stock only if previously PAID
-        if (previousStatus == OrderStatus.PAID) {
+        Order saved = orderRepository.save(order);
+
+        // B-17: Trigger saga compensation if a saga exists for this order.
+        var sagaOpt = sagaRepo.findByAggregateTypeAndAggregateId("Order", orderId);
+        if (sagaOpt.isPresent()) {
+            sagaCompensationHandler.compensate(sagaOpt.get().getId(),
+                    "Manual cancellation by user/actor " + actorId);
+        } else if (previousStatus == OrderStatus.PAID) {
+            // Backwards-compat: keep the original STOCK_RESTORED outbox event for old orders
+            // without a saga (e.g., orders placed before the saga migration).
             for (OrderItem item : order.getItems()) {
                 String payload = String.format(
                         "{\"medicineId\":\"%s\",\"branchId\":\"%s\",\"qty\":%d,\"orderId\":\"%s\",\"actorId\":\"%s\"}",
@@ -417,7 +410,7 @@ public class OrderServiceImpl implements OrderService {
                         "inventory-service", "/inventory/orders/" + order.getId() + "/cancelled", payload));
             }
         }
-        return OrderResponse.from(orderRepository.save(order));
+        return OrderResponse.from(saved);
     }
 
     /**
