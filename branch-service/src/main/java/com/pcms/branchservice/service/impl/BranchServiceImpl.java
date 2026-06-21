@@ -74,10 +74,10 @@ public class BranchServiceImpl implements BranchService {
     public BranchResponse update(UUID id, UpdateBranchRequest request) {
         Branch branch = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch", id));
-        branch.setName(request.name());
-        branch.setAddress(request.address());
-        branch.setPhone(request.phone());
-        branch.setStatus(request.status());
+        if (request.name() != null) branch.setName(request.name());
+        if (request.address() != null) branch.setAddress(request.address());
+        if (request.phone() != null) branch.setPhone(request.phone());
+        if (request.status() != null) branch.setStatus(request.status());
         return toResponse(repository.save(branch));
     }
 
