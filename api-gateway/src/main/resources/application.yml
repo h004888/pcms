@@ -1,9 +1,22 @@
 server:
   port: 8080
 
+app:
+  jwt:
+    secret: "pcms-jwt-secret-key-must-be-at-least-32-bytes-long-for-hs256-signing-2026"
+
 spring:
   application:
     name: api-gateway
+  config:
+    import: "optional:configserver:http://localhost:8888"
+  profiles:
+    active: default
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
   cloud:
     gateway:
       discovery:
@@ -13,11 +26,11 @@ spring:
       server:
         webmvc:
           routes:
-            # Auth & User (UC01, UC02)
+            # Auth & User (UC01, UC02) + Dashboard + Audit Logs
             - id: user-service
               uri: lb://user-service
               predicates:
-                - Path=/api/v1/auth/**,/api/v1/users/**
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/dashboard/**,/api/v1/audit-logs/**
               filters:
                 - StripPrefix=2
             # Branch (UC03)
@@ -62,18 +75,18 @@ spring:
                 - Path=/api/v1/customers/**
               filters:
                 - StripPrefix=2
-            # Order (UC06)
+            # Order (UC06) + Coupons
             - id: order-service
               uri: lb://order-service
               predicates:
-                - Path=/api/v1/orders/**
+                - Path=/api/v1/orders/**,/api/v1/coupons/**
               filters:
                 - StripPrefix=2
-            # Payment (UC07)
+            # Payment (UC07) + Webhooks
             - id: payment-service
               uri: lb://payment-service
               predicates:
-                - Path=/api/v1/payments/**
+                - Path=/api/v1/payments/**,/api/v1/webhooks/**
               filters:
                 - StripPrefix=2
             # Prescription (UC12)
@@ -101,7 +114,7 @@ spring:
             - id: customer-portal-service
               uri: lb://customer-portal-service
               predicates:
-                - Path=/api/v1/shop/**,/api/v1/store/**,/api/v1/vaccine/**,/api/v1/health-articles/**,/api/v1/videos/**,/api/v1/lookup/**,/api/v1/verify-origin/**
+                - Path=/api/v1/shop/**,/api/v1/store/**,/api/v1/vaccine/**,/api/v1/vaccine-bookings/**,/api/v1/vaccination-ledger/**,/api/v1/health/**,/api/v1/health-articles/**,/api/v1/diseases/**,/api/v1/videos/**,/api/v1/lookup/**,/api/v1/verify-origin/**,/api/v1/addresses/**,/api/v1/favorites/**,/api/v1/family/**,/api/v1/cart/**,/api/v1/notif-settings/**,/api/v1/installment/**,/api/v1/wallet/**,/api/v1/vouchers/**,/api/v1/admin/videos/**
               filters:
                 - StripPrefix=2
             # Pharmacist Workbench (UC16) - Sprint 9
