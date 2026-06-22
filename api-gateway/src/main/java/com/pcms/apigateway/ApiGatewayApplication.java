@@ -4,23 +4,21 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsWebFilter;
-import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
 /**
  * API Gateway entry point.
  *
- * <p>Responsibilities (CR-03):
+ * <p>Responsibilities:
  * <ul>
  *   <li>Single entry point for all 12 business services.</li>
  *   <li>Routes requests based on path prefix (see {@code application.yml}).</li>
  *   <li>Forwards {@code Authorization} + {@code X-Correlation-Id} + {@code Idempotency-Key} headers.</li>
  *   <li>Applies CORS policy for the frontend dev server.</li>
  * </ul>
- *
- * <p>JWT validation and rate limiting will be added in a follow-up sprint.
  */
 @SpringBootApplication
 public class ApiGatewayApplication {
@@ -37,13 +35,20 @@ public class ApiGatewayApplication {
     }
 
     /**
-     * CORS configuration for the API Gateway (CR-03, dev-friendly).
+     * CORS configuration for the API Gateway (dev-friendly).
      *
-     * <p>For production, replace {@code ALLOWED_ORIGINS} with the actual
+     * <p>Spring Cloud Gateway 5.x with {@code server-webmvc} uses the
+     * <b>servlet</b> stack, so the reactive {@code CorsWebFilter} bean
+     * is ignored. We register a standard servlet {@link CorsFilter} that
+     * the servlet container will run <em>before</em> the gateway routing,
+     * so preflight {@code OPTIONS} requests get the right headers and never
+     * reach {@code JwtAuthenticationFilter}.
+     *
+     * <p>For production, replace {@link #ALLOWED_ORIGINS} with the actual
      * production domain. The {@code *} value is NOT allowed in production.
      */
     @Bean
-    public CorsWebFilter corsWebFilter() {
+    public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(ALLOWED_ORIGINS);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
@@ -64,6 +69,6 @@ public class ApiGatewayApplication {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-        return new CorsWebFilter(source);
+        return new CorsFilter(source);
     }
 }
