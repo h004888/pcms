@@ -8,9 +8,11 @@ import com.pcms.paymentservice.dto.InvoiceResponse;
 import com.pcms.paymentservice.dto.PaymentResponse;
 import com.pcms.paymentservice.dto.RefundHistoryResponse;
 import com.pcms.paymentservice.dto.RefundPaymentRequest;
+import com.pcms.paymentservice.entity.OutboxEvent;
 import com.pcms.paymentservice.entity.Payment;
 import com.pcms.paymentservice.enums.PaymentMethod;
 import com.pcms.paymentservice.enums.PaymentStatus;
+import com.pcms.paymentservice.repository.OutboxEventRepository;
 import com.pcms.paymentservice.repository.PaymentRepository;
 import com.pcms.paymentservice.service.PaymentService;
 import org.slf4j.Logger;
@@ -48,13 +50,16 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderClient orderClient;
+    private final OutboxEventRepository outboxEventRepository;
 
     @Value("${payment.gateway.timeout-ms:5000}")
     private long gatewayTimeoutMs;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository, OrderClient orderClient) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository, OrderClient orderClient,
+            OutboxEventRepository outboxEventRepository) {
         this.paymentRepository = paymentRepository;
         this.orderClient = orderClient;
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     @Override
@@ -127,12 +132,18 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment saved = paymentRepository.save(payment);
 
-        // Notify order-service that this order is paid (consumes stock, awards points)
-        try {
-            orderClient.markOrderPaid(request.orderId(), request.staffId());
-        } catch (Exception e) {
-            log.warn("Failed to notify order-service for order {}: {}", request.orderId(), e.getMessage());
-        }
+        // B-17: Emit OutboxEvent instead of synchronous orderClient call.
+        // PaymentOutboxPublisher will retry until SENT, triggering the saga
+        // in order-service. Atomic with the Payment record.
+        // NOTE: aggregateId MUST be the Order ID (not Payment ID) because
+        // the publisher's dispatch() passes it to OrderClient.markOrderPaid(orderId, ...)
+        outboxEventRepository.save(new OutboxEvent(
+                "Order", request.orderId(), "PAYMENT_COMPLETED",
+                "order-service",
+                "/orders/" + request.orderId() + "/pay",
+                String.format("{\"actorId\":\"%s\"}", request.staffId())));
+        log.info("[payment-outbox] Emitted PAYMENT_COMPLETED for order {} (payment {})",
+                request.orderId(), saved.getId());
 
         return PaymentResponse.from(saved);
     }
