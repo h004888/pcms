@@ -80,6 +80,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        // CORS preflight requests bypass JWT validation (browser sends OPTIONS without
+        // Authorization header; Spring Cloud Gateway needs to respond with CORS headers
+        // before the auth filter would otherwise reject with 401).
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (isPublic(path)) {
             filterChain.doFilter(request, response);
             return;
