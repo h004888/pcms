@@ -261,11 +261,7 @@ public class UserServiceImpl implements UserService {
                 refreshToken,
                 "Bearer",
                 ACCESS_TOKEN_EXPIRES_IN_SECONDS,
-                user.getId(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getRole(),
-                user.getBranchId());
+                LoginResponse.UserInfo.from(user));
     }
 
     @Override
@@ -315,11 +311,7 @@ public class UserServiceImpl implements UserService {
                 newRefreshToken,
                 "Bearer",
                 ACCESS_TOKEN_EXPIRES_IN_SECONDS,
-                user.getId(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getRole(),
-                user.getBranchId());
+                LoginResponse.UserInfo.from(user));
     }
 
     @Override
