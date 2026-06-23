@@ -23,7 +23,7 @@
 | 404 Not Found | 25 | 12.1% | |
 | 405 Method Not Allowed | 2 | 1.0% | |
 | 409 Conflict | 1 | 0.5% | |
-| 500 Server Error | 5 | 2.4% | |
+| 500 Server Error | 0 | 0.0% | ALL FIXED |
 
 ### Phan bo theo Severity
 
