@@ -147,8 +147,8 @@ def build_realistic_body(method, url, service, controller):
         return json.dumps([{
             "medicineId": med_id,
             "branchId": branch_id,
-            "batchNumber": "BATCH-" + str(int(time.time()) % 10000),
-            "quantity": 10,
+            "batchNo": "BATCH-" + str(int(time.time()) % 10000),
+            "qty": 10,
             "expiryDate": "2027-12-31",
             "purchasePrice": 1000.0,
             "sellingPrice": 1500.0
