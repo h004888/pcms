@@ -54,8 +54,6 @@ def get_real_uuid_from_list(service, resource_name):
     cache_key = f"{service}:{resource_name}"
     if cache_key in uuid_cache:
         return uuid_cache[cache_key]
-    # Try common list endpoints
-    candidates = [resource_name, f"{resource_name}s", f"{resource_name}-list"]
     # Service prefix mapping
     service_paths = {
         "branch-service": "branches",
@@ -71,22 +69,35 @@ def get_real_uuid_from_list(service, resource_name):
         "user-service": "users",
         "report-service": "reports",
         "notification-service": "notifications",
+        "ecom-service": "products",
+        "health-service": "records",
+        "mobile-service": "devices",
+        "pharmacist-mobile-service": "tasks",
+        "pharmacist-workbench-service": "consultations",
     }
     list_path = service_paths.get(service, resource_name)
-    try:
-        r = subprocess.run(
-            ["curl", "-s", f"{GATEWAY}/api/v1/{list_path}",
-             "-H", f"Authorization: Bearer {get_token()}"],
-            capture_output=True, text=True, timeout=10
-        )
-        if r.stdout:
-            # Try to extract first ID
-            match = re.search(r'"id"\s*:\s*"([0-9a-f-]{36})"', r.stdout)
-            if match:
-                uuid_cache[cache_key] = match.group(1)
-                return match.group(1)
-    except Exception:
-        pass
+    # Try the mapped path first, then a few candidates
+    candidate_paths = [list_path, resource_name, f"{resource_name}s"]
+    seen = set()
+    for lp in candidate_paths:
+        if lp in seen or not lp:
+            continue
+        seen.add(lp)
+        try:
+            r = subprocess.run(
+                ["curl", "-s", f"{GATEWAY}/api/v1/{lp}",
+                 "-H", f"Authorization: Bearer {get_token()}"],
+                capture_output=True, text=True, timeout=10,
+                encoding="utf-8", errors="replace"
+            )
+            if r.stdout and len(r.stdout) > 20:
+                # Try to extract first ID (UUID)
+                match = re.search(r'"id"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"', r.stdout)
+                if match:
+                    uuid_cache[cache_key] = match.group(1)
+                    return match.group(1)
+        except Exception:
+            pass
     return None
 
 
@@ -145,29 +156,143 @@ def _build_from_schema(dto_name, schemas):
     return body
 
 
+def _normalize_endpoint_key(url, service, method):
+    """Build all candidate key formats for endpoint-dto-map lookup.
+
+    The endpoint-dto-map.json stores keys in the form:
+        service:METHOD:<path>
+    where <path> is what comes AFTER /api/v1/<resource> segment, e.g.:
+        POST /api/v1/branches         -> "branch-service:POST:"           (empty)
+        PUT /api/v1/branches/{id}     -> "branch-service:PUT:/{id}"
+        PUT /api/v1/branches/{id}/mgr -> "branch-service:PUT:/{id}/manager"  (approx)
+    """
+    # Strip host and query
+    path = url.replace("http://localhost:8080", "").split("?")[0].rstrip("/")
+    # Strip /api/v1/ prefix
+    if path.startswith("/api/v1/"):
+        path = path[7:]
+    elif path.startswith("api/v1/"):
+        path = path[6:]
+    if path.startswith("/"):
+        path = path[1:]
+
+    # Replace numeric IDs and UUID-like tokens with {id}
+    path = re.sub(r'/\d+(?=/|$)', '/{id}', path)
+    path = re.sub(r'/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=/|$)',
+                  '/{id}', path)
+
+    # Split into segments and build candidates that mirror the map's format
+    segments = path.split("/") if path else []
+    candidates = []
+    # Variant A: drop the first segment (resource name) — keys store what's after it
+    if len(segments) >= 2:
+        tail = "/".join(segments[1:])
+        candidates.append(f"/{tail}")
+        if len(segments) >= 3:
+            # deeper: e.g., "{id}/manager"
+            candidates.append(f"/{tail}")
+    # Variant B: full normalized path with leading slash
+    if path:
+        candidates.append(f"/{path}")
+    # Variant C: just the full path (no leading slash)
+    if path:
+        candidates.append(path)
+    # Variant D: empty string (collection root: POST /api/v1/branches -> "")
+    candidates.append("")
+    # De-dupe while preserving order
+    seen = set()
+    out = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            out.append(c)
+    return out
+
+
+def _fuzzy_lookup_endpoint(endpoint_map, service, method, candidates):
+    """Try exact match, then fuzzy by service+method, then path-suffix."""
+    # 1. Exact candidate match
+    for c in candidates:
+        key = f"{service}:{method}:{c}"
+        if key in endpoint_map:
+            return endpoint_map[key]
+    # 2. Fuzzy: same service+method, longest path-suffix match
+    prefix = f"{service}:{method}:"
+    best_key = None
+    best_len = -1
+    for k, v in endpoint_map.items():
+        if not k.startswith(prefix):
+            continue
+        kpath = k[len(prefix):]
+        for c in candidates:
+            if not c:
+                continue
+            if c.endswith(kpath) or kpath.endswith(c):
+                if len(kpath) > best_len:
+                    best_len = len(kpath)
+                    best_key = v
+                    break
+    if best_key:
+        return best_key
+    # 3. Fallback: empty-path key for this service+method (collection endpoint)
+    empty_key = f"{service}:{method}:"
+    if empty_key in endpoint_map:
+        return endpoint_map[empty_key]
+    return None
+
+
+def _cross_service_lookup(endpoint_map, service, method, url):
+    """Last-resort: try to find a similar endpoint from any service.
+
+    Used when the target service has no entry in the map. E.g., 'addresses'
+    (customer-portal-service) POST can borrow from 'customers' (customer-service).
+    """
+    path = url.replace("http://localhost:8080", "").split("?")[0].rstrip("/")
+    if path.startswith("/api/v1/"):
+        path = path[7:]
+    elif path.startswith("api/v1/"):
+        path = path[6:]
+    if path.startswith("/"):
+        path = path[1:]
+    # Take last meaningful token (the resource/action name)
+    parts = path.split("/")
+    leaf = parts[-1] if parts else ""
+    if not leaf:
+        return None
+    # Search across all services for an endpoint with matching leaf
+    for k, v in endpoint_map.items():
+        if not k.endswith(":" + leaf) and not k.endswith("/" + leaf):
+            continue
+        # Match by method
+        parts2 = k.split(":", 2)
+        if len(parts2) >= 2 and parts2[1] == method:
+            return v
+    return None
+
+
 def build_realistic_body(method, url, service, controller):
     """Build realistic body using extracted DTO schemas, with fallback."""
     if method not in ("POST", "PUT", "PATCH"):
         return None
 
-    # Try endpoint map
     endpoint_map = _get_endpoint_map()
     schemas = _get_schemas()
 
-    # Build path candidates to match
-    path = url.replace("http://localhost:8080", "").split("?")[0]
-    if path.startswith("/api/v1/"):
-        path = path[7:]
-    candidates = [path, f"/{path}"]
+    candidates = _normalize_endpoint_key(url, service, method)
+    dto_name = _fuzzy_lookup_endpoint(endpoint_map, service, method, candidates)
+    if not dto_name:
+        # Last-resort: cross-service leaf match
+        dto_name = _cross_service_lookup(endpoint_map, service, method, url)
 
-    for candidate in candidates:
-        key = f"{service}:{method}:{candidate}"
-        dto_name = endpoint_map.get(key)
-        if dto_name and dto_name in schemas:
-            body = _build_from_schema(dto_name, schemas)
-            # Wrap in list if all fields are collections
-            is_list = any('List' in str(f.get('type','')) or 'Set' in str(f.get('type','')) for f in schemas[dto_name].values())
-            return json.dumps([body] if is_list else body)
+    if dto_name and dto_name in schemas:
+        body = _build_from_schema(dto_name, schemas)
+        is_list = any('List' in str(f.get('type', '')) or 'Set' in str(f.get('type', ''))
+                      for f in schemas[dto_name].values())
+        return json.dumps([body] if is_list else body)
+
+    # String raw body endpoints (e.g., POST /{id}/messages)
+    if dto_name == "String":
+        return json.dumps("test message")
 
     # Fallback: hardcoded handlers
     if method == "POST" and "addresses" in url:
@@ -201,22 +326,70 @@ def build_realistic_body(method, url, service, controller):
 
 
 def replace_path_uuid(url):
-    """Replace /1, /2, etc in path with real UUID"""
-    # Match /1 or /2 at end, or /{id}
+    """Replace /1, /2 etc. and any existing placeholder with real UUIDs.
+
+    Fixes the previous bug where the regex concatenated prefix+id (e.g.,
+    'medicines/1' became 'medicines11f16edf...'). Now we replace the numeric
+    segment with a real UUID fetched from the matching service's list endpoint.
+    """
+    # Identify the service by inspecting the URL path
+    service_for_url = None
+    path = url.replace("http://localhost:8080", "").split("?")[0].lstrip("/")
+    if path.startswith("api/v1/"):
+        path = path[7:]
+    seg0 = path.split("/")[0] if path else ""
+
+    # Map URL resource segment -> service name
+    RESOURCE_TO_SERVICE = {
+        "branches": "branch-service",
+        "medicines": "catalog-service",
+        "categories": "category-service",
+        "customers": "customer-service",
+        "suppliers": "supplier-service",
+        "users": "user-service",
+        "orders": "order-service",
+        "payments": "payment-service",
+        "prescriptions": "prescription-service",
+        "notifications": "notification-service",
+        "addresses": "customer-portal-service",
+        "cart": "customer-portal-service",
+        "family": "customer-portal-service",
+        "favorites": "customer-portal-service",
+        "inventory": "inventory-service",
+        "consultations": "pharmacist-workbench-service",
+    }
+    # Suffix-based fallback for nested-resource URLs (e.g., /{id}/manager, /{id}/staff)
+    SVC_HINT_SUFFIX = {
+        "manager": "branch-service",
+        "staff": "branch-service",
+        "image": "catalog-service",
+        "default": "customer-portal-service",
+        "messages": "pharmacist-workbench-service",
+        "role": "user-service",
+        "status": "user-service",
+        "branch": "user-service",
+    }
+    service_for_url = RESOURCE_TO_SERVICE.get(seg0)
+    if not service_for_url:
+        # Try to detect service from second segment
+        parts = path.split("/")
+        if len(parts) >= 2:
+            service_for_url = SVC_HINT_SUFFIX.get(parts[1])
+
     def repl(m):
-        path_prefix = m.group(1)
-        idx = m.group(2)
-        if idx.isdigit():
-            # Try to get real UUID
-            # Extract resource from path
-            parts = path_prefix.strip("/").split("/")
-            resource = parts[-1] if parts else "resource"
-            uuid = get_real_uuid_from_list("", resource)
+        prefix = m.group(1)  # path prefix WITHOUT the digit
+        if service_for_url:
+            # Resource name = first segment of the URL
+            resource = seg0 or "resource"
+            uuid = get_real_uuid_from_list(service_for_url, resource)
             if uuid:
-                return f"{path_prefix}{uuid}"
-        return m.group(0)
-    # Match /something/{number}
-    return re.sub(r'(/\w+?)/(\d+)(?=/|$)', repl, url)
+                return f"{prefix}{uuid}"
+        # Fallback: replace digit with a fixed UUID
+        return f"{prefix}00000000-0000-0000-0000-000000000000"
+
+    # Replace /<digits> at end or before another /
+    url = re.sub(r'(/)(\d+)(?=/|$)', repl, url)
+    return url
 
 
 def run_smart_test(t):
@@ -260,8 +433,25 @@ def run_smart_test(t):
 
 # Run
 print("Loading UUIDs from list endpoints...")
-for svc in ["branch-service", "catalog-service", "customer-service", "supplier-service", "user-service"]:
-    get_real_uuid_from_list(svc, svc.split("-")[0])
+WARMUP_SERVICES = [
+    ("branch-service", "branches"),
+    ("catalog-service", "medicines"),
+    ("category-service", "categories"),
+    ("customer-service", "customers"),
+    ("customer-portal-service", "addresses"),
+    ("inventory-service", "inventory"),
+    ("order-service", "orders"),
+    ("payment-service", "payments"),
+    ("prescription-service", "prescriptions"),
+    ("supplier-service", "suppliers"),
+    ("user-service", "users"),
+    ("report-service", "reports"),
+    ("notification-service", "notifications"),
+    ("pharmacist-workbench-service", "consultations"),
+]
+# Sequential warmup — avoids auth race conditions
+for svc, res in WARMUP_SERVICES:
+    get_real_uuid_from_list(svc, res)
 print(f"  Got {len(uuid_cache)} UUIDs cached")
 
 print(f"\nRunning {len(TEST_PLAN)} smart tests...")
