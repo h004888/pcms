@@ -1,0 +1,1573 @@
+{
+  "CreateBranchRequest": {
+    "code": {
+      "type": "String",
+      "required": false,
+      "sample": "test-code"
+    },
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "address": {
+      "type": "String",
+      "required": false,
+      "sample": "test-address"
+    }
+  },
+  "UpdateBranchRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "address": {
+      "type": "String",
+      "required": false,
+      "sample": "test-address"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    }
+  },
+  "CreateMedicineRequest": {
+    "sku": {
+      "type": "String",
+      "required": false,
+      "sample": "test-sku"
+    },
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "categoryId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "supplierId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "price": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    },
+    "unit": {
+      "type": "String",
+      "required": false,
+      "sample": "test-unit"
+    },
+    "prescriptionRequired": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    }
+  },
+  "UpdateMedicineRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "categoryId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "supplierId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "price": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    },
+    "unit": {
+      "type": "String",
+      "required": false,
+      "sample": "test-unit"
+    },
+    "prescriptionRequired": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "imageUrl": {
+      "type": "String",
+      "required": false,
+      "sample": "test-imageUrl"
+    }
+  },
+  "CreateCategoryRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    }
+  },
+  "UpdateCategoryRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "description": {
+      "type": "String",
+      "required": false,
+      "sample": "test-description"
+    }
+  },
+  "AddCartItemRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "CheckoutConfirmRequest": {
+    "addressId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "shippingMethod": {
+      "type": "String",
+      "required": true,
+      "sample": "test-shippingMethod"
+    },
+    "voucherCode": {
+      "type": "String",
+      "required": false,
+      "sample": "test-voucherCode"
+    }
+  },
+  "CheckoutPreviewRequest": {
+    "addressId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "shippingMethod": {
+      "type": "String",
+      "required": true,
+      "sample": "test-shippingMethod"
+    }
+  },
+  "CreateAddressRequest": {
+    "label": {
+      "type": "AddressLabel",
+      "required": true,
+      "sample": null
+    },
+    "receiverName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-receiverName"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "province": {
+      "type": "String",
+      "required": false,
+      "sample": "test-province"
+    },
+    "district": {
+      "type": "String",
+      "required": false,
+      "sample": "test-district"
+    },
+    "ward": {
+      "type": "String",
+      "required": false,
+      "sample": "test-ward"
+    },
+    "street": {
+      "type": "String",
+      "required": false,
+      "sample": "test-street"
+    },
+    "isDefault": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "lat": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    }
+  },
+  "CreateFamilyMemberRequest": {
+    "memberName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-memberName"
+    },
+    "relationship": {
+      "type": "String",
+      "required": false,
+      "sample": "test-relationship"
+    },
+    "dob": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    },
+    "gender": {
+      "type": "Gender",
+      "required": false,
+      "sample": null
+    },
+    "allergies": {
+      "type": "List<String>",
+      "required": false,
+      "sample": []
+    }
+  },
+  "CreateVaccineBookingRequest": {
+    "vaccineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "slotId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "absent": {
+      "type": "if",
+      "required": false,
+      "sample": null
+    },
+    "familyMemberId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "CreateVideoRequest": {
+    "title": {
+      "type": "String",
+      "required": false,
+      "sample": "test-title"
+    },
+    "youtubeId": {
+      "type": "String",
+      "required": false,
+      "sample": "test-youtubeId"
+    },
+    "thumbnailUrl": {
+      "type": "String",
+      "required": false,
+      "sample": "test-thumbnailUrl"
+    },
+    "source": {
+      "type": "String",
+      "required": false,
+      "sample": "test-source"
+    },
+    "durationSec": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    }
+  },
+  "InstallmentConfirmRequest": {
+    "orderId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "provider": {
+      "type": "String",
+      "required": true,
+      "sample": "test-provider"
+    }
+  },
+  "InstallmentQuoteRequest": {
+    "amount": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    },
+    "months": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    }
+  },
+  "RedeemPointsRequest": {
+    "points": {
+      "type": "int",
+      "required": false,
+      "sample": 1
+    }
+  },
+  "UpdateAddressRequest": {
+    "label": {
+      "type": "AddressLabel",
+      "required": false,
+      "sample": null
+    },
+    "receiverName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-receiverName"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "province": {
+      "type": "String",
+      "required": false,
+      "sample": "test-province"
+    },
+    "district": {
+      "type": "String",
+      "required": false,
+      "sample": "test-district"
+    },
+    "ward": {
+      "type": "String",
+      "required": false,
+      "sample": "test-ward"
+    },
+    "street": {
+      "type": "String",
+      "required": false,
+      "sample": "test-street"
+    },
+    "isDefault": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "lat": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    }
+  },
+  "UpdateFamilyMemberRequest": {
+    "memberName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-memberName"
+    },
+    "relationship": {
+      "type": "String",
+      "required": false,
+      "sample": "test-relationship"
+    },
+    "dob": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    },
+    "gender": {
+      "type": "Gender",
+      "required": false,
+      "sample": null
+    },
+    "allergies": {
+      "type": "List<String>",
+      "required": false,
+      "sample": []
+    }
+  },
+  "UpdateNotificationSettingsPatchRequest": {
+    "pushEnabled": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "emailEnabled": {
+      "type": "Boolean",
+      "required": false,
+      "sample": "test@pcms.vn"
+    },
+    "smsEnabled": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "marketingEnabled": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "orderUpdates": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "lowStockAlert": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    }
+  },
+  "UpdateNotificationSettingsRequest": {
+    "pushEnabled": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "emailEnabled": {
+      "type": "Boolean",
+      "required": false,
+      "sample": "test@pcms.vn"
+    },
+    "smsEnabled": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "marketingEnabled": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "orderUpdates": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "lowStockAlert": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    }
+  },
+  "UpdateVideoRequest": {
+    "title": {
+      "type": "String",
+      "required": false,
+      "sample": "test-title"
+    },
+    "youtubeId": {
+      "type": "String",
+      "required": false,
+      "sample": "test-youtubeId"
+    },
+    "thumbnailUrl": {
+      "type": "String",
+      "required": false,
+      "sample": "test-thumbnailUrl"
+    },
+    "source": {
+      "type": "String",
+      "required": false,
+      "sample": "test-source"
+    },
+    "durationSec": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    },
+    "category": {
+      "type": "String",
+      "required": false,
+      "sample": "test-category"
+    }
+  },
+  "AddPointsRequest": {
+    "points": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    },
+    "refOrderId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "CreateCustomerRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "email": {
+      "type": "String",
+      "required": false,
+      "sample": "test@pcms.vn"
+    },
+    "address": {
+      "type": "String",
+      "required": false,
+      "sample": "test-address"
+    },
+    "dob": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    }
+  },
+  "CustomerPortalRegisterRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "email": {
+      "type": "String",
+      "required": false,
+      "sample": "test@pcms.vn"
+    },
+    "address": {
+      "type": "String",
+      "required": false,
+      "sample": "test-address"
+    },
+    "dob": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    }
+  },
+  "UpdateCustomerRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "email": {
+      "type": "String",
+      "required": false,
+      "sample": "test@pcms.vn"
+    },
+    "address": {
+      "type": "String",
+      "required": false,
+      "sample": "test-address"
+    },
+    "dob": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    }
+  },
+  "CreateFlashSaleRequest": {
+    "name": {
+      "type": "String",
+      "required": true,
+      "sample": "test-name"
+    },
+    "description": {
+      "type": "String",
+      "required": false,
+      "sample": "test-description"
+    },
+    "startsAt": {
+      "type": "LocalDateTime",
+      "required": true,
+      "sample": "2027-12-31T00:00:00"
+    },
+    "endsAt": {
+      "type": "LocalDateTime",
+      "required": true,
+      "sample": "2027-12-31T00:00:00"
+    },
+    "discountPct": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    },
+    "maxQtyPerUser": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    }
+  },
+  "FlashSaleItemRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "originalPrice": {
+      "type": "BigDecimal",
+      "required": true,
+      "sample": 100.0
+    },
+    "salePrice": {
+      "type": "BigDecimal",
+      "required": true,
+      "sample": 100.0
+    }
+  },
+  "SubmitQuizRequest": {
+    "customerId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "BulkImportBatchItemRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "batchNo": {
+      "type": "String",
+      "required": false,
+      "sample": "test-batchNo"
+    },
+    "barcode": {
+      "type": "String",
+      "required": false,
+      "sample": "test-barcode"
+    },
+    "qty": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    },
+    "expiryDate": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    },
+    "minStockLevel": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    },
+    "supplierId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "ConsumeBatchRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "qty": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    },
+    "actorId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "CreateBatchRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "batchNo": {
+      "type": "String",
+      "required": false,
+      "sample": "test-batchNo"
+    },
+    "barcode": {
+      "type": "String",
+      "required": false,
+      "sample": "test-barcode"
+    },
+    "qty": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    },
+    "expiryDate": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    },
+    "actorId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "supplierId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "ExportBatchRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "qty": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    },
+    "reason": {
+      "type": "String",
+      "required": true,
+      "sample": "test-reason"
+    }
+  },
+  "TransferBatchRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "fromBranchId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "toBranchId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "qty": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    },
+    "reason": {
+      "type": "String",
+      "required": true,
+      "sample": "test-reason"
+    }
+  },
+  "CreateReminderRequest": {
+    "customerId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "familyMemberId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "medicineName": {
+      "type": "String",
+      "required": true,
+      "sample": "test-medicineName"
+    },
+    "dosage": {
+      "type": "String",
+      "required": false,
+      "sample": "test-dosage"
+    },
+    "frequency": {
+      "type": "String",
+      "required": true,
+      "sample": "test-frequency"
+    },
+    "scheduleTime": {
+      "type": "String",
+      "required": false,
+      "sample": "test-scheduleTime"
+    },
+    "startDate": {
+      "type": "LocalDate",
+      "required": true,
+      "sample": "2027-12-31"
+    },
+    "endDate": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    }
+  },
+  "BroadcastRequest": {
+    "audience": {
+      "type": "Audience",
+      "required": false,
+      "sample": null
+    },
+    "channels": {
+      "type": "Set<NotificationChannel>",
+      "required": true,
+      "sample": []
+    },
+    "template": {
+      "type": "String",
+      "required": false,
+      "sample": "test-template"
+    },
+    "title": {
+      "type": "String",
+      "required": true,
+      "sample": "test-title"
+    },
+    "roles": {
+      "type": "Set<String>",
+      "required": false,
+      "sample": []
+    },
+    "users": {
+      "type": "Set<UUID>",
+      "required": false,
+      "sample": []
+    }
+  },
+  "BulkNotificationRequest": {
+    "recipientIds": {
+      "type": "List<UUID>",
+      "required": true,
+      "sample": []
+    },
+    "channel": {
+      "type": "NotificationChannel",
+      "required": true,
+      "sample": null
+    },
+    "template": {
+      "type": "String",
+      "required": false,
+      "sample": "test-template"
+    },
+    "title": {
+      "type": "String",
+      "required": true,
+      "sample": "test-title"
+    }
+  },
+  "ComposeNotificationRequest": {
+    "recipientIds": {
+      "type": "Set<UUID>",
+      "required": false,
+      "sample": []
+    },
+    "recipientId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "channels": {
+      "type": "Set<NotificationChannel>",
+      "required": false,
+      "sample": []
+    },
+    "channel": {
+      "type": "NotificationChannel",
+      "required": false,
+      "sample": null
+    },
+    "template": {
+      "type": "String",
+      "required": false,
+      "sample": "test-template"
+    },
+    "variables": {
+      "type": "Map<String, Object>",
+      "required": false,
+      "sample": {}
+    },
+    "title": {
+      "type": "String",
+      "required": false,
+      "sample": "test-title"
+    }
+  },
+  "CreateNotificationRequest": {
+    "recipientId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "channel": {
+      "type": "NotificationChannel",
+      "required": true,
+      "sample": null
+    },
+    "template": {
+      "type": "String",
+      "required": false,
+      "sample": "test-template"
+    },
+    "title": {
+      "type": "String",
+      "required": true,
+      "sample": "test-title"
+    },
+    "body": {
+      "type": "String",
+      "required": true,
+      "sample": "test-body"
+    }
+  },
+  "CreateNotificationTemplateRequest": {
+    "code": {
+      "type": "String",
+      "required": true,
+      "sample": "test-code"
+    },
+    "channel": {
+      "type": "NotificationChannel",
+      "required": true,
+      "sample": null
+    },
+    "titleTemplate": {
+      "type": "String",
+      "required": true,
+      "sample": "test-titleTemplate"
+    },
+    "bodyTemplate": {
+      "type": "String",
+      "required": true,
+      "sample": "test-bodyTemplate"
+    },
+    "variables": {
+      "type": "String",
+      "required": false,
+      "sample": "test-variables"
+    }
+  },
+  "ExpiryAlertNotificationRequest": {
+    "branchId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "medicineName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-medicineName"
+    },
+    "batchNo": {
+      "type": "String",
+      "required": true,
+      "sample": "test-batchNo"
+    },
+    "expiryDate": {
+      "type": "LocalDate",
+      "required": true,
+      "sample": "2027-12-31"
+    }
+  },
+  "LowStockNotificationRequest": {
+    "branchId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "medicineName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-medicineName"
+    },
+    "qtyOnHand": {
+      "type": "Integer",
+      "required": true,
+      "sample": 1
+    },
+    "minQty": {
+      "type": "Integer",
+      "required": true,
+      "sample": 1
+    }
+  },
+  "OrderPaidNotificationRequest": {
+    "orderId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "orderNumber": {
+      "type": "String",
+      "required": true,
+      "sample": "test-orderNumber"
+    },
+    "customerId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "staffId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "total": {
+      "type": "BigDecimal",
+      "required": true,
+      "sample": 100.0
+    }
+  },
+  "CreateCouponRequest": {
+    "code": {
+      "type": "String",
+      "required": false,
+      "sample": "test-code"
+    },
+    "description": {
+      "type": "String",
+      "required": false,
+      "sample": "test-description"
+    },
+    "couponType": {
+      "type": "CouponType",
+      "required": true,
+      "sample": null
+    },
+    "value": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    },
+    "validFrom": {
+      "type": "LocalDateTime",
+      "required": true,
+      "sample": "2027-12-31T00:00:00"
+    },
+    "validTo": {
+      "type": "LocalDateTime",
+      "required": true,
+      "sample": "2027-12-31T00:00:00"
+    }
+  },
+  "CreateOrderRequest": {
+    "customerId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "staffId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "prescriptionId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "items": {
+      "type": "List<OrderItemRequest>",
+      "required": false,
+      "sample": []
+    }
+  },
+  "OrderItemRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "UpdateCouponRequest": {
+    "description": {
+      "type": "String",
+      "required": false,
+      "sample": "test-description"
+    },
+    "couponType": {
+      "type": "CouponType",
+      "required": false,
+      "sample": null
+    },
+    "value": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    },
+    "validFrom": {
+      "type": "LocalDateTime",
+      "required": false,
+      "sample": "2027-12-31T00:00:00"
+    },
+    "validTo": {
+      "type": "LocalDateTime",
+      "required": false,
+      "sample": "2027-12-31T00:00:00"
+    },
+    "maxUses": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
+    }
+  },
+  "CreatePaymentRequest": {
+    "orderId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "paymentMethod": {
+      "type": "PaymentMethod",
+      "required": true,
+      "sample": null
+    },
+    "amount": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    },
+    "tenderedAmount": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    },
+    "staffId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "RefundPaymentRequest": {
+    "amount": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    }
+  },
+  "MarkVipRequest": {
+    "customerId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "tier": {
+      "type": "String",
+      "required": true,
+      "sample": "test-tier"
+    }
+  },
+  "ScheduleFollowUpRequest": {
+    "customerId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "orderId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "prescriptionId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "daysFromNow": {
+      "type": "Integer",
+      "required": true,
+      "sample": 1
+    }
+  },
+  "StartConsultationRequest": {
+    "customerId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "CreatePrescriptionRequest": {
+    "patientId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "doctorId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "diagnosis": {
+      "type": "String",
+      "required": true,
+      "sample": "test-diagnosis"
+    },
+    "notes": {
+      "type": "String",
+      "required": false,
+      "sample": "test-notes"
+    },
+    "items": {
+      "type": "List<PrescriptionItemRequest>",
+      "required": false,
+      "sample": []
+    },
+    "saveAsDraft": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    }
+  },
+  "PrescriptionItemRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "dosage": {
+      "type": "String",
+      "required": false,
+      "sample": "test-dosage"
+    }
+  },
+  "UpdatePrescriptionRequest": {
+    "diagnosis": {
+      "type": "String",
+      "required": true,
+      "sample": "test-diagnosis"
+    },
+    "notes": {
+      "type": "String",
+      "required": false,
+      "sample": "test-notes"
+    }
+  },
+  "CreateReportScheduleRequest": {
+    "type": {
+      "type": "String",
+      "required": false,
+      "sample": "test-type"
+    },
+    "format": {
+      "type": "String",
+      "required": false,
+      "sample": "test-format"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "cronExpression": {
+      "type": "String",
+      "required": false,
+      "sample": "test-cronExpression"
+    },
+    "recipientEmail": {
+      "type": "String",
+      "required": false,
+      "sample": "test@pcms.vn"
+    }
+  },
+  "InventoryReportRequest": {
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "fromDate": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    }
+  },
+  "ReportExportRequest": {
+    "supplied": {
+      "type": "be",
+      "required": false,
+      "sample": null
+    },
+    "reportType": {
+      "type": "String",
+      "required": false,
+      "sample": "test-reportType"
+    },
+    "format": {
+      "type": "String",
+      "required": false,
+      "sample": "test-format"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "fromDate": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    },
+    "toDate": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
+    }
+  },
+  "RevenueReportRequest": {
+    "fromDate": {
+      "type": "LocalDate",
+      "required": true,
+      "sample": "2027-12-31"
+    },
+    "toDate": {
+      "type": "LocalDate",
+      "required": true,
+      "sample": "2027-12-31"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "StaffReportRequest": {
+    "fromDate": {
+      "type": "LocalDate",
+      "required": true,
+      "sample": "2027-12-31"
+    },
+    "toDate": {
+      "type": "LocalDate",
+      "required": true,
+      "sample": "2027-12-31"
+    }
+  },
+  "CreateSupplierRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "taxCode": {
+      "type": "String",
+      "required": false,
+      "sample": "test-taxCode"
+    },
+    "contactPerson": {
+      "type": "String",
+      "required": false,
+      "sample": "test-contactPerson"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "email": {
+      "type": "String",
+      "required": false,
+      "sample": "test@pcms.vn"
+    },
+    "address": {
+      "type": "String",
+      "required": false,
+      "sample": "test-address"
+    },
+    "bankName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-bankName"
+    }
+  },
+  "UpdateSupplierRequest": {
+    "name": {
+      "type": "String",
+      "required": false,
+      "sample": "test-name"
+    },
+    "taxCode": {
+      "type": "String",
+      "required": false,
+      "sample": "test-taxCode"
+    },
+    "contactPerson": {
+      "type": "String",
+      "required": false,
+      "sample": "test-contactPerson"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "email": {
+      "type": "String",
+      "required": false,
+      "sample": "test@pcms.vn"
+    },
+    "address": {
+      "type": "String",
+      "required": false,
+      "sample": "test-address"
+    },
+    "bankName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-bankName"
+    },
+    "bankAccount": {
+      "type": "String",
+      "required": false,
+      "sample": "test-bankAccount"
+    }
+  },
+  "AssignBranchRequest": {
+    "set": {
+      "type": "When",
+      "required": false,
+      "sample": null
+    }
+  },
+  "ChangePasswordRequest": {
+    "characters": {
+      "type": "8",
+      "required": false,
+      "sample": null
+    },
+    "uppercase": {
+      "type": "contain",
+      "required": false,
+      "sample": null
+    },
+    "currentPassword": {
+      "type": "String",
+      "required": true,
+      "sample": "test-currentPassword"
+    },
+    "hoa": {
+      "type": "chữ",
+      "required": false,
+      "sample": null
+    },
+    "newPassword": {
+      "type": "String",
+      "required": false,
+      "sample": "test-newPassword"
+    }
+  },
+  "CreateUserRequest": {
+    "email": {
+      "type": "String",
+      "required": false,
+      "sample": "test@pcms.vn"
+    },
+    "fullName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-fullName"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "role": {
+      "type": "Role",
+      "required": true,
+      "sample": null
+    }
+  },
+  "LoginRequest": {
+    "email": {
+      "type": "String",
+      "required": false,
+      "sample": "test@pcms.vn"
+    }
+  },
+  "ResetPasswordRequest": {
+    "token": {
+      "type": "String",
+      "required": true,
+      "sample": "test-token"
+    }
+  },
+  "UpdateUserRequest": {
+    "fullName": {
+      "type": "String",
+      "required": false,
+      "sample": "test-fullName"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "role": {
+      "type": "Role",
+      "required": true,
+      "sample": null
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "VerifyEmailRequest": {
+    "link": {
+      "type": "email",
+      "required": false,
+      "sample": null
+    }
+  }
+}
