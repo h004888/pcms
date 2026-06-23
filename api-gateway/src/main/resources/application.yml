@@ -8,6 +8,8 @@ app:
 spring:
   application:
     name: api-gateway
+  main:
+    allow-bean-definition-overriding: true
   config:
     import: "optional:configserver:http://localhost:8888"
   profiles:
@@ -150,6 +152,20 @@ spring:
               uri: lb://ai-engine-service
               predicates:
                 - Path=/api/v1/ai/**
+              filters:
+                - StripPrefix=2
+            # Admin Video routes - explicit paths for /admin/videos/**
+            - id: customer-portal-admin-videos
+              uri: lb://customer-portal-service
+              predicates:
+                - Path=/api/v1/admin/videos/**
+              filters:
+                - StripPrefix=2
+            # Flash sales under ecom-ops (admin)
+            - id: ecom-ops-flash-sales
+              uri: lb://ecom-ops-service
+              predicates:
+                - Path=/api/v1/admin/videos/flash-sales/**
               filters:
                 - StripPrefix=2
 
