@@ -49,34 +49,35 @@ def get_token(role="ADMIN"):
         return ""
 
 
-def get_real_uuid_from_list(service, resource_name):
-    """Fetch real UUIDs from list endpoint"""
-    cache_key = f"{service}:{resource_name}"
+# Service prefix mapping
+SERVICE_PATHS = {
+    "branch-service": "branches",
+    "catalog-service": "medicines",
+    "category-service": "categories",
+    "customer-service": "customers",
+    "customer-portal-service": "addresses",
+    "inventory-service": "inventory",
+    "order-service": "orders",
+    "payment-service": "payments",
+    "prescription-service": "prescriptions",
+    "supplier-service": "suppliers",
+    "user-service": "users",
+    "report-service": "reports",
+    "notification-service": "notifications",
+    "ecom-service": "products",
+    "health-service": "records",
+    "mobile-service": "devices",
+    "pharmacist-mobile-service": "tasks",
+    "pharmacist-workbench-service": "consultations",
+}
+
+
+def get_all_uuids_from_list(service, resource_name, limit=10):
+    """Fetch multiple UUIDs from list endpoint. Returns list of UUIDs (may be empty)."""
+    cache_key = f"{service}:{resource_name}:all"
     if cache_key in uuid_cache:
         return uuid_cache[cache_key]
-    # Service prefix mapping
-    service_paths = {
-        "branch-service": "branches",
-        "catalog-service": "medicines",
-        "category-service": "categories",
-        "customer-service": "customers",
-        "customer-portal-service": "addresses",
-        "inventory-service": "inventory",
-        "order-service": "orders",
-        "payment-service": "payments",
-        "prescription-service": "prescriptions",
-        "supplier-service": "suppliers",
-        "user-service": "users",
-        "report-service": "reports",
-        "notification-service": "notifications",
-        "ecom-service": "products",
-        "health-service": "records",
-        "mobile-service": "devices",
-        "pharmacist-mobile-service": "tasks",
-        "pharmacist-workbench-service": "consultations",
-    }
-    list_path = service_paths.get(service, resource_name)
-    # Try the mapped path first, then a few candidates
+    list_path = SERVICE_PATHS.get(service, resource_name)
     candidate_paths = [list_path, resource_name, f"{resource_name}s"]
     seen = set()
     for lp in candidate_paths:
@@ -91,13 +92,38 @@ def get_real_uuid_from_list(service, resource_name):
                 encoding="utf-8", errors="replace"
             )
             if r.stdout and len(r.stdout) > 20:
-                # Try to extract first ID (UUID)
-                match = re.search(r'"id"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"', r.stdout)
-                if match:
-                    uuid_cache[cache_key] = match.group(1)
-                    return match.group(1)
+                ids = re.findall(
+                    r'"id"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"',
+                    r.stdout,
+                )
+                if ids:
+                    # Deduplicate while preserving order
+                    seen_ids = []
+                    seen_set = set()
+                    for i in ids:
+                        if i not in seen_set:
+                            seen_set.add(i)
+                            seen_ids.append(i)
+                    result = seen_ids[:limit]
+                    uuid_cache[cache_key] = result
+                    return result
         except Exception:
             pass
+    uuid_cache[cache_key] = []
+    return []
+
+
+def get_real_uuid_from_list(service, resource_name):
+    """Fetch a real UUID from list endpoint (back-compat). Returns one UUID or None."""
+    cache_key = f"{service}:{resource_name}"
+    if cache_key in uuid_cache:
+        return uuid_cache[cache_key]
+    ids = get_all_uuids_from_list(service, resource_name)
+    if ids:
+        # Pick first for back-compat path
+        uuid_cache[cache_key] = ids[0]
+        return ids[0]
+    uuid_cache[cache_key] = None
     return None
 
 
@@ -331,6 +357,9 @@ def replace_path_uuid(url):
     Fixes the previous bug where the regex concatenated prefix+id (e.g.,
     'medicines/1' became 'medicines11f16edf...'). Now we replace the numeric
     segment with a real UUID fetched from the matching service's list endpoint.
+
+    Uses the multi-UUID cache and rotates through IDs so callers that retry
+    get a different ID on each attempt.
     """
     # Identify the service by inspecting the URL path
     service_for_url = None
@@ -381,8 +410,13 @@ def replace_path_uuid(url):
         if service_for_url:
             # Resource name = first segment of the URL
             resource = seg0 or "resource"
-            uuid = get_real_uuid_from_list(service_for_url, resource)
-            if uuid:
+            ids = get_all_uuids_from_list(service_for_url, resource)
+            if ids:
+                # Round-robin through available IDs
+                idx_key = f"{service_for_url}:{resource}:rr"
+                idx = uuid_cache.get(idx_key, 0)
+                uuid = ids[idx % len(ids)]
+                uuid_cache[idx_key] = idx + 1
                 return f"{prefix}{uuid}"
         # Fallback: replace digit with a fixed UUID
         return f"{prefix}00000000-0000-0000-0000-000000000000"
@@ -393,7 +427,8 @@ def replace_path_uuid(url):
 
 
 def run_smart_test(t):
-    """Run test with smart data"""
+    """Run test with smart data. If first attempt returns 404 due to stale UUID,
+    retry with a different UUID from the cached pool (up to MAX_404_RETRIES)."""
     method = t["method"]
     url = replace_path_uuid(t["url"])
     service = t["service"]
@@ -407,19 +442,31 @@ def run_smart_test(t):
     token = get_token(role)
 
     body = build_realistic_body(method, url, service, controller) if method in ("POST", "PUT", "PATCH") else None
-    args = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}|%{time_total}",
-            "-H", f"Authorization: Bearer {token}",
-            "-X", method, "--max-time", "15"]
-    if body:
-        args += ["-H", "Content-Type: application/json", "-d", body]
-    args.append(url)
-    try:
-        out = subprocess.run(args, capture_output=True, text=True, timeout=18).stdout.strip()
-        parts = out.split("|")
-        new_status = int(parts[0]) if parts[0].isdigit() else 0
-        elapsed = float(parts[1]) if len(parts) > 1 else 0
-    except Exception:
-        new_status, elapsed = 0, 0
+
+    def _exec(u):
+        args = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}|%{time_total}",
+                "-H", f"Authorization: Bearer {token}",
+                "-X", method, "--max-time", "15"]
+        if body:
+            args += ["-H", "Content-Type: application/json", "-d", body]
+        args.append(u)
+        try:
+            out = subprocess.run(args, capture_output=True, text=True, timeout=18).stdout.strip()
+            parts = out.split("|")
+            ns = int(parts[0]) if parts[0].isdigit() else 0
+            el = float(parts[1]) if len(parts) > 1 else 0
+            return ns, el
+        except Exception:
+            return 0, 0
+
+    new_status, elapsed = _exec(url)
+    # On 404, retry up to N times with regenerated UUIDs (skip write methods)
+    MAX_404_RETRIES = 3
+    attempts = 0
+    while new_status == 404 and attempts < MAX_404_RETRIES and method in ("GET", "DELETE"):
+        attempts += 1
+        url = replace_path_uuid(t["url"])  # rotates to next UUID via round-robin
+        new_status, elapsed = _exec(url)
 
     return {
         **t,
@@ -427,7 +474,8 @@ def run_smart_test(t):
         "old_status": status,
         "new_status": new_status,
         "time": round(elapsed, 3),
-        "role": role
+        "role": role,
+        "uuid_retries": attempts,
     }
 
 
@@ -450,9 +498,14 @@ WARMUP_SERVICES = [
     ("pharmacist-workbench-service", "consultations"),
 ]
 # Sequential warmup — avoids auth race conditions
+total_uuids = 0
 for svc, res in WARMUP_SERVICES:
-    get_real_uuid_from_list(svc, res)
-print(f"  Got {len(uuid_cache)} UUIDs cached")
+    ids = get_all_uuids_from_list(svc, res)
+    if ids:
+        # Back-compat: also populate single-uuid cache
+        uuid_cache[f"{svc}:{res}"] = ids[0]
+        total_uuids += len(ids)
+print(f"  Got {total_uuids} UUIDs across {len(WARMUP_SERVICES)} services")
 
 print(f"\nRunning {len(TEST_PLAN)} smart tests...")
 results = []
