@@ -479,6 +479,74 @@ def run_smart_test(t):
     }
 
 
+def warmup_fixtures():
+    """Pre-create test data via POST calls for services with empty tables.
+    Captures returned IDs for use in subsequent tests.
+    Failures are tolerated — if POST body is wrong, the test still runs
+    (those endpoints just won't have pre-created UUIDs in cache)."""
+    # Use a stable pseudo-orderId for payment warmup so we don't need a real order
+    fallback_uuid = "00000000-0000-0000-0000-000000000001"
+    cust_uuid = get_real_uuid_from_list("customer-service", "customers") or fallback_uuid
+    branch_uuid = get_real_uuid_from_list("branch-service", "branches") or fallback_uuid
+    med_uuid = get_real_uuid_from_list("catalog-service", "medicines") or fallback_uuid
+    user_uuid = get_real_uuid_from_list("user-service", "users") or fallback_uuid
+
+    fixtures = [
+        # (service, method, path, body, id_field, cache_key_resource)
+        ("order-service", "POST", "/api/v1/orders",
+         {"customerId": cust_uuid, "branchId": branch_uuid,
+          "items": [{"medicineId": med_uuid, "quantity": 1}]},
+         "orders"),
+        ("pharmacist-workbench-service", "POST", "/api/v1/consultations",
+         {"customerId": cust_uuid, "symptoms": "warmup", "notes": "auto-fixture",
+          "channel": "IN_STORE"},
+         "consultations"),
+        ("customer-portal-service", "POST", "/api/v1/cart/items",
+         {"medicineId": med_uuid, "qty": 1},
+         "cart"),
+        ("customer-portal-service", "POST", "/api/v1/family",
+         {"memberName": "Warmup Member", "relationship": "CHILD", "phone": "0901234567"},
+         "family"),
+    ]
+
+    token = get_token()
+    if not token:
+        print("  warmup: no token, skipping")
+        return
+
+    created = 0
+    for service, method, path, body, res_name in fixtures:
+        try:
+            r = subprocess.run(
+                ["curl", "-s", "-X", method,
+                 "-H", f"Authorization: Bearer {token}",
+                 "-H", "Content-Type: application/json",
+                 "-d", json.dumps(body),
+                 f"{GATEWAY}{path}",
+                 "--max-time", "10"],
+                capture_output=True, text=True, timeout=12,
+                encoding="utf-8", errors="replace",
+            )
+            if not r.stdout:
+                continue
+            match = re.search(
+                r'"id"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"',
+                r.stdout,
+            )
+            if match:
+                uuid = match.group(1)
+                # Pre-seed both the multi-UUID and single-UUID caches
+                cache_key_all = f"{service}:{res_name}:all"
+                cache_key_one = f"{service}:{res_name}"
+                uuid_cache[cache_key_all] = [uuid]
+                uuid_cache[cache_key_one] = uuid
+                created += 1
+                print(f"  Created {service} fixture ({res_name}): {uuid[:8]}...")
+        except Exception as e:
+            print(f"  Warmup {service} failed: {e}")
+    print(f"  Warmup created {created}/{len(fixtures)} fixtures")
+
+
 # Run
 print("Loading UUIDs from list endpoints...")
 WARMUP_SERVICES = [
@@ -506,6 +574,10 @@ for svc, res in WARMUP_SERVICES:
         uuid_cache[f"{svc}:{res}"] = ids[0]
         total_uuids += len(ids)
 print(f"  Got {total_uuids} UUIDs across {len(WARMUP_SERVICES)} services")
+
+# Pre-create fixtures via POST for services with empty tables
+print("\nPre-creating test fixtures (POST warmup)...")
+warmup_fixtures()
 
 print(f"\nRunning {len(TEST_PLAN)} smart tests...")
 results = []
