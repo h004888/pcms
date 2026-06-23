@@ -90,72 +90,114 @@ def get_real_uuid_from_list(service, resource_name):
     return None
 
 
+# Lazy-load schemas and endpoint map
+_schemas_cache = None
+_endpoint_map_cache = None
+
+def _get_schemas():
+    global _schemas_cache
+    if _schemas_cache is None:
+        try:
+            _schemas_cache = json.loads((BASE_DIR / "test-results" / "dto-schemas.json").read_text(encoding="utf-8"))
+        except Exception:
+            _schemas_cache = {}
+    return _schemas_cache
+
+def _get_endpoint_map():
+    global _endpoint_map_cache
+    if _endpoint_map_cache is None:
+        try:
+            _endpoint_map_cache = json.loads((BASE_DIR / "test-results" / "endpoint-dto-map.json").read_text(encoding="utf-8"))
+        except Exception:
+            _endpoint_map_cache = {}
+    return _endpoint_map_cache
+
+
+def _build_from_schema(dto_name, schemas):
+    """Build JSON body from DTO schema with real UUIDs."""
+    body = {}
+    fields = schemas[dto_name]
+    for fname, finfo in fields.items():
+        if not finfo['required'] and fname not in ('label', 'status', 'isDefault', 'isActive'):
+            continue
+        ftype = finfo['type']
+        # Override UUIDs with real ones
+        if ftype == 'UUID':
+            name_lower = fname.lower()
+            if 'medicine' in name_lower:
+                body[fname] = get_real_uuid_from_list("catalog-service", "medicines") or "00000000-0000-0000-0000-000000000001"
+            elif 'branch' in name_lower:
+                body[fname] = get_real_uuid_from_list("branch-service", "branches") or "00000000-0000-0000-0000-000000000002"
+            elif 'customer' in name_lower:
+                body[fname] = get_real_uuid_from_list("customer-service", "customers") or "00000000-0000-0000-0000-000000000003"
+            elif 'category' in name_lower:
+                body[fname] = get_real_uuid_from_list("category-service", "categories") or "00000000-0000-0000-0000-000000000004"
+            elif 'supplier' in name_lower:
+                body[fname] = get_real_uuid_from_list("supplier-service", "suppliers") or "00000000-0000-0000-0000-000000000005"
+            elif 'order' in name_lower:
+                body[fname] = get_real_uuid_from_list("order-service", "orders") or "00000000-0000-0000-0000-000000000006"
+            elif 'prescription' in name_lower:
+                body[fname] = get_real_uuid_from_list("prescription-service", "prescriptions") or "00000000-0000-0000-0000-000000000007"
+            else:
+                body[fname] = "00000000-0000-0000-0000-000000000000"
+        else:
+            body[fname] = finfo['sample']
+    return body
+
+
 def build_realistic_body(method, url, service, controller):
-    """Build realistic body for POST/PUT based on service"""
-    # Map service to DTO sample
+    """Build realistic body using extracted DTO schemas, with fallback."""
+    if method not in ("POST", "PUT", "PATCH"):
+        return None
+
+    # Try endpoint map
+    endpoint_map = _get_endpoint_map()
+    schemas = _get_schemas()
+
+    # Build path candidates to match
+    path = url.replace("http://localhost:8080", "").split("?")[0]
+    if path.startswith("/api/v1/"):
+        path = path[7:]
+    candidates = [path, f"/{path}"]
+
+    for candidate in candidates:
+        key = f"{service}:{method}:{candidate}"
+        dto_name = endpoint_map.get(key)
+        if dto_name and dto_name in schemas:
+            body = _build_from_schema(dto_name, schemas)
+            # Wrap in list if all fields are collections
+            is_list = any('List' in str(f.get('type','')) or 'Set' in str(f.get('type','')) for f in schemas[dto_name].values())
+            return json.dumps([body] if is_list else body)
+
+    # Fallback: hardcoded handlers
     if method == "POST" and "addresses" in url:
-        return json.dumps({
-            "label": "HOME",
-            "receiverName": "Test User",
-            "phone": "0901234567",
-            "province": "HCMC",
-            "district": "District 1",
-            "ward": "Ben Nghe",
-            "street": "123 Le Loi",
-            "isDefault": False
-        })
+        return json.dumps({"label": "HOME", "receiverName": "Test User", "phone": "0901234567",
+                          "province": "HCMC", "district": "D1", "ward": "BN", "street": "123"})
     if method == "POST" and "medicines" in url and "/image" not in url:
-        # Get a real category and supplier ID
         cat_id = get_real_uuid_from_list(service, "categories") or "00000000-0000-0000-0000-000000000000"
         sup_id = get_real_uuid_from_list(service, "suppliers") or "00000000-0000-0000-0000-000000000000"
-        return json.dumps({
-            "sku": "TEST-001",
-            "name": "Test Medicine",
-            "categoryId": cat_id,
-            "supplierId": sup_id,
-            "price": 10000,
-            "unit": "box",
-            "prescriptionRequired": False
-        })
+        return json.dumps({"sku": "TEST-" + str(int(time.time()) % 10000), "name": "Test Medicine",
+                          "categoryId": cat_id, "supplierId": sup_id, "price": 10000,
+                          "unit": "box", "prescriptionRequired": False})
     if method == "POST" and "branches" in url:
-        return json.dumps({
-            "code": "TEST-" + str(int(time.time()) % 10000),
-            "name": "Test Branch",
-            "address": "Test Address",
-            "phone": "0281234567"
-        })
+        return json.dumps({"code": "T-" + str(int(time.time()) % 10000), "name": "Test Branch",
+                          "address": "Test", "phone": "0281234567"})
     if method == "POST" and "consultations" in url:
         cust_id = get_real_uuid_from_list("customer-service", "customers") or "00000000-0000-0000-0000-000000000000"
-        return json.dumps({
-            "customerId": cust_id,
-            "symptoms": "Test symptoms",
-            "notes": "Test notes"
-        })
+        return json.dumps({"customerId": cust_id, "symptoms": "test", "notes": "test"})
     if method == "POST" and "rx/cross-sell" in url:
-        return json.dumps({
-            "medicineIds": ["00000000-0000-0000-0000-000000000001"],
-            "context": "test"
-        })
+        return json.dumps({"medicineIds": ["00000000-0000-0000-0000-000000000001"], "context": "test"})
     if method == "POST" and "rx/drug-check" in url:
-        return json.dumps({
-            "medicineIds": ["00000000-0000-0000-0000-000000000001"],
-            "patientContext": "test"
-        })
+        return json.dumps({"medicineIds": ["00000000-0000-0000-0000-000000000001"], "patientContext": "test"})
     if method == "POST" and "inventory/bulk/import" in url:
         med_id = get_real_uuid_from_list("catalog-service", "medicines") or "00000000-0000-0000-0000-000000000001"
         branch_id = get_real_uuid_from_list("branch-service", "branches") or "00000000-0000-0000-0000-000000000002"
-        return json.dumps([{
-            "medicineId": med_id,
-            "branchId": branch_id,
-            "batchNo": "BATCH-" + str(int(time.time()) % 10000),
-            "qty": 10,
-            "expiryDate": "2027-12-31",
-            "purchasePrice": 1000.0,
-            "sellingPrice": 1500.0
-        }])
+        return json.dumps([{"medicineId": med_id, "branchId": branch_id,
+                          "batchNo": "B-" + str(int(time.time()) % 10000),
+                          "qty": 10, "expiryDate": "2027-12-31"}])
     if method == "PATCH" and "notif-settings" in url:
         return json.dumps({"emailEnabled": True, "smsEnabled": False})
-    return "{}"  # fallback
+    return "{}"  # final fallback
 
 
 def replace_path_uuid(url):
