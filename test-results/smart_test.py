@@ -151,9 +151,11 @@ def _get_endpoint_map():
 
 
 def _build_from_schema(dto_name, schemas):
-    """Build JSON body from DTO schema with real UUIDs."""
+    """Build JSON body from DTO schema with real UUIDs and unique constraint-safe values."""
     body = {}
     fields = schemas[dto_name]
+    t_suf = str(int(time.time() * 1000) % 100000000)
+    t_sec = str(int(time.time()) % 100000)
     for fname, finfo in fields.items():
         if not finfo['required'] and fname not in ('label', 'status', 'isDefault', 'isActive'):
             continue
@@ -178,7 +180,31 @@ def _build_from_schema(dto_name, schemas):
             else:
                 body[fname] = "00000000-0000-0000-0000-000000000000"
         else:
-            body[fname] = finfo['sample']
+            # Inject unique values for fields likely to have unique constraints
+            sample = finfo['sample']
+            fl = fname.lower()
+            if fl in ('name', 'fullname', 'customername', 'membername'):
+                body[fname] = f"Test {fname}-{t_suf}"
+            elif fl == 'email':
+                body[fname] = f"test-{t_suf}@pcms.vn"
+            elif fl in ('contactemail', 'contact_email'):
+                body[fname] = f"contact-{t_suf}@pcms.vn"
+            elif fl == 'username':
+                body[fname] = f"user-{t_suf}"
+            elif fl in ('code',):
+                body[fname] = f"BR-{t_sec}"
+            elif fl in ('sku',):
+                body[fname] = f"SKU-{t_suf}"
+            elif fl in ('slug',):
+                body[fname] = f"slug-{t_suf}"
+            elif fl in ('batchno', 'batch_no'):
+                body[fname] = f"BATCH-{t_suf}"
+            elif fl == 'taxcode':
+                body[fname] = f"TAX-{t_suf}"
+            elif fl == 'phone' and sample and isinstance(sample, str) and sample.startswith('09'):
+                body[fname] = f"090{t_suf[-7:]}"
+            else:
+                body[fname] = sample
     return body
 
 
@@ -310,29 +336,82 @@ def build_realistic_body(method, url, service, controller):
         # Last-resort: cross-service leaf match
         dto_name = _cross_service_lookup(endpoint_map, service, method, url)
 
+    # Time-based suffix to ensure uniqueness across test runs
+    t_suf = str(int(time.time() * 1000) % 100000000)
+    t_sec = str(int(time.time()) % 100000)
+
     if dto_name and dto_name in schemas:
         body = _build_from_schema(dto_name, schemas)
         is_list = any('List' in str(f.get('type', '')) or 'Set' in str(f.get('type', ''))
                       for f in schemas[dto_name].values())
+        # Inject time-based unique values for fields that have unique constraints
+        for fname in list(body.keys()):
+            fl = fname.lower()
+            if fl == 'code':
+                body[fname] = f"BR-{t_sec}"
+            elif fl == 'sku':
+                body[fname] = f"SKU-{t_suf}"
+            elif fl in ('email',):
+                body[fname] = f"test-{t_suf}@pcms.vn"
+            elif fl in ('username',):
+                body[fname] = f"test-{t_suf}"
+            elif fl in ('name',) and 'sku' in str(body.get('sku', '')).lower() or fl == 'name':
+                # Only rewrite name when paired with code/sku so we don't clobber arbitrary names
+                if 'code' in body or 'sku' in body:
+                    pass  # leave as is
+            elif fl == 'name' and method == "POST":
+                # Don't overwrite existing semantic names
+                pass
         return json.dumps([body] if is_list else body)
 
     # String raw body endpoints (e.g., POST /{id}/messages)
     if dto_name == "String":
         return json.dumps("test message")
 
-    # Fallback: hardcoded handlers
+    # Fallback: hardcoded handlers (with time-based unique values to avoid 409)
     if method == "POST" and "addresses" in url:
         return json.dumps({"label": "HOME", "receiverName": "Test User", "phone": "0901234567",
                           "province": "HCMC", "district": "D1", "ward": "BN", "street": "123"})
     if method == "POST" and "medicines" in url and "/image" not in url:
         cat_id = get_real_uuid_from_list(service, "categories") or "00000000-0000-0000-0000-000000000000"
         sup_id = get_real_uuid_from_list(service, "suppliers") or "00000000-0000-0000-0000-000000000000"
-        return json.dumps({"sku": "TEST-" + str(int(time.time()) % 10000), "name": "Test Medicine",
+        return json.dumps({"sku": f"SKU-{t_suf}", "name": f"Test Med {t_suf}",
                           "categoryId": cat_id, "supplierId": sup_id, "price": 10000,
                           "unit": "box", "prescriptionRequired": False})
     if method == "POST" and "branches" in url:
-        return json.dumps({"code": "T-" + str(int(time.time()) % 10000), "name": "Test Branch",
+        return json.dumps({"code": f"BR-{t_sec}", "name": f"Test Branch {t_sec}",
                           "address": "Test", "phone": "0281234567"})
+    if method == "POST" and "categories" in url:
+        return json.dumps({"name": f"Test Cat {t_suf}", "slug": f"cat-{t_suf}",
+                          "description": "Test category"})
+    if method == "POST" and "customers" in url and "/register" in url:
+        return json.dumps({"email": f"cust-{t_suf}@pcms.vn",
+                          "password": "Test123!", "fullName": f"Test User {t_suf}",
+                          "phone": "0901234567"})
+    if method == "POST" and "customers" in url:
+        cust_user = get_real_uuid_from_list("user-service", "users") or "00000000-0000-0000-0000-000000000000"
+        return json.dumps({"userId": cust_user, "email": f"cust-{t_suf}@pcms.vn",
+                          "fullName": f"Test Customer {t_suf}", "phone": "0901234567"})
+    if method == "POST" and "suppliers" in url:
+        return json.dumps({"name": f"Test Supplier {t_suf}",
+                          "contactEmail": f"sup-{t_suf}@pcms.vn",
+                          "phone": "0901234567"})
+    if method == "POST" and "inventory/export" in url:
+        med_id = get_real_uuid_from_list("catalog-service", "medicines") or "00000000-0000-0000-0000-000000000001"
+        branch_id = get_real_uuid_from_list("branch-service", "branches") or "00000000-0000-0000-0000-000000000002"
+        return json.dumps({"medicineId": med_id, "branchId": branch_id,
+                          "batchNo": f"EXP-{t_suf}", "qty": 1,
+                          "reason": "test-export", "expiryDate": "2027-12-31"})
+    if method == "POST" and "inventory/consume" in url:
+        med_id = get_real_uuid_from_list("catalog-service", "medicines") or "00000000-0000-0000-0000-000000000001"
+        branch_id = get_real_uuid_from_list("branch-service", "branches") or "00000000-0000-0000-0000-000000000002"
+        return json.dumps({"medicineId": med_id, "branchId": branch_id,
+                          "qty": 1, "reason": "test-consume"})
+    if method == "POST" and "inventory/import" in url:
+        med_id = get_real_uuid_from_list("catalog-service", "medicines") or "00000000-0000-0000-0000-000000000001"
+        branch_id = get_real_uuid_from_list("branch-service", "branches") or "00000000-0000-0000-0000-000000000002"
+        return json.dumps({"medicineId": med_id, "branchId": branch_id,
+                          "batchNo": f"IMP-{t_suf}", "qty": 10, "expiryDate": "2027-12-31"})
     if method == "POST" and "consultations" in url:
         cust_id = get_real_uuid_from_list("customer-service", "customers") or "00000000-0000-0000-0000-000000000000"
         return json.dumps({"customerId": cust_id, "symptoms": "test", "notes": "test"})
@@ -344,11 +423,31 @@ def build_realistic_body(method, url, service, controller):
         med_id = get_real_uuid_from_list("catalog-service", "medicines") or "00000000-0000-0000-0000-000000000001"
         branch_id = get_real_uuid_from_list("branch-service", "branches") or "00000000-0000-0000-0000-000000000002"
         return json.dumps([{"medicineId": med_id, "branchId": branch_id,
-                          "batchNo": "B-" + str(int(time.time()) % 10000),
+                          "batchNo": f"BULK-{t_suf}",
                           "qty": 10, "expiryDate": "2027-12-31"}])
     if method == "PATCH" and "notif-settings" in url:
         return json.dumps({"emailEnabled": True, "smsEnabled": False})
     return "{}"  # final fallback
+
+
+def _fix_broken_paths(url):
+    """Repair known doubled/wrong path segments generated by the test-plan parser.
+
+    The test-plan.json was generated with a `gateway_pattern` that did not match
+    the controller's actual path, producing URLs like:
+        /api/v1/admin/videos/videos    -> controller is /admin/videos
+        /api/v1/admin/videos/flash-sales -> controller is /admin/flash-sales
+    The gateway already routes /api/v1/admin/videos/** to customer-portal-service
+    and /api/v1/admin/videos/flash-sales/** to ecom-ops-service, so we rewrite
+    the URL to what the controller actually expects under the gateway prefix.
+    """
+    # /api/v1/admin/videos/videos -> /api/v1/admin/videos (controller: /admin/videos, StripPrefix=2)
+    if "/admin/videos/videos" in url:
+        url = url.replace("/admin/videos/videos", "/admin/videos")
+    # /api/v1/admin/videos/flash-sales -> /api/v1/admin/flash-sales (controller: /admin/flash-sales, StripPrefix=2)
+    if "/admin/videos/flash-sales" in url:
+        url = url.replace("/admin/videos/flash-sales", "/admin/flash-sales")
+    return url
 
 
 def replace_path_uuid(url):
@@ -361,6 +460,8 @@ def replace_path_uuid(url):
     Uses the multi-UUID cache and rotates through IDs so callers that retry
     get a different ID on each attempt.
     """
+    # Repair known broken paths first
+    url = _fix_broken_paths(url)
     # Identify the service by inspecting the URL path
     service_for_url = None
     path = url.replace("http://localhost:8080", "").split("?")[0].lstrip("/")
