@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Extract JSON schema from Java DTO files using regex-based parsing.
 
-Scans all *Request.java files in services' dto/request/ packages,
-parses @NotNull/@NotBlank/@Size constraints, generates minimal
-valid JSON schema for each DTO class.
+Improved version: handles records with multi-line annotations, complex
+generic types (Map, List, nested), inline validation annotations,
+and class-based DTOs.
 """
 import re
 import json
@@ -35,38 +35,137 @@ def get_sample_value(ftype, fname):
         return '2027-12-31'
     if ftype in ('LocalDateTime',):
         return '2027-12-31T00:00:00'
-    if 'List' in ftype or 'Set' in ftype or 'Collection' in ftype:
+    # Generic types
+    if ftype.startswith('List<') or ftype.startswith('Set<') or ftype.startswith('Collection<'):
         return []
-    if 'Map' in ftype:
+    if ftype.startswith('Map<'):
+        return {}
+    if 'Page<' in ftype or 'Wrapper<' in ftype:
         return {}
     return None
 
 
-def parse_dto(filepath):
-    """Parse a single DTO file, return dict of field_name -> {type, required, sample}"""
-    content = filepath.read_text(encoding='utf-8', errors='ignore')
+def is_required_annotation(ann_text):
+    """Check if annotation text indicates a required field."""
+    if not ann_text:
+        return False
+    required_markers = ('NotNull', 'NotBlank', 'NotEmpty')
+    return any(m in ann_text for m in required_markers)
+
+
+def parse_record(content: str):
+    """Parse a record body (inside record(...))."""
+    fields = {}
+    m = re.search(r'public\s+record\s+\w+(?:<[^>]+>)?\s*\((.+?)\)\s*(?:implements[^{]*)?\{',
+                  content, re.DOTALL)
+    if not m:
+        return fields
+    body = m.group(1)
+    # Split body by commas that are not inside <...> or (...)
+    depth = 0
+    paren = 0
+    parts = []
+    cur = []
+    for ch in body:
+        if ch == '<':
+            depth += 1
+        elif ch == '>':
+            depth -= 1
+        elif ch == '(':
+            paren += 1
+        elif ch == ')':
+            paren -= 1
+        if ch == ',' and depth == 0 and paren == 0:
+            parts.append(''.join(cur).strip())
+            cur = []
+        else:
+            cur.append(ch)
+    last = ''.join(cur).strip()
+    if last:
+        parts.append(last)
+
+    for part in parts:
+        if not part:
+            continue
+        # Strip trailing comma if any
+        part = part.rstrip(',').strip()
+        if not part:
+            continue
+        # Extract @Annotations (may span multiple lines, joined)
+        annotations = re.findall(r'@\w+(?:\([^)]*\))?', part, re.DOTALL)
+        ann_text = ' '.join(annotations)
+        # Remove annotations from the part
+        remainder = re.sub(r'@\w+(?:\([^)]*\))?', '', part, flags=re.DOTALL).strip()
+        # Field pattern: Type fieldName (for records: no trailing ;)
+        # Allow multi-word types and generic types
+        fm = re.search(r'([A-Za-z_][\w<>,\s\[\].]*?)\s+(\w+)\s*$', remainder, re.DOTALL)
+        if not fm:
+            continue
+        ftype = fm.group(1).strip()
+        fname = fm.group(2).strip()
+        if fname in ('class', 'record', 'public', 'private', 'static', 'final'):
+            continue
+        if ftype in ('class', 'interface', 'enum', 'record', 'implements'):
+            continue
+        fields[fname] = {
+            'type': ftype,
+            'required': is_required_annotation(ann_text),
+            'sample': get_sample_value(ftype, fname),
+        }
+    return fields
+
+
+def parse_class_fields(content: str):
+    """Parse traditional class with field declarations."""
     fields = {}
     # Strip line comments
-    content = re.sub(r'//.*$', '', content, flags=re.MULTILINE)
-    # Match: optional @Annotation(...) \n @Annotation2(...) \n Type fieldName;
-    # Handle multi-line annotations
-    pattern = r'(@\w+(?:\([^)]*\))?\s*)?(\w+(?:<[^>]+>)?)\s+(\w+)\s*[;,]'
-    for m in re.finditer(pattern, content):
-        annotation, ftype, fname = m.groups()
-        # Skip Java keywords
+    stripped = re.sub(r'//.*$', '', content, flags=re.MULTILINE)
+    # Match field declarations with multi-line annotations
+    # Allow optional @Annotations (one or more) followed by Type and field name
+    pattern = re.compile(
+        r'((?:@\w+(?:\([^)]*\))?\s+)+)?'  # one or more annotations
+        r'(?:public|private|protected)?\s*'
+        r'(?:static\s+)?(?:final\s+)?'
+        r'([\w<>,\s\[\]]+?)'              # type
+        r'\s+(\w+)\s*[;=]',                # field name
+        re.DOTALL
+    )
+    for m in pattern.finditer(stripped):
+        ann_block = m.group(1) or ''
+        ftype = m.group(2).strip()
+        fname = m.group(3).strip()
+        # Skip methods (look back for closing paren)
+        # Skip keywords
         if fname in ('class', 'record', 'public', 'private', 'static', 'final', 'return', 'if', 'for', 'while'):
             continue
         if ftype in ('class', 'interface', 'enum', 'record'):
             continue
-        # Skip methods (have parentheses)
-        required = annotation and ('NotNull' in annotation or 'NotBlank' in annotation or 'NotEmpty' in annotation)
-        # Skip if it's actually a method declaration (parentheses missing)
+        # Skip if it looks like a method (has parens before ;)
+        # Check the context before
+        start = m.start()
+        prev_chunk = stripped[max(0, start-200):start]
+        if '(' in prev_chunk and ')' not in prev_chunk[prev_chunk.rfind('('):]:
+            continue
+        # Skip if no annotation block AND no semicolon-only assignment
+        # Simple heuristic: must have at least one annotation or be a plain field
+        if not ann_block and '=' not in m.group(0):
+            # Could still be a plain field like: private String name;
+            pass
         fields[fname] = {
             'type': ftype,
-            'required': bool(required),
-            'sample': get_sample_value(ftype, fname)
+            'required': is_required_annotation(ann_block),
+            'sample': get_sample_value(ftype, fname),
         }
     return fields
+
+
+def parse_dto(filepath):
+    """Parse a single DTO file, return dict of field_name -> {type, required, sample}."""
+    content = filepath.read_text(encoding='utf-8', errors='ignore')
+    # Detect record vs class
+    if re.search(r'public\s+record\s+', content):
+        return parse_record(content)
+    return parse_class_fields(content)
 
 
 # Scan all DTOs
@@ -96,3 +195,9 @@ out_dir.mkdir(parents=True, exist_ok=True)
 out = out_dir / 'dto-schemas.json'
 out.write_text(json.dumps(schemas, indent=2, ensure_ascii=False), encoding='utf-8')
 print(f'Extracted {len(schemas)} DTO schemas from {scanned_files} files to {out}')
+
+# Show some samples
+sample = list(schemas.items())[:5]
+print('\nSample schemas:')
+for k, v in sample:
+    print(f'  {k}: {list(v.keys())}')

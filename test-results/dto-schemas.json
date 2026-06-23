@@ -2,18 +2,23 @@
   "CreateBranchRequest": {
     "code": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-code"
     },
     "name": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-name"
     },
     "address": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-address"
+    },
+    "phone": {
+      "type": "String",
+      "required": true,
+      "sample": "0901234567"
     }
   },
   "UpdateBranchRequest": {
@@ -31,6 +36,11 @@
       "type": "String",
       "required": false,
       "sample": "0901234567"
+    },
+    "status": {
+      "type": "BranchStatus",
+      "required": false,
+      "sample": null
     }
   },
   "CreateMedicineRequest": {
@@ -41,7 +51,7 @@
     },
     "name": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-name"
     },
     "categoryId": {
@@ -56,18 +66,23 @@
     },
     "price": {
       "type": "BigDecimal",
-      "required": false,
+      "required": true,
       "sample": 100.0
     },
     "unit": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-unit"
     },
     "prescriptionRequired": {
       "type": "Boolean",
       "required": false,
       "sample": false
+    },
+    "imageUrl": {
+      "type": "String",
+      "required": false,
+      "sample": "test-imageUrl"
     }
   },
   "UpdateMedicineRequest": {
@@ -105,19 +120,17 @@
       "type": "String",
       "required": false,
       "sample": "test-imageUrl"
+    },
+    "status": {
+      "type": "MedicineStatus",
+      "required": false,
+      "sample": null
     }
   },
   "CreateCategoryRequest": {
     "name": {
       "type": "String",
-      "required": false,
-      "sample": "test-name"
-    }
-  },
-  "UpdateCategoryRequest": {
-    "name": {
-      "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-name"
     },
     "description": {
@@ -126,11 +139,47 @@
       "sample": "test-description"
     }
   },
+  "UpdateCategoryRequest": {
+    "name": {
+      "type": "String",
+      "required": true,
+      "sample": "test-name"
+    },
+    "description": {
+      "type": "String",
+      "required": false,
+      "sample": "test-description"
+    },
+    "status": {
+      "type": "CategoryStatus",
+      "required": false,
+      "sample": null
+    }
+  },
   "AddCartItemRequest": {
     "medicineId": {
       "type": "UUID",
       "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "qty": {
+      "type": "Integer",
+      "required": true,
+      "sample": 1
+    }
+  },
+  "AddFavoriteRequest": {
+    "medicineId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "ApplyVoucherRequest": {
+    "voucherCode": {
+      "type": "String",
+      "required": true,
+      "sample": "test-voucherCode"
     }
   },
   "CheckoutConfirmRequest": {
@@ -148,6 +197,11 @@
       "type": "String",
       "required": false,
       "sample": "test-voucherCode"
+    },
+    "paymentMethod": {
+      "type": "String",
+      "required": true,
+      "sample": "test-paymentMethod"
     }
   },
   "CheckoutPreviewRequest": {
@@ -160,6 +214,11 @@
       "type": "String",
       "required": true,
       "sample": "test-shippingMethod"
+    },
+    "voucherCode": {
+      "type": "String",
+      "required": false,
+      "sample": "test-voucherCode"
     }
   },
   "CreateAddressRequest": {
@@ -168,56 +227,21 @@
       "required": true,
       "sample": null
     },
-    "receiverName": {
-      "type": "String",
-      "required": false,
-      "sample": "test-receiverName"
-    },
-    "phone": {
-      "type": "String",
-      "required": false,
-      "sample": "0901234567"
-    },
-    "province": {
-      "type": "String",
-      "required": false,
-      "sample": "test-province"
-    },
-    "district": {
-      "type": "String",
-      "required": false,
-      "sample": "test-district"
-    },
-    "ward": {
-      "type": "String",
-      "required": false,
-      "sample": "test-ward"
-    },
-    "street": {
-      "type": "String",
-      "required": false,
-      "sample": "test-street"
-    },
-    "isDefault": {
-      "type": "Boolean",
-      "required": false,
-      "sample": false
-    },
-    "lat": {
-      "type": "BigDecimal",
-      "required": false,
-      "sample": 100.0
+    "lng": {
+      "type": "String phone,\n\n        \n        \n        String province,\n\n        \n        \n        String district,\n\n        \n        \n        String ward,\n\n        \n        \n        String street,\n\n        Boolean isDefault,\n\n        BigDecimal lat,\n        BigDecimal",
+      "required": true,
+      "sample": null
     }
   },
   "CreateFamilyMemberRequest": {
     "memberName": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-memberName"
     },
     "relationship": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-relationship"
     },
     "dob": {
@@ -231,6 +255,11 @@
       "sample": null
     },
     "allergies": {
+      "type": "List<String>",
+      "required": false,
+      "sample": []
+    },
+    "chronicConditions": {
       "type": "List<String>",
       "required": false,
       "sample": []
@@ -256,17 +285,22 @@
       "type": "UUID",
       "required": false,
       "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "note": {
+      "type": "String",
+      "required": false,
+      "sample": "test-note"
     }
   },
   "CreateVideoRequest": {
     "title": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-title"
     },
     "youtubeId": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-youtubeId"
     },
     "thumbnailUrl": {
@@ -283,6 +317,11 @@
       "type": "Integer",
       "required": false,
       "sample": 1
+    },
+    "category": {
+      "type": "String",
+      "required": false,
+      "sample": "test-category"
     }
   },
   "InstallmentConfirmRequest": {
@@ -295,25 +334,42 @@
       "type": "String",
       "required": true,
       "sample": "test-provider"
+    },
+    "planId": {
+      "type": "String",
+      "required": true,
+      "sample": "test-planId"
     }
   },
   "InstallmentQuoteRequest": {
     "amount": {
       "type": "BigDecimal",
-      "required": false,
+      "required": true,
       "sample": 100.0
     },
     "months": {
       "type": "Integer",
-      "required": false,
+      "required": true,
       "sample": 1
+    },
+    "provider": {
+      "type": "String",
+      "required": false,
+      "sample": "test-provider"
     }
   },
   "RedeemPointsRequest": {
-    "points": {
-      "type": "int",
-      "required": false,
-      "sample": 1
+    "rewardType": {
+      "type": "int points,\n\n        \n        \n        String",
+      "required": true,
+      "sample": null
+    }
+  },
+  "ScanCodeRequest": {
+    "code": {
+      "type": "String",
+      "required": true,
+      "sample": "test-code"
     }
   },
   "UpdateAddressRequest": {
@@ -361,6 +417,18 @@
       "type": "BigDecimal",
       "required": false,
       "sample": 100.0
+    },
+    "lng": {
+      "type": "BigDecimal",
+      "required": false,
+      "sample": 100.0
+    }
+  },
+  "UpdateCartItemRequest": {
+    "qty": {
+      "type": "Integer",
+      "required": true,
+      "sample": 1
     }
   },
   "UpdateFamilyMemberRequest": {
@@ -385,6 +453,11 @@
       "sample": null
     },
     "allergies": {
+      "type": "List<String>",
+      "required": false,
+      "sample": []
+    },
+    "chronicConditions": {
       "type": "List<String>",
       "required": false,
       "sample": []
@@ -420,6 +493,11 @@
       "type": "Boolean",
       "required": false,
       "sample": false
+    },
+    "expiryAlert": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
     }
   },
   "UpdateNotificationSettingsRequest": {
@@ -449,6 +527,11 @@
       "sample": false
     },
     "lowStockAlert": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
+    },
+    "expiryAlert": {
       "type": "Boolean",
       "required": false,
       "sample": false
@@ -484,6 +567,11 @@
       "type": "String",
       "required": false,
       "sample": "test-category"
+    },
+    "status": {
+      "type": "String",
+      "required": false,
+      "sample": "test-status"
     }
   },
   "AddPointsRequest": {
@@ -496,17 +584,22 @@
       "type": "UUID",
       "required": false,
       "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "reason": {
+      "type": "String",
+      "required": false,
+      "sample": "test-reason"
     }
   },
   "CreateCustomerRequest": {
     "name": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-name"
     },
     "phone": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "0901234567"
     },
     "email": {
@@ -523,17 +616,22 @@
       "type": "LocalDate",
       "required": false,
       "sample": "2027-12-31"
+    },
+    "gender": {
+      "type": "Gender",
+      "required": false,
+      "sample": null
     }
   },
   "CustomerPortalRegisterRequest": {
     "name": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-name"
     },
     "phone": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "0901234567"
     },
     "email": {
@@ -550,17 +648,22 @@
       "type": "LocalDate",
       "required": false,
       "sample": "2027-12-31"
+    },
+    "gender": {
+      "type": "Gender",
+      "required": false,
+      "sample": null
     }
   },
   "UpdateCustomerRequest": {
     "name": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-name"
     },
     "phone": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "0901234567"
     },
     "email": {
@@ -577,6 +680,11 @@
       "type": "LocalDate",
       "required": false,
       "sample": "2027-12-31"
+    },
+    "gender": {
+      "type": "Gender",
+      "required": false,
+      "sample": null
     }
   },
   "CreateFlashSaleRequest": {
@@ -609,6 +717,11 @@
       "type": "Integer",
       "required": false,
       "sample": 1
+    },
+    "items": {
+      "type": "List<FlashSaleItemRequest>",
+      "required": false,
+      "sample": []
     }
   },
   "FlashSaleItemRequest": {
@@ -626,6 +739,11 @@
       "type": "BigDecimal",
       "required": true,
       "sample": 100.0
+    },
+    "qtyLimit": {
+      "type": "Integer",
+      "required": true,
+      "sample": 1
     }
   },
   "SubmitQuizRequest": {
@@ -633,22 +751,41 @@
       "type": "UUID",
       "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "answers": {
+      "type": "Map<String, Object>",
+      "required": true,
+      "sample": {}
+    }
+  },
+  "BulkConsumeRequest": {
+    "items": {
+      "type": "List<ConsumeBatchRequest>",
+      "required": true,
+      "sample": []
+    }
+  },
+  "BulkRestoreRequest": {
+    "items": {
+      "type": "List<ConsumeBatchRequest>",
+      "required": true,
+      "sample": []
     }
   },
   "BulkImportBatchItemRequest": {
     "medicineId": {
       "type": "UUID",
-      "required": false,
+      "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
     },
     "branchId": {
       "type": "UUID",
-      "required": false,
+      "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
     },
     "batchNo": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-batchNo"
     },
     "barcode": {
@@ -658,12 +795,12 @@
     },
     "qty": {
       "type": "Integer",
-      "required": false,
+      "required": true,
       "sample": 1
     },
     "expiryDate": {
       "type": "LocalDate",
-      "required": false,
+      "required": true,
       "sample": "2027-12-31"
     },
     "minStockLevel": {
@@ -672,6 +809,11 @@
       "sample": 1
     },
     "supplierId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "actorId": {
       "type": "UUID",
       "required": false,
       "sample": "00000000-0000-0000-0000-000000000001"
@@ -690,10 +832,15 @@
     },
     "qty": {
       "type": "Integer",
-      "required": false,
+      "required": true,
       "sample": 1
     },
     "actorId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "orderId": {
       "type": "UUID",
       "required": false,
       "sample": "00000000-0000-0000-0000-000000000001"
@@ -702,17 +849,17 @@
   "CreateBatchRequest": {
     "medicineId": {
       "type": "UUID",
-      "required": false,
+      "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
     },
     "branchId": {
       "type": "UUID",
-      "required": false,
+      "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
     },
     "batchNo": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-batchNo"
     },
     "barcode": {
@@ -722,12 +869,12 @@
     },
     "qty": {
       "type": "Integer",
-      "required": false,
+      "required": true,
       "sample": 1
     },
     "expiryDate": {
       "type": "LocalDate",
-      "required": false,
+      "required": true,
       "sample": "2027-12-31"
     },
     "actorId": {
@@ -739,6 +886,11 @@
       "type": "UUID",
       "required": false,
       "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "minStockLevel": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
     }
   },
   "ExportBatchRequest": {
@@ -754,13 +906,18 @@
     },
     "qty": {
       "type": "Integer",
-      "required": false,
+      "required": true,
       "sample": 1
     },
     "reason": {
       "type": "String",
       "required": true,
       "sample": "test-reason"
+    },
+    "actorId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
     }
   },
   "TransferBatchRequest": {
@@ -781,13 +938,18 @@
     },
     "qty": {
       "type": "Integer",
-      "required": false,
+      "required": true,
       "sample": 1
     },
     "reason": {
       "type": "String",
       "required": true,
       "sample": "test-reason"
+    },
+    "actorId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
     }
   },
   "CreateReminderRequest": {
@@ -817,9 +979,9 @@
       "sample": "test-frequency"
     },
     "scheduleTime": {
-      "type": "String",
+      "type": "CUSTOM\n        String",
       "required": false,
-      "sample": "test-scheduleTime"
+      "sample": null
     },
     "startDate": {
       "type": "LocalDate",
@@ -830,6 +992,11 @@
       "type": "LocalDate",
       "required": false,
       "sample": "2027-12-31"
+    },
+    "notes": {
+      "type": "String",
+      "required": false,
+      "sample": "test-notes"
     }
   },
   "BroadcastRequest": {
@@ -853,15 +1020,10 @@
       "required": true,
       "sample": "test-title"
     },
-    "roles": {
-      "type": "Set<String>",
-      "required": false,
-      "sample": []
-    },
-    "users": {
-      "type": "Set<UUID>",
-      "required": false,
-      "sample": []
+    "body": {
+      "type": "String",
+      "required": true,
+      "sample": "test-body"
     }
   },
   "BulkNotificationRequest": {
@@ -884,6 +1046,11 @@
       "type": "String",
       "required": true,
       "sample": "test-title"
+    },
+    "body": {
+      "type": "String",
+      "required": true,
+      "sample": "test-body"
     }
   },
   "ComposeNotificationRequest": {
@@ -921,6 +1088,11 @@
       "type": "String",
       "required": false,
       "sample": "test-title"
+    },
+    "body": {
+      "type": "String",
+      "required": false,
+      "sample": "test-body"
     }
   },
   "CreateNotificationRequest": {
@@ -948,6 +1120,11 @@
       "type": "String",
       "required": true,
       "sample": "test-body"
+    },
+    "sendAt": {
+      "type": "LocalDateTime",
+      "required": false,
+      "sample": "2027-12-31T00:00:00"
     }
   },
   "CreateNotificationTemplateRequest": {
@@ -975,6 +1152,11 @@
       "type": "String",
       "required": false,
       "sample": "test-variables"
+    },
+    "active": {
+      "type": "Boolean",
+      "required": false,
+      "sample": false
     }
   },
   "ExpiryAlertNotificationRequest": {
@@ -1002,6 +1184,11 @@
       "type": "LocalDate",
       "required": true,
       "sample": "2027-12-31"
+    },
+    "recipientId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
     }
   },
   "LowStockNotificationRequest": {
@@ -1029,6 +1216,11 @@
       "type": "Integer",
       "required": true,
       "sample": 1
+    },
+    "recipientId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
     }
   },
   "OrderPaidNotificationRequest": {
@@ -1061,17 +1253,22 @@
       "type": "BigDecimal",
       "required": true,
       "sample": 100.0
+    },
+    "paidAt": {
+      "type": "LocalDateTime",
+      "required": false,
+      "sample": "2027-12-31T00:00:00"
     }
   },
   "CreateCouponRequest": {
     "code": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-code"
     },
     "description": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-description"
     },
     "couponType": {
@@ -1081,7 +1278,7 @@
     },
     "value": {
       "type": "BigDecimal",
-      "required": false,
+      "required": true,
       "sample": 100.0
     },
     "validFrom": {
@@ -1093,17 +1290,22 @@
       "type": "LocalDateTime",
       "required": true,
       "sample": "2027-12-31T00:00:00"
+    },
+    "maxUses": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
     }
   },
   "CreateOrderRequest": {
     "customerId": {
       "type": "UUID",
-      "required": false,
+      "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
     },
     "branchId": {
       "type": "UUID",
-      "required": false,
+      "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
     },
     "staffId": {
@@ -1118,8 +1320,13 @@
     },
     "items": {
       "type": "List<OrderItemRequest>",
-      "required": false,
+      "required": true,
       "sample": []
+    },
+    "couponCode": {
+      "type": "String",
+      "required": false,
+      "sample": "test-couponCode"
     }
   },
   "OrderItemRequest": {
@@ -1127,6 +1334,11 @@
       "type": "UUID",
       "required": true,
       "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "quantity": {
+      "type": "Integer",
+      "required": true,
+      "sample": 1
     }
   },
   "UpdateCouponRequest": {
@@ -1159,6 +1371,18 @@
       "type": "Integer",
       "required": false,
       "sample": 1
+    },
+    "status": {
+      "type": "CouponStatus",
+      "required": false,
+      "sample": null
+    }
+  },
+  "UpdateOrderRequest": {
+    "items": {
+      "type": "List<OrderItemRequest>",
+      "required": true,
+      "sample": []
     }
   },
   "CreatePaymentRequest": {
@@ -1174,7 +1398,7 @@
     },
     "amount": {
       "type": "BigDecimal",
-      "required": false,
+      "required": true,
       "sample": 100.0
     },
     "tenderedAmount": {
@@ -1186,6 +1410,11 @@
       "type": "UUID",
       "required": false,
       "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "transactionRef": {
+      "type": "String",
+      "required": false,
+      "sample": "test-transactionRef"
     }
   },
   "RefundPaymentRequest": {
@@ -1193,6 +1422,11 @@
       "type": "BigDecimal",
       "required": false,
       "sample": 100.0
+    },
+    "reason": {
+      "type": "String",
+      "required": false,
+      "sample": "test-reason"
     }
   },
   "MarkVipRequest": {
@@ -1205,6 +1439,11 @@
       "type": "String",
       "required": true,
       "sample": "test-tier"
+    },
+    "reason": {
+      "type": "PLATINUM\n        String",
+      "required": false,
+      "sample": null
     }
   },
   "ScheduleFollowUpRequest": {
@@ -1259,13 +1498,18 @@
     },
     "items": {
       "type": "List<PrescriptionItemRequest>",
-      "required": false,
+      "required": true,
       "sample": []
     },
     "saveAsDraft": {
       "type": "Boolean",
       "required": false,
       "sample": false
+    },
+    "licenseNo": {
+      "type": "String",
+      "required": false,
+      "sample": "test-licenseNo"
     }
   },
   "PrescriptionItemRequest": {
@@ -1278,6 +1522,11 @@
       "type": "String",
       "required": false,
       "sample": "test-dosage"
+    },
+    "durationDays": {
+      "type": "Integer",
+      "required": false,
+      "sample": 1
     }
   },
   "UpdatePrescriptionRequest": {
@@ -1290,17 +1539,22 @@
       "type": "String",
       "required": false,
       "sample": "test-notes"
+    },
+    "items": {
+      "type": "List<PrescriptionItemRequest>",
+      "required": true,
+      "sample": []
     }
   },
   "CreateReportScheduleRequest": {
     "type": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-type"
     },
     "format": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-format"
     },
     "branchId": {
@@ -1310,13 +1564,18 @@
     },
     "cronExpression": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-cronExpression"
     },
     "recipientEmail": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test@pcms.vn"
+    },
+    "createdBy": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
     }
   },
   "InventoryReportRequest": {
@@ -1329,17 +1588,17 @@
       "type": "LocalDate",
       "required": false,
       "sample": "2027-12-31"
+    },
+    "toDate": {
+      "type": "LocalDate",
+      "required": false,
+      "sample": "2027-12-31"
     }
   },
   "ReportExportRequest": {
-    "supplied": {
-      "type": "be",
-      "required": false,
-      "sample": null
-    },
     "reportType": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-reportType"
     },
     "format": {
@@ -1361,6 +1620,11 @@
       "type": "LocalDate",
       "required": false,
       "sample": "2027-12-31"
+    },
+    "filters": {
+      "type": "Map<String, Object>",
+      "required": false,
+      "sample": {}
     }
   },
   "RevenueReportRequest": {
@@ -1378,6 +1642,11 @@
       "type": "UUID",
       "required": false,
       "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "groupBy": {
+      "type": "GroupBy",
+      "required": false,
+      "sample": null
     }
   },
   "StaffReportRequest": {
@@ -1390,17 +1659,22 @@
       "type": "LocalDate",
       "required": true,
       "sample": "2027-12-31"
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
     }
   },
   "CreateSupplierRequest": {
     "name": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-name"
     },
     "taxCode": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-taxCode"
     },
     "contactPerson": {
@@ -1410,44 +1684,7 @@
     },
     "phone": {
       "type": "String",
-      "required": false,
-      "sample": "0901234567"
-    },
-    "email": {
-      "type": "String",
-      "required": false,
-      "sample": "test@pcms.vn"
-    },
-    "address": {
-      "type": "String",
-      "required": false,
-      "sample": "test-address"
-    },
-    "bankName": {
-      "type": "String",
-      "required": false,
-      "sample": "test-bankName"
-    }
-  },
-  "UpdateSupplierRequest": {
-    "name": {
-      "type": "String",
-      "required": false,
-      "sample": "test-name"
-    },
-    "taxCode": {
-      "type": "String",
-      "required": false,
-      "sample": "test-taxCode"
-    },
-    "contactPerson": {
-      "type": "String",
-      "required": false,
-      "sample": "test-contactPerson"
-    },
-    "phone": {
-      "type": "String",
-      "required": false,
+      "required": true,
       "sample": "0901234567"
     },
     "email": {
@@ -1471,80 +1708,100 @@
       "sample": "test-bankAccount"
     }
   },
-  "AssignBranchRequest": {
-    "set": {
-      "type": "When",
-      "required": false,
-      "sample": null
-    }
-  },
-  "ChangePasswordRequest": {
-    "characters": {
-      "type": "8",
-      "required": false,
-      "sample": null
-    },
-    "uppercase": {
-      "type": "contain",
-      "required": false,
-      "sample": null
-    },
-    "currentPassword": {
+  "UpdateSupplierRequest": {
+    "name": {
       "type": "String",
       "required": true,
-      "sample": "test-currentPassword"
+      "sample": "test-name"
     },
-    "hoa": {
-      "type": "chữ",
-      "required": false,
-      "sample": null
-    },
-    "newPassword": {
+    "taxCode": {
       "type": "String",
       "required": false,
-      "sample": "test-newPassword"
-    }
-  },
-  "CreateUserRequest": {
+      "sample": "test-taxCode"
+    },
+    "contactPerson": {
+      "type": "String",
+      "required": false,
+      "sample": "test-contactPerson"
+    },
+    "phone": {
+      "type": "String",
+      "required": true,
+      "sample": "0901234567"
+    },
     "email": {
       "type": "String",
       "required": false,
       "sample": "test@pcms.vn"
     },
-    "fullName": {
+    "address": {
       "type": "String",
       "required": false,
-      "sample": "test-fullName"
+      "sample": "test-address"
     },
-    "phone": {
+    "bankName": {
       "type": "String",
       "required": false,
-      "sample": "0901234567"
+      "sample": "test-bankName"
     },
+    "bankAccount": {
+      "type": "String",
+      "required": false,
+      "sample": "test-bankAccount"
+    },
+    "status": {
+      "type": "SupplierStatus",
+      "required": true,
+      "sample": null
+    }
+  },
+  "AssignBranchRequest": {
+    "branchId": {
+      "type": "UUID",
+      "required": true,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "ChangePasswordRequest": {
+    "currentPassword": {
+      "type": "String",
+      "required": true,
+      "sample": "test-currentPassword"
+    },
+    "newPassword": {
+      "type": "String",
+      "required": true,
+      "sample": "test-newPassword"
+    },
+    "confirmPassword": {
+      "type": "String",
+      "required": true,
+      "sample": "test-confirmPassword"
+    }
+  },
+  "ChangeUserRoleRequest": {
     "role": {
       "type": "Role",
       "required": true,
       "sample": null
     }
   },
-  "LoginRequest": {
+  "ChangeUserStatusRequest": {
+    "status": {
+      "type": "UserStatus",
+      "required": true,
+      "sample": null
+    }
+  },
+  "CreateUserRequest": {
     "email": {
       "type": "String",
-      "required": false,
-      "sample": "test@pcms.vn"
-    }
-  },
-  "ResetPasswordRequest": {
-    "token": {
-      "type": "String",
       "required": true,
-      "sample": "test-token"
-    }
-  },
-  "UpdateUserRequest": {
+      "sample": "test@pcms.vn"
+    },
     "fullName": {
       "type": "String",
-      "required": false,
+      "required": true,
       "sample": "test-fullName"
     },
     "phone": {
@@ -1563,11 +1820,76 @@
       "sample": "00000000-0000-0000-0000-000000000001"
     }
   },
-  "VerifyEmailRequest": {
-    "link": {
-      "type": "email",
+  "ForgotPasswordRequest": {
+    "email": {
+      "type": "String",
       "required": false,
+      "sample": "test@pcms.vn"
+    }
+  },
+  "LoginRequest": {
+    "email": {
+      "type": "String",
+      "required": true,
+      "sample": "test@pcms.vn"
+    },
+    "password": {
+      "type": "String",
+      "required": true,
+      "sample": "test-password"
+    }
+  },
+  "ResendVerificationRequest": {
+    "email": {
+      "type": "String",
+      "required": true,
+      "sample": "test@pcms.vn"
+    }
+  },
+  "ResetPasswordRequest": {
+    "token": {
+      "type": "String",
+      "required": true,
+      "sample": "test-token"
+    },
+    "newPassword": {
+      "type": "String",
+      "required": false,
+      "sample": "test-newPassword"
+    }
+  },
+  "UpdateUserRequest": {
+    "fullName": {
+      "type": "String",
+      "required": true,
+      "sample": "test-fullName"
+    },
+    "phone": {
+      "type": "String",
+      "required": false,
+      "sample": "0901234567"
+    },
+    "role": {
+      "type": "Role",
+      "required": true,
       "sample": null
+    },
+    "branchId": {
+      "type": "UUID",
+      "required": false,
+      "sample": "00000000-0000-0000-0000-000000000001"
+    },
+    "status": {
+      "type": "UserStatus",
+      "required": true,
+      "sample": null
+    }
+  },
+  "VerifyEmailRequest": {
+    "token": {
+      "type": "String",
+      "required": true,
+      "sample": "test-token"
     }
   }
 }
