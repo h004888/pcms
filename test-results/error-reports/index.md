@@ -18,11 +18,11 @@
 
 | Status | Count | % | Description |
 |--------|------:|--:|-------------|
-| 400 Bad Request | 171 | 82.6% | |
-| 401 Unauthorized | 3 | 1.4% | |
-| 404 Not Found | 25 | 12.1% | |
+| 400 Bad Request | 155 | 77.5% | |
+| 401 Unauthorized | 3 | 1.5% | |
+| 404 Not Found | 40 | 20.0% | |
 | 405 Method Not Allowed | 2 | 1.0% | |
-| 409 Conflict | 1 | 0.5% | |
+| 409 Conflict | 0 | 0.0% | |
 | 500 Server Error | 0 | 0.0% | ALL FIXED |
 
 ### Phan bo theo Severity
@@ -362,7 +362,7 @@
 
 ## Tat ca Errors theo HTTP Status
 
-### 400 Bad Request (171 errors)
+### 400 Bad Request (155 errors)
 
 | # | Method | URL | Service | Severity |
 |---|--------|-----|---------|----------|
@@ -546,7 +546,7 @@
 | [145](error-145-POST-api-v1-webhooks-payment-gateway.md) | POST | `http://localhost:8080/api/v1/webhooks/payment-gateway` | payment-service | [I] |
 | [190](error-190-POST-api-v1-auth-refresh.md) | POST | `http://localhost:8080/api/v1/auth/refresh` | user-service | [I] |
 
-### 404 Not Found (25 errors)
+### 404 Not Found (40 errors)
 
 | # | Method | URL | Service | Severity |
 |---|--------|-----|---------|----------|
@@ -583,21 +583,13 @@
 | [056](error-056-POST-api-v1-admin-videos-videos.md) | POST | `http://localhost:8080/api/v1/admin/videos/videos` | customer-portal-service | [M] |
 | [069](error-069-POST-api-v1-admin-videos-flash-sales.md) | POST | `http://localhost:8080/api/v1/admin/videos/flash-sales` | ecom-ops-service | [M] |
 
-### 409 Conflict (1 errors)
+### 409 Conflict (0 errors)
 
-| # | Method | URL | Service | Severity |
-|---|--------|-----|---------|----------|
-| [051](error-051-PATCH-api-v1-notif-settings.md) | PATCH | `http://localhost:8080/api/v1/notif-settings` | customer-portal-service | [M] |
+No 409 Conflict errors remaining.
 
-### 500 Server Error (5 errors)
+### 500 Server Error (0 errors)
 
-| # | Method | URL | Service | Severity |
-|---|--------|-----|---------|----------|
-| [013](error-013-POST-api-v1-medicines-1-image.md) | POST | `http://localhost:8080/api/v1/medicines/1/image` | catalog-service | [M] |
-| [026](error-026-POST-api-v1-addresses.md) | POST | `http://localhost:8080/api/v1/addresses` | customer-portal-service | [M] |
-| [091](error-091-POST-api-v1-inventory-bulk-import-file.md) | POST | `http://localhost:8080/api/v1/inventory/bulk/import-file` | inventory-service | [M] |
-| [168](error-168-POST-api-v1-rx-cross-sell.md) | POST | `http://localhost:8080/api/v1/rx/cross-sell` | pharmacist-workbench-service | [H] |
-| [183](error-183-POST-api-v1-rx-drug-check.md) | POST | `http://localhost:8080/api/v1/rx/drug-check` | pharmacist-workbench-service | [H] |
+ALL FIXED - No 500 Server Errors remaining.
 
 ## Huong dan su dung
 
