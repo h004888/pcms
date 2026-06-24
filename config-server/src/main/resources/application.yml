@@ -6,6 +6,12 @@ spring:
     name: config-server
   profiles:
     active: native
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration$GitRepositoryConfiguration
+      - org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration$JGitRepositoryConfiguration
+      - org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration$SvnRepositoryConfiguration
+      - org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration$VaultRepositoryConfiguration
   cloud:
     config:
       server:

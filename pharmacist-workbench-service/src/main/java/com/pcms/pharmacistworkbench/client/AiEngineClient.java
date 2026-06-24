@@ -10,7 +10,7 @@ import java.util.Map;
  * Feign client for ai-engine-service (Python FastAPI).
  * Used for AI-powered suggestions like cross-sell, drug interaction checks.
  */
-@FeignClient(name = "ai-engine-service", fallback = AiEngineClient.Fallback.class)
+@FeignClient(name = "ai-engine-service", fallback = AiEngineClient.Fallback.class, configuration = com.pcms.pharmacistworkbench.config.FeignMapConfig.class)
 public interface AiEngineClient {
 
     @PostMapping("/api/v1/ai/cross-sell")

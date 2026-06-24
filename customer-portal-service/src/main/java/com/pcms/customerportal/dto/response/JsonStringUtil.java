@@ -10,14 +10,14 @@ import java.util.List;
  * Tiny helper for columns stored as JSON strings.
  * Avoids sprinkling {@code ObjectMapper.readValue(...)} across services.
  */
-final class JsonStringUtil {
+public final class JsonStringUtil {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {};
 
     private JsonStringUtil() {}
 
-    static List<String> toStringList(String json) {
+    public static List<String> toStringList(String json) {
         if (json == null || json.isBlank()) {
             return Collections.emptyList();
         }
@@ -28,7 +28,7 @@ final class JsonStringUtil {
         }
     }
 
-    static String fromList(List<String> list) {
+    public static String fromList(List<String> list) {
         if (list == null || list.isEmpty()) {
             return "[]";
         }

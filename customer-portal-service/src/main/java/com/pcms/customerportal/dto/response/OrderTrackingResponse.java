@@ -1,5 +1,6 @@
 package com.pcms.customerportal.dto.response;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -10,11 +11,12 @@ public record OrderTrackingResponse(
         String status,
         List<TimelineEntry> timeline,
         String currentLocation,
-        LocalDateTime estimatedDelivery
+        Instant estimatedDelivery
 ) {
     public record TimelineEntry(
             String status,
-            LocalDateTime timestamp,
-            String note
+            Instant timestamp,
+            String note,
+            String location
     ) {}
 }

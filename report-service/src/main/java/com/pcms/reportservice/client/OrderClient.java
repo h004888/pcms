@@ -12,7 +12,7 @@ import java.util.UUID;
 /**
  * Feign client to aggregate data from order-service for reports
  */
-@FeignClient(name = "order-service")
+@FeignClient(name = "order-service", configuration = com.pcms.reportservice.config.FeignMapConfig.class)
 public interface OrderClient {
 
     @GetMapping("/orders")

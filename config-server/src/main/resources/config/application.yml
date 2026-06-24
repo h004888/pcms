@@ -1,11 +1,9 @@
 spring:
   application:
     name: default-service
-  profiles:
-    active: default
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -17,9 +15,21 @@ spring:
       max-request-size: 10MB
   datasource:
     url: jdbc:mysql://localhost:3306/pcms?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: pcms_user
-    password: pcms_pass
+    username: root
+    password: 123
     driver-class-name: com.mysql.cj.jdbc.Driver
+  # ============================================================
+  # Eureka shutdown resilience (Defense-in-Depth)
+  # ============================================================
+  # Bật override bean để EurekaResilientShutdownAutoConfiguration
+  # (trong pcms-common) thay thế bean EurekaAutoServiceRegistration
+  # gốc của Spring Cloud Netflix.
+  main:
+    allow-bean-definition-overriding: true
+  # Bound tổng thời gian shutdown để service không treo vô tận
+  # nếu Eureka unregister bị hang (HTTP call không có timeout).
+  lifecycle:
+    timeout-per-shutdown-phase: 15s
 
 # NOTE: server.port is intentionally NOT set here.
 # Each service defines its own port in its {service-name}.yml file.
@@ -34,6 +44,18 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
+    # Lease renewal mỗi 10s (mặc định 30s) - phát hiện instance chết nhanh hơn
+    lease-renewal-interval-in-seconds: 10
+    # Sau 30s không thấy heartbeat thì Eureka tự xóa entry (mặc định 90s)
+    # Đây là cơ chế cleanup chính khi service không thể unregister sạch
+    # (Eureka down, network partition, SIGKILL trong Kubernetes, ...).
+    lease-expiration-duration-in-seconds: 30
+
+# Bật/tắt fix Eureka shutdown (mặc định true). Tắt nếu service không
+# dùng Eureka hoặc muốn giữ behavior gốc.
+pcms:
+  eureka:
+    resilient-shutdown: true
 
 management:
   endpoints:

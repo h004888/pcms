@@ -43,6 +43,7 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
         if (orderData.isEmpty()) {
             // Return minimal response so FE can still render
             return new OrderTrackingResponse(
+                    null,
                     "UNKNOWN",
                     "UNKNOWN",
                     List.of(),
@@ -59,6 +60,7 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
         List<OrderTrackingResponse.TimelineEntry> timeline = buildTimeline(status, createdAt);
 
         return new OrderTrackingResponse(
+                null,
                 orderNumber,
                 status,
                 timeline,
@@ -106,18 +108,18 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
         List<OrderTrackingResponse.TimelineEntry> timeline = new ArrayList<>();
         Instant t0 = baseTime != null ? baseTime : Instant.now();
 
-        timeline.add(new OrderTrackingResponse.TimelineEntry("CONFIRMED", t0, "Đã xác nhận"));
+        timeline.add(new OrderTrackingResponse.TimelineEntry("CONFIRMED", t0, "Đã xác nhận", null));
         if ("PAID".equals(status) || "SHIPPING".equals(status) || "DELIVERED".equals(status) || "COMPLETED".equals(status)) {
-            timeline.add(new OrderTrackingResponse.TimelineEntry("PAID", t0.plus(5, ChronoUnit.MINUTES), "Đã thanh toán"));
+            timeline.add(new OrderTrackingResponse.TimelineEntry("PAID", t0.plus(5, ChronoUnit.MINUTES), "Đã thanh toán", null));
         }
         if ("SHIPPING".equals(status) || "DELIVERED".equals(status) || "COMPLETED".equals(status)) {
             timeline.add(new OrderTrackingResponse.TimelineEntry("SHIPPING", t0.plus(1, ChronoUnit.HOURS), "Đang giao", "Kho Hà Nội"));
         }
         if ("DELIVERED".equals(status) || "COMPLETED".equals(status)) {
-            timeline.add(new OrderTrackingResponse.TimelineEntry("DELIVERED", t0.plus(2, ChronoUnit.DAYS), "Đã giao"));
+            timeline.add(new OrderTrackingResponse.TimelineEntry("DELIVERED", t0.plus(2, ChronoUnit.DAYS), "Đã giao", null));
         }
         if ("CANCELLED".equals(status)) {
-            timeline.add(new OrderTrackingResponse.TimelineEntry("CANCELLED", t0, "Đã huỷ"));
+            timeline.add(new OrderTrackingResponse.TimelineEntry("CANCELLED", t0, "Đã huỷ", null));
         }
 
         return timeline;

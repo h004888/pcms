@@ -102,7 +102,7 @@ public class MedicineServiceImpl implements MedicineService {
         if (image == null || image.isEmpty()) {
             return created;
         }
-        return updateImage(created.id(), image);
+        return updateImage(created.id(), image, null);
     }
 
     @Override
@@ -141,16 +141,18 @@ public class MedicineServiceImpl implements MedicineService {
         if (image == null || image.isEmpty()) {
             return updated;
         }
-        return updateImage(id, image);
+        return updateImage(id, image, null);
     }
 
     @Override
     @Transactional
-    public MedicineResponse updateImage(UUID id, MultipartFile image) {
+    public MedicineResponse updateImage(UUID id, MultipartFile image, String imageUrl) {
         Medicine medicine = medicineRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Medicine", id));
-        String imageUrl = imageStorageService.store(id, image);
-        medicine.setImageUrl(imageUrl);
+        String finalImageUrl = (image != null && !image.isEmpty())
+                ? imageStorageService.store(id, image)
+                : (imageUrl != null ? imageUrl : medicine.getImageUrl());
+        medicine.setImageUrl(finalImageUrl);
         return MedicineResponse.from(medicineRepository.save(medicine));
     }
 

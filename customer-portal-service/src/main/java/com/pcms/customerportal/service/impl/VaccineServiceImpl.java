@@ -187,8 +187,9 @@ public class VaccineServiceImpl implements VaccineService {
         }
 
         // Reload slot to restore available qty atomically
-        VaccineSlot slot = slotRepository.lockById(booking.getSlotId())
-                .orElseThrow(() -> new ResourceNotFoundException("Vaccine slot", booking.getSlotId()));
+        UUID slotId = booking.getSlotId();
+        VaccineSlot slot = slotRepository.lockById(slotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vaccine slot", slotId));
         if (slot.getSlotDate().isBefore(LocalDate.now())
                 || slot.getSlotDate().isEqual(LocalDate.now())) {
             throw new InvalidOperationException(

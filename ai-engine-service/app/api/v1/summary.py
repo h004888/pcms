@@ -1,11 +1,12 @@
 """Medical record summary endpoint (AI-08)."""
 
 from datetime import datetime, timezone
+
 from fastapi import APIRouter
 
-from app.core.openai_client import get_client
 from app.core.config import settings
 from app.core.logger import setup_logger
+from app.core.openai_client import get_client
 from app.models.schemas import SummaryRequest, SummaryResponse
 
 logger = setup_logger(__name__)
@@ -29,7 +30,8 @@ async def summarize_customer_history(request: SummaryRequest):
             max_tokens=request.max_words * 2,
             temperature=0.3,
         )
-        summary = resp.choices[0].message.content
+        _raw = resp.choices[0].message.content
+        summary: str = _raw if _raw is not None else ""
         return SummaryResponse(
             customer_id=request.customer_id,
             summary=summary,

@@ -100,10 +100,12 @@ public class MedicineController {
         return ResponseEntity.ok(medicineService.update(id, request, image));
     }
 
-    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{id}/image", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<MedicineResponse> uploadImage(@PathVariable UUID id,
-            @RequestPart("image") MultipartFile image) {
-        return ResponseEntity.ok(medicineService.updateImage(id, image));
+            @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        return ResponseEntity.ok(medicineService.updateImage(id, image,
+                body != null ? body.get("imageUrl") : null));
     }
 
     @GetMapping("/{id}/image")

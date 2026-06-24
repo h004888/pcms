@@ -1,7 +1,7 @@
 package com.pcms.customerportal.dto.response;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record OrderHistoryItemResponse(
@@ -10,5 +10,5 @@ public record OrderHistoryItemResponse(
         String status,
         BigDecimal total,
         int itemCount,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {}

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@FeignClient(name = "inventory-service")
+@FeignClient(name = "inventory-service", configuration = com.pcms.reportservice.config.FeignMapConfig.class)
 public interface InventoryClient {
 
     @GetMapping("/inventory")

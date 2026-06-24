@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "PCMS - Pharmacy Chain Management System",
-    "description": "API collection for all 15 microservices (Spring Boot 4.0.7 + Spring Cloud 2025.1.2 + MySQL)",
+    "description": "API collection for all microservices (Spring Boot + Spring Cloud + MySQL). Base path: {{gateway}}/api/v1",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -13,12 +13,12 @@
     {
       "name": "Infrastructure",
       "item": [
-        {"name": "Eureka Dashboard", "request": {"method": "GET", "url": "{{eureka}}"}},
+        {"name": "Eureka Dashboard", "request": {"method": "GET", "url": "{{eureka}"}},
         {"name": "Config Server", "request": {"method": "GET", "url": "{{config}}/user-service/default"}}
       ]
     },
     {
-      "name": "UC01 - Auth",
+      "name": "UC01 - Auth (user-service)",
       "item": [
         {
           "name": "Login",
@@ -26,10 +26,7 @@
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "url": {"raw": "{{gateway}}/api/v1/auth/login", "host": ["{{gateway}}"], "path": ["api","v1","auth","login"]},
-            "body": {
-              "mode": "raw",
-              "raw": "{\"email\":\"admin@pcms.vn\",\"password\":\"admin123\"}"
-            }
+            "body": {"mode": "raw", "raw": "{\"email\":\"admin@pcms.vn\",\"password\":\"admin123\"}"}
           }
         },
         {
@@ -40,37 +37,122 @@
             "url": "{{gateway}}/api/v1/auth/refresh",
             "body": {"mode": "raw", "raw": "{\"refreshToken\":\"<REFRESH_TOKEN>\"}"}
           }
+        },
+        {
+          "name": "Logout",
+          "request": {"method": "POST", "url": "{{gateway}}/api/v1/auth/logout"}
+        },
+        {
+          "name": "Get Current User (Me)",
+          "request": {"method": "GET", "url": "{{gateway}}/api/v1/auth/me"}
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/auth/password",
+            "body": {"mode": "raw", "raw": "{\"currentPassword\":\"\",\"newPassword\":\"\"}"}
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/auth/forgot-password",
+            "body": {"mode": "raw", "raw": "{\"email\":\"\"}"}
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/auth/verify-email",
+            "body": {"mode": "raw", "raw": "{\"token\":\"\"}"}
+          }
         }
       ]
     },
     {
-      "name": "UC02 - Users",
+      "name": "UC02 - Users (user-service)",
       "item": [
-        {
-          "name": "List Users",
-          "request": {"method": "GET", "url": "{{gateway}}/api/v1/users?page=0&size=20"}
-        },
+        {"name": "List Users", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users"}},
+        {"name": "List Users (with pagination)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users?page=0&size=20"}},
+        {"name": "Get Users by Role", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users/role/PHARMACIST"}},
+        {"name": "Export Users", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users/export"}},
         {
           "name": "Create User",
           "request": {
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "url": "{{gateway}}/api/v1/users",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\":\"pharmacist01@pcms.vn\",\n  \"passwordHash\":\"$2a$10$...\",\n  \"fullName\":\"Nguyen Van A\",\n  \"phone\":\"0901234567\",\n  \"role\":\"PHARMACIST\",\n  \"branchId\":\"<BRANCH_UUID>\"\n}"
-            }
+            "body": {"mode": "raw", "raw": "{\n  \"email\":\"pharmacist01@pcms.vn\",\n  \"passwordHash\":\"$2a$10$...\",\n  \"fullName\":\"Nguyen Van A\",\n  \"phone\":\"0901234567\",\n  \"role\":\"PHARMACIST\",\n  \"branchId\":\"<BRANCH_UUID>\"\n}"}
+          }
+        },
+        {"name": "Get User by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users/:id"}},
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/users/:id",
+            "body": {"mode": "raw", "raw": "{\"fullName\":\"\",\"phone\":\"\"}"}
           }
         },
         {
-          "name": "Get User by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users/:id"}
-        }
+          "name": "Update User Role",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/users/:id/role",
+            "body": {"mode": "raw", "raw": "{\"role\":\"PHARMACIST\"}"}
+          }
+        },
+        {
+          "name": "Update User Status",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/users/:id/status",
+            "body": {"mode": "raw", "raw": "{\"status\":\"ACTIVE\"}"}
+          }
+        },
+        {"name": "Reset Password", "request": {"method": "POST", "url": "{{gateway}}/api/v1/users/:id/reset-password"}},
+        {"name": "Unlock User", "request": {"method": "POST", "url": "{{gateway}}/api/v1/users/:id/unlock"}},
+        {
+          "name": "Assign Branch to User",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/users/:id/branch",
+            "body": {"mode": "raw", "raw": "{\"branchId\":\"<BRANCH_UUID>\"}"}
+          }
+        },
+        {"name": "Delete User", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/users/:id"}}
       ]
     },
     {
-      "name": "UC03 - Branches",
+      "name": "UC02 - Dashboard (user-service)",
+      "item": [
+        {"name": "Dashboard Stats", "request": {"method": "GET", "url": "{{gateway}}/api/v1/dashboard/stats"}},
+        {"name": "Recent Logins", "request": {"method": "GET", "url": "{{gateway}}/api/v1/dashboard/recent-logins"}}
+      ]
+    },
+    {
+      "name": "UC02 - Audit Logs (user-service)",
+      "item": [
+        {"name": "List Audit Logs", "request": {"method": "GET", "url": "{{gateway}}/api/v1/audit-logs"}}
+      ]
+    },
+    {
+      "name": "UC03 - Branches (branch-service)",
       "item": [
         {"name": "List Branches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches"}},
+        {"name": "Get Branch by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches/:id"}},
+        {"name": "Get Branch by Code", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches/code/:code"}},
+        {"name": "Get Branch Staff", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches/:id/staff"}},
         {
           "name": "Create Branch",
           "request": {
@@ -79,13 +161,63 @@
             "url": "{{gateway}}/api/v1/branches",
             "body": {"mode": "raw", "raw": "{\n  \"code\":\"HQ\",\n  \"name\":\"Headquarter\",\n  \"address\":\"12 Le Loi, District 1, HCMC\",\n  \"phone\":\"0281234567\"\n}"}
           }
-        }
+        },
+        {
+          "name": "Update Branch",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/branches/:id",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"address\":\"\",\"phone\":\"\"}"}
+          }
+        },
+        {
+          "name": "Update Branch Manager",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/branches/:id/manager",
+            "body": {"mode": "raw", "raw": "{\"managerId\":\"<USER_UUID>\"}"}
+          }
+        },
+        {"name": "Delete Branch", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/branches/:id"}}
       ]
     },
     {
-      "name": "UC04 - Medicines",
+      "name": "UC04 - Categories (category-service)",
+      "item": [
+        {"name": "List Categories", "request": {"method": "GET", "url": "{{gateway}}/api/v1/categories"}},
+        {"name": "Get Category by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/categories/:id"}},
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/categories",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"slug\":\"\",\"icon\":\"\",\"parentId\":\"\"}"}
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/categories/:id",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"icon\":\"\"}"}
+          }
+        },
+        {"name": "Delete Category", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/categories/:id"}}
+      ]
+    },
+    {
+      "name": "UC04 - Medicines (catalog-service)",
       "item": [
         {"name": "List Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines"}},
+        {"name": "List Medicines (paginated)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines?page=0&size=20"}},
+        {"name": "Get Medicine by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/:id"}},
+        {"name": "Get Medicine by SKU", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/sku/:sku"}},
+        {"name": "Count Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/count"}},
+        {"name": "Export Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/export"}},
         {
           "name": "Create Medicine",
           "request": {
@@ -94,13 +226,39 @@
             "url": "{{gateway}}/api/v1/medicines",
             "body": {"mode": "raw", "raw": "{\n  \"sku\":\"MD001\",\n  \"name\":\"Paracetamol 500mg\",\n  \"categoryId\":\"<CATEGORY_UUID>\",\n  \"supplierId\":\"<SUPPLIER_UUID>\",\n  \"price\":5000,\n  \"unit\":\"box\",\n  \"prescriptionRequired\":false\n}"}
           }
-        }
+        },
+        {
+          "name": "Update Medicine",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/medicines/:id",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"price\":0}"}
+          }
+        },
+        {"name": "Upload Medicine Image", "request": {"method": "POST", "url": "{{gateway}}/api/v1/medicines/:id/image"}},
+        {"name": "Get Medicine Image", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/:id/image"}},
+        {"name": "Delete Medicine", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/medicines/:id"}}
       ]
     },
     {
-      "name": "UC05 - Inventory",
+      "name": "UC04 - Search (catalog-service)",
       "item": [
-        {"name": "List Stock by Branch", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory?branchId=<UUID>"}},
+        {"name": "Search (general)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search?q=para"}},
+        {"name": "Autocomplete Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search/medicines/autocomplete?q=para"}},
+        {"name": "Search Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search/medicines?q=para"}},
+        {"name": "Full Search", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search/full?q=para"}}
+      ]
+    },
+    {
+      "name": "UC05 - Inventory (inventory-service)",
+      "item": [
+        {"name": "List Inventory", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory"}},
+        {"name": "List Inventory Batches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/batches"}},
+        {"name": "Get Inventory by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/:id"}},
+        {"name": "Get Batch by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/batches/:id"}},
+        {"name": "Scan Batch Code", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/batches/scan/:code"}},
+        {"name": "Get Branch Medicine Inventory", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/branch/:branchId/medicine/:medicineId"}},
         {
           "name": "Import Stock",
           "request": {
@@ -110,14 +268,57 @@
             "body": {"mode": "raw", "raw": "{\n  \"medicineId\":\"<MEDICINE_UUID>\",\n  \"branchId\":\"<BRANCH_UUID>\",\n  \"batchNo\":\"BTH-001\",\n  \"qty\":100,\n  \"expiryDate\":\"2027-12-31\",\n  \"actorId\":\"<USER_UUID>\"\n}"}
           }
         },
-        {"name": "Low Stock Alerts", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/low-stock"}},
-        {"name": "Expiring Batches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/expiring?days=30"}}
+        {
+          "name": "Export Stock",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/inventory/export",
+            "body": {"mode": "raw", "raw": "{\n  \"medicineId\":\"\",\n  \"branchId\":\"\",\n  \"batchNo\":\"\",\n  \"qty\":0,\n  \"actorId\":\"\"\n}"}
+          }
+        },
+        {
+          "name": "Transfer Stock",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/inventory/transfer",
+            "body": {"mode": "raw", "raw": "{\n  \"fromBranchId\":\"\",\n  \"toBranchId\":\"\",\n  \"medicineId\":\"\",\n  \"qty\":0\n}"}
+          }
+        },
+        {
+          "name": "Bulk Import (JSON)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/inventory/bulk/import",
+            "body": {"mode": "raw", "raw": "[]"}
+          }
+        },
+        {
+          "name": "Bulk Import (multipart)",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway}}/api/v1/inventory/bulk/import"
+          }
+        },
+        {"name": "Bulk Export", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/bulk/export"}},
+        {"name": "List Transactions", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/transactions"}},
+        {"name": "Low Stock Items", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/low-stock"}},
+        {"name": "Low Stock Alerts", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/alerts/low-stock"}},
+        {"name": "Expiring Batches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/expiring?days=30"}},
+        {"name": "Expiry Alerts", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/alerts/expiry"}},
+        {"name": "Stock Level Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/report/stock-level"}},
+        {"name": "Movement Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/report/movement"}}
       ]
     },
     {
-      "name": "UC06 - Orders",
+      "name": "UC06 - Orders (order-service)",
       "item": [
         {"name": "List Orders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders"}},
+        {"name": "List Orders (paginated)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders?page=0&size=20"}},
+        {"name": "Get Order by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders/:id"}},
+        {"name": "Get Order by Number", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders/number/:orderNumber"}},
         {
           "name": "Create Order",
           "request": {
@@ -128,16 +329,72 @@
           }
         },
         {
-          "name": "Cancel Order (BR06)",
+          "name": "Update Order",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/orders/:id",
+            "body": {"mode": "raw", "raw": "{\"items\":[],\"notes\":\"\"}"}
+          }
+        },
+        {
+          "name": "Pay Order",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/orders/:id/pay",
+            "body": {"mode": "raw", "raw": "{\"paymentMethod\":\"CASH\",\"amount\":0}"}
+          }
+        },
+        {
+          "name": "Approve Order",
+          "request": {"method": "POST", "url": "{{gateway}}/api/v1/orders/:id/approve"}
+        },
+        {
+          "name": "Reject Order",
+          "request": {"method": "POST", "url": "{{gateway}}/api/v1/orders/:id/reject"}
+        },
+        {
+          "name": "Cancel Order",
           "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/orders/:id?actorId=<USER_UUID>"}
-        }
+        },
+        {"name": "Delete Order", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/orders/:id"}}
       ]
     },
     {
-      "name": "UC07 - Payments",
+      "name": "UC06 - Coupons (order-service)",
       "item": [
+        {"name": "List Coupons", "request": {"method": "GET", "url": "{{gateway}}/api/v1/coupons"}},
         {
-          "name": "Pay with Cash",
+          "name": "Create Coupon",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/coupons",
+            "body": {"mode": "raw", "raw": "{\"code\":\"\",\"discountType\":\"PERCENT\",\"discountValue\":0,\"minSpend\":0}"}
+          }
+        },
+        {
+          "name": "Update Coupon",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/coupons/:id",
+            "body": {"mode": "raw", "raw": "{\"code\":\"\",\"active\":true}"}
+          }
+        },
+        {"name": "Delete Coupon", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/coupons/:id"}}
+      ]
+    },
+    {
+      "name": "UC07 - Payments (payment-service)",
+      "item": [
+        {"name": "List Payments", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments"}},
+        {"name": "Get Payment by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/:id"}},
+        {"name": "Get Payment by Invoice Number", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/invoice/:invoiceNumber"}},
+        {"name": "Get Payments by Order", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/order/:orderId"}},
+        {
+          "name": "Create Payment (Cash)",
           "request": {
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
@@ -146,20 +403,49 @@
           }
         },
         {
-          "name": "Pay with QR",
+          "name": "Create Payment (QR)",
           "request": {
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "url": "{{gateway}}/api/v1/payments",
             "body": {"mode": "raw", "raw": "{\n  \"orderId\":\"<ORDER_UUID>\",\n  \"paymentMethod\":\"QR\",\n  \"amount\":100000,\n  \"transactionRef\":\"QR_TXN_12345\",\n  \"staffId\":\"<USER_UUID>\"\n}"}
           }
-        }
+        },
+        {
+          "name": "Refund Payment",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/payments/:id/refund",
+            "body": {"mode": "raw", "raw": "{\"amount\":0,\"reason\":\"\"}"}
+          }
+        },
+        {
+          "name": "Update Refund",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/payments/:id/refund",
+            "body": {"mode": "raw", "raw": "{\"amount\":0,\"reason\":\"\"}"}
+          }
+        },
+        {"name": "Get Refund History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/:id/refund-history"}},
+        {"name": "Get Payment Invoice", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/:id/invoice"}},
+        {"name": "Print Payment", "request": {"method": "POST", "url": "{{gateway}}/api/v1/payments/:id/print"}}
       ]
     },
     {
-      "name": "UC08 - Customers",
+      "name": "UC08 - Customers (customer-service)",
       "item": [
         {"name": "List Customers", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers"}},
+        {"name": "List Customers (paginated)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers?page=0&size=20"}},
+        {"name": "Get Customer by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id"}},
+        {"name": "Get Customer by Phone", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/phone/:phone"}},
+        {"name": "Get Customer by Code", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/code/:code"}},
+        {"name": "Get Customer Tier", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id/tier"}},
+        {"name": "Get Customer Orders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id/orders"}},
+        {"name": "Get Customer Points", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id/points"}},
+        {"name": "Get Customer History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id/history"}},
         {
           "name": "Create Customer",
           "request": {
@@ -168,25 +454,116 @@
             "url": "{{gateway}}/api/v1/customers",
             "body": {"mode": "raw", "raw": "{\n  \"name\":\"Nguyen Van A\",\n  \"phone\":\"0901234567\",\n  \"email\":\"nguyenvana@example.com\",\n  \"address\":\"123 Nguyen Hue, Q1, HCMC\"\n}"}
           }
+        },
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/customers/register",
+            "body": {"mode": "raw", "raw": "{\n  \"name\":\"\",\n  \"phone\":\"\",\n  \"email\":\"\",\n  \"password\":\"\"\n}"}
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/customers/:id",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"phone\":\"\",\"email\":\"\"}"}
+          }
+        },
+        {
+          "name": "Add Points to Customer",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/customers/:id/points/add",
+            "body": {"mode": "raw", "raw": "{\"points\":0,\"reason\":\"\"}"}
+          }
+        },
+        {"name": "Delete Customer", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/customers/:id"}}
+      ]
+    },
+    {
+      "name": "UC08 - Customers Me (customer-service)",
+      "item": [
+        {"name": "Get Current Customer (Me)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/me"}},
+        {
+          "name": "Update Current Customer (Me)",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/customers/me",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"phone\":\"\",\"email\":\"\",\"address\":\"\"}"}
+          }
         }
       ]
     },
     {
-      "name": "UC09 - Reports",
+      "name": "UC09 - Reports (report-service)",
       "item": [
         {"name": "Revenue Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/revenue?from=2026-06-01&to=2026-06-30&groupBy=day"}},
-        {"name": "Inventory Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/inventory?branchId=<UUID>"}}
+        {
+          "name": "Generate Revenue Report",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/reports/revenue",
+            "body": {"mode": "raw", "raw": "{\"from\":\"\",\"to\":\"\",\"groupBy\":\"day\",\"branchId\":\"\"}"}
+          }
+        },
+        {"name": "Inventory Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/inventory?branchId=<UUID>"}},
+        {
+          "name": "Generate Inventory Report",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/reports/inventory",
+            "body": {"mode": "raw", "raw": "{\"from\":\"\",\"to\":\"\",\"branchId\":\"\"}"}
+          }
+        },
+        {"name": "Staff Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/staff"}},
+        {"name": "Real-time Stats", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/realtime/stats"}},
+        {"name": "Recent Orders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/realtime/recent-orders"}},
+        {"name": "Export Reports", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/export"}},
+        {"name": "Export to Excel", "request": {"method": "POST", "url": "{{gateway}}/api/v1/reports/export/excel"}},
+        {"name": "Export to PDF", "request": {"method": "POST", "url": "{{gateway}}/api/v1/reports/export/pdf"}}
       ]
     },
     {
-      "name": "UC10 - Search",
+      "name": "UC10 - Suppliers (supplier-service)",
       "item": [
-        {"name": "Search Medicines (autocomplete)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search?q=para"}}
+        {"name": "List Suppliers", "request": {"method": "GET", "url": "{{gateway}}/api/v1/suppliers"}},
+        {"name": "Get Supplier by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/suppliers/:id"}},
+        {
+          "name": "Create Supplier",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/suppliers",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"code\":\"\",\"address\":\"\",\"phone\":\"\",\"email\":\"\"}"}
+          }
+        },
+        {
+          "name": "Update Supplier",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/suppliers/:id",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"address\":\"\",\"phone\":\"\"}"}
+          }
+        },
+        {"name": "Get Supplier History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/suppliers/:id/history"}},
+        {"name": "Delete Supplier", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/suppliers/:id"}}
       ]
     },
     {
-      "name": "UC12 - Prescriptions",
+      "name": "UC12 - Prescriptions (prescription-service)",
       "item": [
+        {"name": "List Prescriptions", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions"}},
+        {"name": "Get Prescription by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/:id"}},
+        {"name": "Get Prescription by Code", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/code/:code"}},
         {
           "name": "Create Prescription",
           "request": {
@@ -195,14 +572,525 @@
             "url": "{{gateway}}/api/v1/prescriptions",
             "body": {"mode": "raw", "raw": "{\n  \"patientId\":\"<CUSTOMER_UUID>\",\n  \"doctorId\":\"<USER_UUID>\",\n  \"diagnosis\":\"Common cold\",\n  \"notes\":\"Drink warm water\",\n  \"licenseNo\":\"PH-LIC-001\"\n}"}
           }
+        },
+        {
+          "name": "Create Draft Prescription",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/prescriptions/draft",
+            "body": {"mode": "raw", "raw": "{\"patientId\":\"\"}"}
+          }
+        },
+        {
+          "name": "Update Prescription",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/prescriptions/:id",
+            "body": {"mode": "raw", "raw": "{\"diagnosis\":\"\",\"notes\":\"\"}"}
+          }
+        },
+        {"name": "Sign Prescription (PUT)", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/prescriptions/:id/sign"}},
+        {"name": "Sign Prescription (POST)", "request": {"method": "POST", "url": "{{gateway}}/api/v1/prescriptions/:id/sign"}},
+        {"name": "Link Order to Prescription", "request": {"method": "POST", "url": "{{gateway}}/api/v1/prescriptions/:id/link-order"}},
+        {"name": "Print Prescription", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/:id/print"}},
+        {"name": "Print Prescription (POST)", "request": {"method": "POST", "url": "{{gateway}}/api/v1/prescriptions/:id/print"}},
+        {"name": "Delete Prescription", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/prescriptions/:id"}}
+      ]
+    },
+    {
+      "name": "UC13 - Notifications (notification-service)",
+      "item": [
+        {"name": "List Notifications", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications"}},
+        {"name": "List Unread Notifications", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications/unread"}},
+        {"name": "Get Notification by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications/:id"}},
+        {
+          "name": "Create Notification",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/notifications",
+            "body": {"mode": "raw", "raw": "{\"recipientId\":\"\",\"title\":\"\",\"message\":\"\",\"type\":\"\"}"}
+          }
+        },
+        {
+          "name": "Create Bulk Notifications",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/notifications/bulk",
+            "body": {"mode": "raw", "raw": "{\"recipientIds\":[],\"title\":\"\",\"message\":\"\"}"}
+          }
+        },
+        {"name": "Broadcast Notification", "request": {"method": "POST", "url": "{{gateway}}/api/v1/notifications/broadcast"}},
+        {"name": "Compose Notification", "request": {"method": "POST", "url": "{{gateway}}/api/v1/notifications/compose"}},
+        {"name": "Retry Notification", "request": {"method": "POST", "url": "{{gateway}}/api/v1/notifications/:id/retry"}},
+        {"name": "Mark as Read", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/notifications/:id/read"}},
+        {"name": "Mark All as Read", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/notifications/read-all"}},
+        {"name": "Delete Notification", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/notifications/:id"}}
+      ]
+    },
+    {
+      "name": "UC13 - Notification Templates (notification-service)",
+      "item": [
+        {"name": "List Templates", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications/templates"}},
+        {
+          "name": "Create Template",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/notifications/templates",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"subject\":\"\",\"body\":\"\",\"type\":\"\"}"}
+          }
         }
       ]
     },
     {
-      "name": "UC13 - Notifications",
+      "name": "Health Tools (health-tools-service)",
       "item": [
-        {"name": "List My Notifications", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications?recipientId=<USER_UUID>"}},
-        {"name": "Unread Only", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications/unread?recipientId=<USER_UUID>"}}
+        {"name": "List Quizzes", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health/quizzes"}},
+        {"name": "Get Quiz by Slug", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health/quizzes/:slug"}},
+        {
+          "name": "Submit Quiz",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/health/quizzes/:slug/submit",
+            "body": {"mode": "raw", "raw": "{\"answers\":{}}"}
+          }
+        },
+        {"name": "Get My Quiz Results", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health/quiz-results/me"}}
+      ]
+    },
+    {
+      "name": "Rx Console - Consultations (pharmacist-workbench-service)",
+      "item": [
+        {
+          "name": "Create Consultation",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/consultations",
+            "body": {"mode": "raw", "raw": "{\"customerId\":\"\",\"pharmacistId\":\"\",\"topic\":\"\"}"}
+          }
+        },
+        {"name": "Get Consultation by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/consultations/:id"}},
+        {"name": "End Consultation", "request": {"method": "POST", "url": "{{gateway}}/api/v1/consultations/:id/end"}},
+        {
+          "name": "Add Message to Consultation",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/consultations/:id/messages",
+            "body": {"mode": "raw", "raw": "{\"message\":\"\"}"}
+          }
+        },
+        {"name": "Get Consultations by Customer", "request": {"method": "GET", "url": "{{gateway}}/api/v1/consultations/by-customer/:customerId"}},
+        {"name": "Get Consultations by Pharmacist", "request": {"method": "GET", "url": "{{gateway}}/api/v1/consultations/by-pharmacist/:pharmacistId"}}
+      ]
+    },
+    {
+      "name": "Rx Console - Customer 360 (pharmacist-workbench-service)",
+      "item": [
+        {"name": "Get Customer Profile 360", "request": {"method": "GET", "url": "{{gateway}}/api/v1/rx/customers/:id/profile-360"}}
+      ]
+    },
+    {
+      "name": "Rx Console - Follow-ups (pharmacist-workbench-service)",
+      "item": [
+        {
+          "name": "Create Follow-up",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/follow-ups",
+            "body": {"mode": "raw", "raw": "{\"customerId\":\"\",\"notes\":\"\",\"dueDate\":\"\"}"}
+          }
+        },
+        {"name": "Get Follow-ups by Customer", "request": {"method": "GET", "url": "{{gateway}}/api/v1/follow-ups/by-customer/:customerId"}},
+        {
+          "name": "Respond to Follow-up",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/follow-ups/:id/response",
+            "body": {"mode": "raw", "raw": "{\"response\":\"\"}"}
+          }
+        },
+        {"name": "Delete Follow-up", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/follow-ups/:id"}}
+      ]
+    },
+    {
+      "name": "Rx Console - AI Features (pharmacist-workbench-service)",
+      "item": [
+        {
+          "name": "AI Cross-sell",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/rx/cross-sell",
+            "body": {"mode": "raw", "raw": "{\"customerId\":\"\",\"currentMedicines\":[]}"}
+          }
+        },
+        {
+          "name": "AI Drug Check",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/rx/drug-check",
+            "body": {"mode": "raw", "raw": "{\"medicines\":[],\"symptoms\":[]}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rx Console - VIP Marks (pharmacist-workbench-service)",
+      "item": [
+        {
+          "name": "Create VIP Mark",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/vip-marks",
+            "body": {"mode": "raw", "raw": "{\"customerId\":\"\",\"reason\":\"\",\"tier\":\"\"}"}
+          }
+        },
+        {"name": "Get VIP Marks by Customer", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vip-marks/by-customer/:customerId"}},
+        {"name": "Get VIP Marks by Tier", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vip-marks/by-tier/:tier"}},
+        {"name": "List VIP Marks", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vip-marks"}},
+        {"name": "Delete VIP Mark", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/vip-marks/:customerId"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Addresses (customer-portal-service)",
+      "item": [
+        {"name": "List Addresses", "request": {"method": "GET", "url": "{{gateway}}/api/v1/addresses"}},
+        {"name": "Get Address by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/addresses/:id"}},
+        {
+          "name": "Create Address",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/addresses",
+            "body": {"mode": "raw", "raw": "{\"label\":\"Nhà\",\"name\":\"\",\"phone\":\"\",\"line\":\"\",\"province\":\"\",\"isDefault\":false}"}
+          }
+        },
+        {
+          "name": "Update Address",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/addresses/:id",
+            "body": {"mode": "raw", "raw": "{\"label\":\"\",\"name\":\"\",\"phone\":\"\",\"line\":\"\",\"province\":\"\"}"}
+          }
+        },
+        {"name": "Delete Address", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/addresses/:id"}},
+        {"name": "Set Default Address", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/addresses/:id/default"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Family (customer-portal-service)",
+      "item": [
+        {"name": "List Family Members", "request": {"method": "GET", "url": "{{gateway}}/api/v1/family"}},
+        {"name": "Get Family Member by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/family/:id"}},
+        {
+          "name": "Add Family Member",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/family",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"relation\":\"\",\"birthYear\":1990,\"allergies\":[],\"conditions\":[]}"}
+          }
+        },
+        {
+          "name": "Update Family Member",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/family/:id",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"allergies\":[],\"conditions\":[]}"}
+          }
+        },
+        {"name": "Remove Family Member", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/family/:id"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Favorites (customer-portal-service)",
+      "item": [
+        {"name": "List Favorites", "request": {"method": "GET", "url": "{{gateway}}/api/v1/favorites"}},
+        {
+          "name": "Add Favorite",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/favorites",
+            "body": {"mode": "raw", "raw": "{\"medicineId\":\"\"}"}
+          }
+        },
+        {"name": "Remove Favorite", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/favorites/:medicineId"}},
+        {"name": "Check if Favorite", "request": {"method": "GET", "url": "{{gateway}}/api/v1/favorites/:medicineId/check"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Cart (customer-portal-service)",
+      "item": [
+        {"name": "Get Cart", "request": {"method": "GET", "url": "{{gateway}}/api/v1/cart"}},
+        {
+          "name": "Add Item to Cart",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/cart/items",
+            "body": {"mode": "raw", "raw": "{\"medicineId\":\"\",\"quantity\":1}"}
+          }
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/cart/items/:itemId",
+            "body": {"mode": "raw", "raw": "{\"quantity\":1}"}
+          }
+        },
+        {"name": "Remove Cart Item", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/cart/items/:itemId"}},
+        {"name": "Clear Cart", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/cart"}},
+        {
+          "name": "Checkout Preview",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/cart/checkout/preview",
+            "body": {"mode": "raw", "raw": "{\"addressId\":\"\",\"voucherCode\":\"\"}"}
+          }
+        },
+        {
+          "name": "Checkout Confirm",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/cart/checkout/confirm",
+            "body": {"mode": "raw", "raw": "{\"addressId\":\"\",\"paymentMethod\":\"\",\"voucherCode\":\"\"}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Portal - Wallet (customer-portal-service)",
+      "item": [
+        {"name": "Get Wallet", "request": {"method": "GET", "url": "{{gateway}}/api/v1/wallet"}},
+        {"name": "Get Wallet Transactions", "request": {"method": "GET", "url": "{{gateway}}/api/v1/wallet/transactions"}},
+        {
+          "name": "Redeem Points",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/wallet/redeem",
+            "body": {"mode": "raw", "raw": "{\"rewardId\":\"\"}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Portal - Orders (customer-portal-service)",
+      "item": [
+        {"name": "Get Order Tracking", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders/:id/track"}},
+        {"name": "Get Order History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders/history"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Vouchers (customer-portal-service)",
+      "item": [
+        {"name": "List Vouchers", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vouchers"}},
+        {
+          "name": "Apply Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/vouchers/apply",
+            "body": {"mode": "raw", "raw": "{\"code\":\"\"}"}
+          }
+        },
+        {"name": "Get Voucher History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vouchers/history"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Shop (customer-portal-service)",
+      "item": [
+        {"name": "Shop Home", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/home"}},
+        {"name": "Product Detail Page", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/pdp/:id"}},
+        {"name": "Search Products", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/search?q=para"}},
+        {"name": "Lookup Drug", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/lookup/drug?q=para"}},
+        {"name": "Lookup Ingredient", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/lookup/ingredient?q=para"}},
+        {"name": "Lookup Herb", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/lookup/herb?q=para"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Store (customer-portal-service)",
+      "item": [
+        {"name": "Locate Stores", "request": {"method": "GET", "url": "{{gateway}}/api/v1/store/locator"}},
+        {"name": "Get Store Details", "request": {"method": "GET", "url": "{{gateway}}/api/v1/store/locator/:branchId"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Health Articles (customer-portal-service)",
+      "item": [
+        {"name": "List Health Articles", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health-articles"}},
+        {"name": "Get Health Article by Slug", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health-articles/:slug"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Diseases (customer-portal-service)",
+      "item": [
+        {"name": "List Diseases", "request": {"method": "GET", "url": "{{gateway}}/api/v1/diseases"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Verify Origin (customer-portal-service)",
+      "item": [
+        {
+          "name": "Scan Origin Verification",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/verify-origin/scan",
+            "body": {"mode": "raw", "raw": "{\"code\":\"\"}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Portal - Installment (customer-portal-service)",
+      "item": [
+        {
+          "name": "Get Installment Quote",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/installment/quote",
+            "body": {"mode": "raw", "raw": "{\"amount\":0,\"tenureMonths\":3}"}
+          }
+        },
+        {
+          "name": "Confirm Installment",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/installment/confirm",
+            "body": {"mode": "raw", "raw": "{\"quoteId\":\"\",\"paymentMethod\":\"\"}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Portal - Notifications Settings (customer-portal-service)",
+      "item": [
+        {"name": "Get Notification Settings", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notif-settings"}},
+        {
+          "name": "Update Notification Settings",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/notif-settings",
+            "body": {"mode": "raw", "raw": "{\"email\":true,\"sms\":false,\"push\":true}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Portal - Vaccines (customer-portal-service)",
+      "item": [
+        {"name": "List Vaccines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vaccines"}},
+        {"name": "Get Vaccine Slots", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vaccines/:id/slots"}},
+        {
+          "name": "Book Vaccine",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/vaccine-bookings",
+            "body": {"mode": "raw", "raw": "{\"vaccineId\":\"\",\"slotId\":\"\",\"customerId\":\"\"}"}
+          }
+        },
+        {"name": "Get My Vaccine Bookings", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vaccine-bookings/me"}},
+        {"name": "Cancel Vaccine Booking", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/vaccine-bookings/:id"}},
+        {"name": "Get Vaccination Ledger", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vaccination-ledger/me"}}
+      ]
+    },
+    {
+      "name": "Customer Portal - Prescriptions (customer-portal-service)",
+      "item": [
+        {"name": "Get My Prescriptions", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/me"}},
+        {"name": "Re-download Prescription", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/:id/re-download"}}
+      ]
+    },
+    {
+      "name": "Admin - Videos (customer-portal-service)",
+      "item": [
+        {"name": "List Videos", "request": {"method": "GET", "url": "{{gateway}}/api/v1/admin/videos"}},
+        {"name": "Get Video by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/admin/videos/:id"}},
+        {
+          "name": "Create Video",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/admin/videos",
+            "body": {"mode": "raw", "raw": "{\"title\":\"\",\"url\":\"\",\"thumbnail\":\"\",\"duration\":0}"}
+          }
+        },
+        {
+          "name": "Update Video",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/admin/videos/:id",
+            "body": {"mode": "raw", "raw": "{\"title\":\"\",\"url\":\"\"}"}
+          }
+        },
+        {"name": "Delete Video", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/admin/videos/:id"}}
+      ]
+    },
+    {
+      "name": "Mobile BFF (mobile-bff)",
+      "item": [
+        {"name": "Mobile Home", "request": {"method": "GET", "url": "{{gateway}}/api/v1/mobile/home"}},
+        {"name": "Nearby Pharmacies", "request": {"method": "GET", "url": "{{gateway}}/api/v1/mobile/nearby-pharmacies"}},
+        {
+          "name": "Create Medication Reminder",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/mobile/medication-reminders",
+            "body": {"mode": "raw", "raw": "{\"medicineName\":\"\",\"dosage\":\"\",\"times\":[],\"startDate\":\"\",\"endDate\":\"\"}"}
+          }
+        },
+        {"name": "List Medication Reminders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/mobile/medication-reminders"}},
+        {"name": "Deactivate Reminder", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/mobile/medication-reminders/:id/deactivate"}},
+        {"name": "Delete Reminder", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/mobile/medication-reminders/:id"}}
+      ]
+    },
+    {
+      "name": "Ecom Ops - Flash Sales (ecom-ops-service)",
+      "item": [
+        {"name": "Get Active Flash Sales", "request": {"method": "GET", "url": "{{gateway}}/api/v1/ecom-ops/flash-sales/active"}},
+        {"name": "Get Flash Sale by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/ecom-ops/flash-sales/:id"}}
+      ]
+    },
+    {
+      "name": "Admin - Flash Sales (ecom-ops-service)",
+      "item": [
+        {
+          "name": "Create Flash Sale",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{gateway}}/api/v1/admin/flash-sales",
+            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"startTime\":\"\",\"endTime\":\"\",\"discountPercent\":0,\"maxQuantity\":0}"}
+          }
+        },
+        {"name": "List All Flash Sales", "request": {"method": "GET", "url": "{{gateway}}/api/v1/admin/flash-sales"}},
+        {"name": "Get Flash Sale by ID (Admin)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/admin/flash-sales/:id"}},
+        {"name": "Cancel Flash Sale", "request": {"method": "POST", "url": "{{gateway}}/api/v1/admin/flash-sales/:id/cancel"}}
       ]
     }
   ]

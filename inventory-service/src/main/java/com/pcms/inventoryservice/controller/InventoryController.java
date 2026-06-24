@@ -145,11 +145,14 @@ public class InventoryController {
         return ResponseEntity.ok(inventoryService.bulkImportCsv(file, resolveActorId(actorId, userId)));
     }
 
-    @PostMapping(value = "/bulk/import-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/bulk/import-file", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<BulkImportResultResponse> bulkImportFile(
-            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "file", required = false) MultipartFile file,
             @RequestParam(required = false) UUID actorId,
             @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
+        if (file == null || file.isEmpty()) {
+            throw new InvalidOperationException("file (multipart) is required");
+        }
         return ResponseEntity.ok(inventoryService.bulkImportCsv(file, resolveActorId(actorId, userId)));
     }
 

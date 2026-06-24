@@ -116,8 +116,7 @@ public class WalletServiceImpl implements WalletService {
     public RedeemResponse redeem(UUID currentCustomerId, RedeemPointsRequest req) {
         int currentBalance = txRepo.sumAmountByCustomer(currentCustomerId);
         if (currentBalance < req.points()) {
-            throw new BusinessException(
-                    "MSG33", 400,
+            throw new com.pcms.customerportal.exception.InsufficientBalanceException(
                     "Insufficient wallet balance: requested " + req.points()
                             + " points, have " + currentBalance,
                     "Số dư ví không đủ: yêu cầu " + req.points()

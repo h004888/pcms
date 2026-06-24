@@ -2,6 +2,7 @@ package com.pcms.customerportal.dto.request;
 
 import com.pcms.customerportal.enums.AddressLabel;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -12,7 +13,7 @@ import java.math.BigDecimal;
  * FR14.21 - Customer delivery address book.
  */
 public record CreateAddressRequest(
-        @NotBlank(message = "label is required")
+        @NotNull(message = "label is required")
         AddressLabel label,
 
         @NotBlank(message = "receiverName is required")

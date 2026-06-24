@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
@@ -18,7 +19,7 @@ import java.util.UUID;
  * with a jobId and a (future) download URL. A real OpenPDF/iText renderer
  * is planned for a follow-up sprint.
  */
-@Service
+@Service("pdfExportQueueService")
 public class PdfExportService {
 
     private static final Logger log = LoggerFactory.getLogger(PdfExportService.class);

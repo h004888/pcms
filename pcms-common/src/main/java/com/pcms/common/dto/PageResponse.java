@@ -15,6 +15,7 @@ import java.util.List;
  * @param totalPages  total number of pages = ceil(total / size)
  * @param <T>         item type
  */
+
 public record PageResponse<T>(
         List<T> data,
         int page,
@@ -54,6 +55,10 @@ public record PageResponse<T>(
     /**
      * Empty page (no results).
      */
+    public static <T> PageResponse<T> of(List<T> items, java.util.function.Function<T, T> mapper) {
+        return new PageResponse<>(items, 0, items.size(), items.size(), items.size() > 0 ? 1 : 0);
+    }
+
     public static <T> PageResponse<T> empty(int page, int size) {
         return new PageResponse<>(List.of(), page, size, 0L, 0);
     }

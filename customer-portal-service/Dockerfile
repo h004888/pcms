@@ -3,7 +3,6 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY ../pom.xml ../pom.xml
-COPY ../*/pom.xml ../
 RUN mvn -B -q -f ../pom.xml -pl customer-portal-service -am dependency:go-offline
 COPY . .
 RUN mvn -B -q -f ../pom.xml -pl customer-portal-service -am clean package -DskipTests

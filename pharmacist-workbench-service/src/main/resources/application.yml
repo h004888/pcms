@@ -6,7 +6,7 @@ spring:
   config:
     import: "optional:configserver:http://localhost:8888"
   datasource:
-    url: jdbc:mysql://localhost:3307/pcms_pharmacist_workbench?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=utf8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_pharmacist_workbench?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=utf8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: pcms_user
     password: pcms_pass
     driver-class-name: com.mysql.cj.jdbc.Driver

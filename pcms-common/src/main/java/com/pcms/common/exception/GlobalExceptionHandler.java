@@ -104,6 +104,17 @@ public class GlobalExceptionHandler {
                         req.getRequestURI()));
     }
 
+    @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingHeader(
+            org.springframework.web.bind.MissingRequestHeaderException ex, HttpServletRequest req) {
+        log.debug("Missing required header '{}' at {}", ex.getHeaderName(), req.getRequestURI());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(withPath(ErrorResponse.of("MSG01", 401,
+                                "Missing required header: " + ex.getHeaderName(),
+                                "Thiếu header yêu cầu: " + ex.getHeaderName()),
+                        req.getRequestURI()));
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -113,6 +124,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoHandler(NoHandlerFoundException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(withPath(ErrorResponse.of("MSG31", 404, "Endpoint not found: " + req.getRequestURI(),
+                                "Không tìm thấy endpoint: " + req.getRequestURI()),
+                        req.getRequestURI()));
+    }
+
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(withPath(ErrorResponse.of("MSG31", 404, "Endpoint not found: " + req.getRequestURI(),
                                 "Không tìm thấy endpoint: " + req.getRequestURI()),

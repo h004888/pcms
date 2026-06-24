@@ -10,6 +10,14 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+# NOTE: Eureka shutdown resilience config (allow-bean-definition-overriding,
+# lifecycle timeout, lease-*-in-seconds, pcms.eureka.resilient-shutdown) đã
+# được centralize tại config-server/src/main/resources/config/application.yml
+# và tự động áp dụng cho tất cả 15 services. Service này chỉ giữ config
+# riêng (port, datasource, business config).
+#
+# Lớp Java fix: com.pcms.common.eureka.EurekaResilientShutdownAutoConfiguration
+# trong pcms-common, tự pick up qua META-INF/spring/...AutoConfiguration.imports.
 
 server:
   port: 8092

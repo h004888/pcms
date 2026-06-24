@@ -7,12 +7,12 @@ spring:
     name: customer-portal-service
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_customer_portal?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: ${MYSQL_USER:pcms_user}
-    password: ${MYSQL_PASSWORD:pcms_pass}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:123}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect

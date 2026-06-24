@@ -12,5 +12,7 @@ public record InstallmentQuoteRequest(
 
         @NotNull(message = "months is required")
         @Positive(message = "months must be positive")
-        Integer months
+        Integer months,
+
+        String provider
 ) {}

@@ -33,7 +33,7 @@ import java.util.UUID;
  * }
  * }</pre>
  */
-@Service
+@Service("excelExportQueueService")
 public class ExcelExportService {
 
     private static final Logger log = LoggerFactory.getLogger(ExcelExportService.class);

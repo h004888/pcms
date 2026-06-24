@@ -1,7 +1,8 @@
 """Demand forecast endpoints (NSF-16)."""
 
-import uuid
 from datetime import datetime, timedelta
+import uuid
+
 from fastapi import APIRouter
 
 from app.core.logger import setup_logger
@@ -13,7 +14,7 @@ router = APIRouter()
 
 @router.get("/{medicine_id}", response_model=ForecastResponse)
 async def forecast_demand(
-    medicine_id: uuid.UUID, days: int = 30, branch_id: uuid.UUID = None
+    medicine_id: uuid.UUID, days: int = 30, branch_id: uuid.UUID | None = None
 ):
     """Predict next N-day demand for a medicine (using Prophet/ARIMA in production)."""
     # Stub: return simple moving average as baseline forecast

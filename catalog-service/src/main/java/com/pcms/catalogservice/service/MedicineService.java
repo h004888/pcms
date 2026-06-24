@@ -31,7 +31,7 @@ public interface MedicineService {
 
         MedicineResponse update(UUID id, UpdateMedicineRequest request, MultipartFile image);
 
-        MedicineResponse updateImage(UUID id, MultipartFile image);
+        MedicineResponse updateImage(UUID id, MultipartFile image, String imageUrl);
 
         void softDelete(UUID id);
 

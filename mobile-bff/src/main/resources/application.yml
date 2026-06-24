@@ -3,13 +3,15 @@ server:
 spring:
   application:
     name: mobile-bff
+  config:
+    import: "optional:configserver:http://localhost:8888"
   datasource:
-    url: jdbc:mysql://localhost:3306/pcms_mobile_bff
+    url: jdbc:mysql://localhost:3307/pcms_mobile_bff?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: pcms_user
     password: pcms_pass
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
 eureka:
   client:
     service-url:

@@ -10,6 +10,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "follow_up_tasks", indexes = {
         @Index(name = "idx_fu_customer", columnList = "customer_id"),
+        @Index(name = "idx_fu_pharmacist", columnList = "pharmacist_id"),
         @Index(name = "idx_fu_scheduled", columnList = "scheduled_at"),
         @Index(name = "idx_fu_status", columnList = "status")
 })
@@ -18,6 +19,9 @@ public class FollowUpTask extends BaseEntity {
 
     @Column(name = "customer_id", nullable = false)
     private UUID customerId;
+
+    @Column(name = "pharmacist_id")
+    private UUID pharmacistId;
 
     @Column(name = "order_id")
     private UUID orderId;
@@ -43,6 +47,8 @@ public class FollowUpTask extends BaseEntity {
 
     public UUID getCustomerId() { return customerId; }
     public void setCustomerId(UUID customerId) { this.customerId = customerId; }
+    public UUID getPharmacistId() { return pharmacistId; }
+    public void setPharmacistId(UUID pharmacistId) { this.pharmacistId = pharmacistId; }
     public UUID getOrderId() { return orderId; }
     public void setOrderId(UUID orderId) { this.orderId = orderId; }
     public UUID getPrescriptionId() { return prescriptionId; }

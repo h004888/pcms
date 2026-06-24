@@ -25,15 +25,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
-        <!-- For DataIntegrityViolationException in GlobalExceptionHandler -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
         <!-- For AuthenticationException, AccessDeniedException in GlobalExceptionHandler -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- For DataIntegrityViolationException, BaseEntity, PageResponse -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <!-- JWT support - for cross-service token validation (CR-02) -->
         <dependency>
@@ -60,5 +60,28 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
+        <!--
+          Eureka client API chỉ dùng cho EurekaResilientShutdownConfig.
+          optional=true: compile thì cần, nhưng KHÔNG truyền cho service consumer.
+          Service nào KHÔNG dùng Eureka sẽ không bị kéo theo dependency này.
+          @ConditionalOnClass đảm bảo bean chỉ active khi service thực sự có Eureka.
+        -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

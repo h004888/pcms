@@ -42,3 +42,6 @@ docker-compose.override.yml
 .mvn/
 mvnw
 mvnw.cmd
+
+# pi-lens JSON-RPC log files (self-generated, not source)
+.pi-lens-*.json
