@@ -1,0 +1,150 @@
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: "pcms-jwt-secret-key-must-be-at-least-32-bytes-long-for-hs256-signing-2026"
+
+spring:
+  application:
+    name: api-gateway
+  main:
+    allow-bean-definition-overriding: true
+  config:
+    import: "optional:configserver:http://config-server:8888"
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      server:
+        webmvc:
+          routes:
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/dashboard/**,/api/v1/audit-logs/**
+              filters:
+                - StripPrefix=2
+            - id: branch-service
+              uri: lb://branch-service
+              predicates:
+                - Path=/api/v1/branches/**
+              filters:
+                - StripPrefix=2
+            - id: catalog-service
+              uri: lb://catalog-service
+              predicates:
+                - Path=/api/v1/medicines/**,/api/v1/search/**
+              filters:
+                - StripPrefix=2
+            - id: category-service
+              uri: lb://category-service
+              predicates:
+                - Path=/api/v1/categories/**
+              filters:
+                - StripPrefix=2
+            - id: supplier-service
+              uri: lb://supplier-service
+              predicates:
+                - Path=/api/v1/suppliers/**
+              filters:
+                - StripPrefix=2
+            - id: inventory-service
+              uri: lb://inventory-service
+              predicates:
+                - Path=/api/v1/inventory/**
+              filters:
+                - StripPrefix=2
+            - id: customer-service
+              uri: lb://customer-service
+              predicates:
+                - Path=/api/v1/customers/**
+              filters:
+                - StripPrefix=2
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/v1/orders/**,/api/v1/coupons/**
+              filters:
+                - StripPrefix=2
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/v1/payments/**,/api/v1/webhooks/**
+              filters:
+                - StripPrefix=2
+            - id: prescription-service
+              uri: lb://prescription-service
+              predicates:
+                - Path=/api/v1/prescriptions/**
+              filters:
+                - StripPrefix=2
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/v1/notifications/**
+              filters:
+                - StripPrefix=2
+            - id: report-service
+              uri: lb://report-service
+              predicates:
+                - Path=/api/v1/reports/**
+              filters:
+                - StripPrefix=2
+            - id: customer-portal-service
+              uri: lb://customer-portal-service
+              predicates:
+                - Path=/api/v1/shop/**,/api/v1/store/**,/api/v1/vaccines/**,/api/v1/vaccine-bookings/**,/api/v1/vaccination-ledger/**,/api/v1/health-articles/**,/api/v1/diseases/**,/api/v1/videos/**,/api/v1/lookup/**,/api/v1/verify-origin/**,/api/v1/addresses/**,/api/v1/favorites/**,/api/v1/family/**,/api/v1/cart/**,/api/v1/notif-settings/**,/api/v1/installment/**,/api/v1/wallet/**,/api/v1/vouchers/**,/api/v1/admin/videos/**
+              filters:
+                - StripPrefix=2
+            - id: pharmacist-workbench-service
+              uri: lb://pharmacist-workbench-service
+              predicates:
+                - Path=/api/v1/rx/**,/api/v1/consultations/**,/api/v1/follow-ups/**,/api/v1/vip-marks/**
+              filters:
+                - StripPrefix=2
+            - id: health-tools-service
+              uri: lb://health-tools-service
+              predicates:
+                - Path=/api/v1/health/**
+              filters:
+                - StripPrefix=2
+            - id: ecom-ops-service
+              uri: lb://ecom-ops-service
+              predicates:
+                - Path=/api/v1/ecom-ops/**,/api/v1/admin/vouchers/**,/api/v1/admin/flash-sales/**,/api/v1/admin/reviews/**
+              filters:
+                - StripPrefix=2
+            - id: customer-portal-admin-videos
+              uri: lb://customer-portal-service
+              predicates:
+                - Path=/api/v1/admin/videos/**
+              filters:
+                - StripPrefix=2
+            - id: ecom-ops-flash-sales
+              uri: lb://ecom-ops-service
+              predicates:
+                - Path=/api/v1/admin/videos/flash-sales/**
+              filters:
+                - StripPrefix=2
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

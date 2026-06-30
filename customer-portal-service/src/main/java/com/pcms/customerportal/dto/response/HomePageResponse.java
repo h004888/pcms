@@ -26,10 +26,10 @@ public record HomePageResponse(
 
     public record BannerResponse(String id, String title, String imageUrl, String linkUrl) {}
 
-    public record BestSellerResponse(String id, String name, java.math.BigDecimal price,
+    public record BestSellerResponse(String id, String slug, String name, java.math.BigDecimal price,
                                      String imageUrl, Long soldCount) {}
 
-    public record CategoryTeaserResponse(String id, String name, String imageUrl, Long productCount) {}
+    public record CategoryTeaserResponse(String id, String slug, String name, String imageUrl, Long productCount) {}
 
     public record BrandResponse(String id, String name, String logoUrl) {}
 

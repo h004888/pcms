@@ -13,6 +13,7 @@ TRUNCATE TABLE herbs;
 TRUNCATE TABLE ingredients;
 TRUNCATE TABLE videos;
 TRUNCATE TABLE home_banners;
+TRUNCATE TABLE review;
 SET FOREIGN_KEY_CHECKS=1;
 
 -- ============= VACCINES =============
@@ -107,6 +108,14 @@ INSERT INTO home_banners (id, title, image_url, link_url, sort_order, status, st
 (UUID_TO_BIN('ceeeeeee-1111-1111-1111-111111111111'), 'FPT Long Châu - Đồng hành cùng sức khỏe Việt', 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1200', '/mobile', 1, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW()),
 (UUID_TO_BIN('cfffffff-2222-2222-2222-222222222222'), 'Chương trình Tích điểm đổi quà', 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1200', '/wallet', 2, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW());
 
+-- ============= REVIEWS (SPRINT 3 - T11) =============
+-- Note: medicineId tham chiếu catalog-service (UUID). Khi test cần có sẵn
+-- medicines UUID thật. Dùng placeholder UUID; thay sau nếu cần.
+INSERT INTO review (id, customer_id, medicine_id, rating, comment, created_at, updated_at) VALUES
+(UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000010'), 5, 'Thuốc tốt, hiệu quả rõ rệt.', NOW(), NOW()),
+(UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000002'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000011'), 4, 'Hơi đắng nhưng chịu được.', NOW(), NOW()),
+(UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000003'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('00000000-0000-0000-0000-000000000010'), 3, 'Tạm ổn, sẽ dùng tiếp.', NOW(), NOW());
+
 -- ============= SUMMARY =============
 SELECT '✅ Seed customer-portal completed!' AS status;
 SELECT 'vaccines' AS tbl, COUNT(*) AS cnt FROM vaccines
@@ -117,4 +126,5 @@ UNION SELECT 'diseases', COUNT(*) FROM disease_info
 UNION SELECT 'herbs', COUNT(*) FROM herbs
 UNION SELECT 'ingredients', COUNT(*) FROM ingredients
 UNION SELECT 'videos', COUNT(*) FROM videos
-UNION SELECT 'home_banners', COUNT(*) FROM home_banners;
+UNION SELECT 'home_banners', COUNT(*) FROM home_banners
+UNION SELECT 'reviews', COUNT(*) FROM review;

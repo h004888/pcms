@@ -1,1096 +1,363 @@
 {
   "info": {
+    "_postman_id": "pcms-collection-001",
     "name": "PCMS - Pharmacy Chain Management System",
-    "description": "API collection for all microservices (Spring Boot + Spring Cloud + MySQL). Base path: {{gateway}}/api/v1",
+    "description": "# PCMS Backend API Collection\n\nPharmacy Chain Management System - Microservices Architecture.\n\n## Stack\n- Spring Boot 4.0.7 + Spring Cloud 2025.1.2 (Oakwood)\n- JDK 21, Maven 3.9.16, MySQL 8.0\n- Resilience4J 2.4.0, Eureka, Spring Cloud Config\n\n## Services (17)\n**Infrastructure:** config-server (8888), discovery-server (8761), api-gateway (8080)\n**Core Business (12):** user (8081), branch (8082), catalog (8083), category (8084), supplier (8085), inventory (8086), customer (8087), order (8088), payment (8089), prescription (8090), notification (8091), report (8092)\n**Extra:** customer-portal, pharmacist-workbench, ecom-ops, health-tools, mobile-bff\n\n## Routing\nAll API access via API Gateway at `{{gateway}}` = http://localhost:8080/api/v1.\nService-direct URLs: see environment variables `{{xxxServiceUrl}}`.\n\n## Auth Flow\n1. POST /auth/login -> accessToken saved automatically by test script to `{{accessToken}}`\n2. All subsequent requests include `Authorization: Bearer {{accessToken}}` from collection auth.\n\n## Environment\nImport companion file `PCMS.postman_environment.json`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
   "variable": [
-    {"key": "gateway", "value": "http://localhost:8080", "type": "string"},
-    {"key": "eureka", "value": "http://localhost:8761", "type": "string"},
-    {"key": "config", "value": "http://localhost:8888", "type": "string"}
+    {"key": "baseUrl", "value": "http://localhost:8080"},
+    {"key": "gateway", "value": "http://localhost:8080/api/v1"}
   ],
   "item": [
     {
-      "name": "Infrastructure",
+      "name": "00 - Infrastructure",
       "item": [
-        {"name": "Eureka Dashboard", "request": {"method": "GET", "url": "{{eureka}"}},
-        {"name": "Config Server", "request": {"method": "GET", "url": "{{config}}/user-service/default"}}
+        {"name": "Eureka - All Apps Registry", "request": {"method": "GET", "header": [], "url": {"raw": "http://localhost:8761/eureka/apps", "host": ["http://localhost:8761"], "path": ["eureka", "apps"]}}},
+        {"name": "Eureka - Single App (NOTIFICATION-SERVICE)", "request": {"method": "GET", "header": [], "url": {"raw": "http://localhost:8761/eureka/apps/NOTIFICATION-SERVICE", "host": ["http://localhost:8761"], "path": ["eureka", "apps", "NOTIFICATION-SERVICE"]}}},
+        {"name": "API Gateway - Health", "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"]}}},
+        {"name": "API Gateway - Refresh (Spring Cloud Bus)", "request": {"method": "POST", "header": [], "url": {"raw": "{{baseUrl}}/actuator/busrefresh", "host": ["{{baseUrl}}"], "path": ["actuator", "busrefresh"]}}},
+        {"name": "Config Server - Service Config (notification-service)", "request": {"method": "GET", "header": [], "url": {"raw": "http://localhost:8888/notification-service/default", "host": ["http://localhost:8888"], "path": ["notification-service", "default"]}}}
       ]
     },
     {
-      "name": "UC01 - Auth (user-service)",
+      "name": "01 - user-service (UC01 Auth + UC02 Users + Dashboard + Audit)",
       "item": [
-        {
-          "name": "Login",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": {"raw": "{{gateway}}/api/v1/auth/login", "host": ["{{gateway}}"], "path": ["api","v1","auth","login"]},
-            "body": {"mode": "raw", "raw": "{\"email\":\"admin@pcms.vn\",\"password\":\"admin123\"}"}
-          }
-        },
-        {
-          "name": "Refresh Token",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/auth/refresh",
-            "body": {"mode": "raw", "raw": "{\"refreshToken\":\"<REFRESH_TOKEN>\"}"}
-          }
-        },
-        {
-          "name": "Logout",
-          "request": {"method": "POST", "url": "{{gateway}}/api/v1/auth/logout"}
-        },
-        {
-          "name": "Get Current User (Me)",
-          "request": {"method": "GET", "url": "{{gateway}}/api/v1/auth/me"}
-        },
-        {
-          "name": "Update Password",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/auth/password",
-            "body": {"mode": "raw", "raw": "{\"currentPassword\":\"\",\"newPassword\":\"\"}"}
-          }
-        },
-        {
-          "name": "Forgot Password",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/auth/forgot-password",
-            "body": {"mode": "raw", "raw": "{\"email\":\"\"}"}
-          }
-        },
-        {
-          "name": "Verify Email",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/auth/verify-email",
-            "body": {"mode": "raw", "raw": "{\"token\":\"\"}"}
-          }
-        }
+        {"name": "Auth - Login (saves accessToken)", "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.data && r.data.accessToken) { pm.collectionVariables.set('accessToken', r.data.accessToken); pm.environment.set('accessToken', r.data.accessToken); }", "if (r.data && r.data.refreshToken) { pm.environment.set('refreshToken', r.data.refreshToken); }", "if (r.data && r.data.userId) { pm.environment.set('userId', r.data.userId); }"]}}], "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\"\n}"}, "url": {"raw": "{{gateway}}/auth/login", "host": ["{{gateway}}"], "path": ["auth", "login"]}}},
+        {"name": "Auth - Forgot password", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"email\": \"user@pcms.vn\"\n}"}, "url": {"raw": "{{gateway}}/auth/forgot-password", "host": ["{{gateway}}"], "path": ["auth", "forgot-password"]}}},
+        {"name": "Auth - Reset password", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"token\": \"RESET_TOKEN\",\n  \"newPassword\": \"NewPass@123\"\n}"}, "url": {"raw": "{{gateway}}/auth/reset-password", "host": ["{{gateway}}"], "path": ["auth", "reset-password"]}}},
+        {"name": "Auth - Refresh", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"}, "url": {"raw": "{{gateway}}/auth/refresh", "host": ["{{gateway}}"], "path": ["auth", "refresh"]}}},
+        {"name": "Auth - Logout (NSF-07)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"}, "url": {"raw": "{{gateway}}/auth/logout", "host": ["{{gateway}}"], "path": ["auth", "logout"]}}},
+        {"name": "Auth - Get current user /me", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/auth/me", "host": ["{{gateway}}"], "path": ["auth", "me"]}}},
+        {"name": "Auth - Change password", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"oldPassword\": \"Admin@123\",\n  \"newPassword\": \"Admin@456\"\n}"}, "url": {"raw": "{{gateway}}/auth/password", "host": ["{{gateway}}"], "path": ["auth", "password"]}}},
+        {"name": "Auth - Verify email", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"token\": \"VERIFY_TOKEN\"\n}"}, "url": {"raw": "{{gateway}}/auth/verify-email", "host": ["{{gateway}}"], "path": ["auth", "verify-email"]}}},
+        {"name": "Auth - Resend verification", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"email\": \"user@pcms.vn\"\n}"}, "url": {"raw": "{{gateway}}/auth/resend-verification", "host": ["{{gateway}}"], "path": ["auth", "resend-verification"]}}},
+        {"name": "Users - List (with role/status filters)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/users?page=0&size=20", "host": ["{{gateway}}"], "path": ["users"], "query": [{"key": "search", "value": "", "disabled": true}, {"key": "role", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}, {"key": "branchId", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Users - Export CSV", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/users/export", "host": ["{{gateway}}"], "path": ["users", "export"]}}},
+        {"name": "Users - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/users/{{userId}}", "host": ["{{gateway}}"], "path": ["users", "{{userId}}"]}}},
+        {"name": "Users - Create (Admin/CEO, server generates temp password)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"username\": \"pharmacist1\",\n  \"email\": \"pharma1@pcms.vn\",\n  \"fullName\": \"Nguyen Van A\",\n  \"phone\": \"0901234567\",\n  \"role\": \"PHARMACIST\",\n  \"branchId\": \"{{branchId}}\"\n}"}, "url": {"raw": "{{gateway}}/users", "host": ["{{gateway}}"], "path": ["users"]}}},
+        {"name": "Users - Update", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"fullName\": \"Nguyen Van A Updated\",\n  \"phone\": \"0901234567\"\n}"}, "url": {"raw": "{{gateway}}/users/{{userId}}", "host": ["{{gateway}}"], "path": ["users", "{{userId}}"]}}},
+        {"name": "Users - Change role", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"role\": \"BRANCH_MANAGER\"\n}"}, "url": {"raw": "{{gateway}}/users/{{userId}}/role", "host": ["{{gateway}}"], "path": ["users", "{{userId}}", "role"]}}},
+        {"name": "Users - Change status (ACTIVE/INACTIVE/LOCKED)", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}"}, "url": {"raw": "{{gateway}}/users/{{userId}}/status", "host": ["{{gateway}}"], "path": ["users", "{{userId}}", "status"]}}},
+        {"name": "Users - Unlock account (BR05)", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/users/{{userId}}/unlock", "host": ["{{gateway}}"], "path": ["users", "{{userId}}", "unlock"]}}},
+        {"name": "Users - Soft delete", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/users/{{userId}}", "host": ["{{gateway}}"], "path": ["users", "{{userId}}"]}}},
+        {"name": "Users - Assign branch", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"branchId\": \"{{branchId}}\"\n}"}, "url": {"raw": "{{gateway}}/users/{{userId}}/branch", "host": ["{{gateway}}"], "path": ["users", "{{userId}}", "branch"]}}},
+        {"name": "Users - Find by role", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/users/role/PHARMACIST", "host": ["{{gateway}}"], "path": ["users", "role", "PHARMACIST"]}}},
+        {"name": "Dashboard - SCR-HOME KPI stats", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/dashboard/stats", "host": ["{{gateway}}"], "path": ["dashboard", "stats"]}}},
+        {"name": "Dashboard - Recent logins", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/dashboard/recent-logins", "host": ["{{gateway}}"], "path": ["dashboard", "recent-logins"]}}},
+        {"name": "Audit Logs - Search (filter by userId + action)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/audit-logs?userId={{userId}}&action=LOGIN", "host": ["{{gateway}}"], "path": ["audit-logs"], "query": [{"key": "userId", "value": "{{userId}}"}, {"key": "action", "value": "LOGIN"}]}}}
       ]
     },
     {
-      "name": "UC02 - Users (user-service)",
+      "name": "02 - branch-service (UC03 Branches)",
       "item": [
-        {"name": "List Users", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users"}},
-        {"name": "List Users (with pagination)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users?page=0&size=20"}},
-        {"name": "Get Users by Role", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users/role/PHARMACIST"}},
-        {"name": "Export Users", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users/export"}},
-        {
-          "name": "Create User",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/users",
-            "body": {"mode": "raw", "raw": "{\n  \"email\":\"pharmacist01@pcms.vn\",\n  \"passwordHash\":\"$2a$10$...\",\n  \"fullName\":\"Nguyen Van A\",\n  \"phone\":\"0901234567\",\n  \"role\":\"PHARMACIST\",\n  \"branchId\":\"<BRANCH_UUID>\"\n}"}
-          }
-        },
-        {"name": "Get User by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/users/:id"}},
-        {
-          "name": "Update User",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/users/:id",
-            "body": {"mode": "raw", "raw": "{\"fullName\":\"\",\"phone\":\"\"}"}
-          }
-        },
-        {
-          "name": "Update User Role",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/users/:id/role",
-            "body": {"mode": "raw", "raw": "{\"role\":\"PHARMACIST\"}"}
-          }
-        },
-        {
-          "name": "Update User Status",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/users/:id/status",
-            "body": {"mode": "raw", "raw": "{\"status\":\"ACTIVE\"}"}
-          }
-        },
-        {"name": "Reset Password", "request": {"method": "POST", "url": "{{gateway}}/api/v1/users/:id/reset-password"}},
-        {"name": "Unlock User", "request": {"method": "POST", "url": "{{gateway}}/api/v1/users/:id/unlock"}},
-        {
-          "name": "Assign Branch to User",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/users/:id/branch",
-            "body": {"mode": "raw", "raw": "{\"branchId\":\"<BRANCH_UUID>\"}"}
-          }
-        },
-        {"name": "Delete User", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/users/:id"}}
+        {"name": "Branches - List (search + paginate)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/branches?page=0&size=20", "host": ["{{gateway}}"], "path": ["branches"], "query": [{"key": "search", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}, "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.data && r.data[0]) { pm.environment.set('branchId', r.data[0].id); }"]}}]},
+        {"name": "Branches - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/branches/{{branchId}}", "host": ["{{gateway}}"], "path": ["branches", "{{branchId}}"]}}},
+        {"name": "Branches - Get by code (HQ, CN001...)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/branches/code/HQ", "host": ["{{gateway}}"], "path": ["branches", "code", "HQ"]}}},
+        {"name": "Branches - Get staff list", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/branches/{{branchId}}/staff", "host": ["{{gateway}}"], "path": ["branches", "{{branchId}}", "staff"]}}},
+        {"name": "Branches - Create", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"code\": \"HQ\",\n  \"name\": \"Headquarter\",\n  \"address\": \"12 Le Loi, District 1, HCMC\",\n  \"phone\": \"0281234567\",\n  \"province\": \"Ho Chi Minh\",\n  \"district\": \"District 1\"\n}"}, "url": {"raw": "{{gateway}}/branches", "host": ["{{gateway}}"], "path": ["branches"]}}, "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.id) pm.environment.set('branchId', r.id);"]}}]},
+        {"name": "Branches - Update", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Headquarter Updated\",\n  \"phone\": \"0287654321\"\n}"}, "url": {"raw": "{{gateway}}/branches/{{branchId}}", "host": ["{{gateway}}"], "path": ["branches", "{{branchId}}"]}}},
+        {"name": "Branches - Assign manager (AT2)", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"managerId\": \"{{userId}}\"\n}"}, "url": {"raw": "{{gateway}}/branches/{{branchId}}/manager", "host": ["{{gateway}}"], "path": ["branches", "{{branchId}}", "manager"]}}},
+        {"name": "Branches - Soft delete", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/branches/{{branchId}}", "host": ["{{gateway}}"], "path": ["branches", "{{branchId}}"]}}}
       ]
     },
     {
-      "name": "UC02 - Dashboard (user-service)",
+      "name": "03 - catalog-service (UC04 Medicines + UC10 Search)",
       "item": [
-        {"name": "Dashboard Stats", "request": {"method": "GET", "url": "{{gateway}}/api/v1/dashboard/stats"}},
-        {"name": "Recent Logins", "request": {"method": "GET", "url": "{{gateway}}/api/v1/dashboard/recent-logins"}}
+        {"name": "Medicines - List (filter by category/price/search)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/medicines?page=0&size=20", "host": ["{{gateway}}"], "path": ["medicines"], "query": [{"key": "search", "value": "", "disabled": true}, {"key": "categoryId", "value": "", "disabled": true}, {"key": "minPrice", "value": "", "disabled": true}, {"key": "maxPrice", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}, "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.data && r.data[0]) pm.environment.set('medicineId', r.data[0].id);"]}}]},
+        {"name": "Medicines - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/medicines/{{medicineId}}", "host": ["{{gateway}}"], "path": ["medicines", "{{medicineId}}"]}}},
+        {"name": "Medicines - Get by SKU", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/medicines/sku/MD001", "host": ["{{gateway}}"], "path": ["medicines", "sku", "MD001"]}}},
+        {"name": "Medicines - Get by slug", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/medicines/slug/paracetamol-500mg", "host": ["{{gateway}}"], "path": ["medicines", "slug", "paracetamol-500mg"]}}},
+        {"name": "Medicines - Count by category", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/medicines/count?categoryId=00000000-0000-0000-0000-000000000001", "host": ["{{gateway}}"], "path": ["medicines", "count"], "query": [{"key": "categoryId", "value": "00000000-0000-0000-0000-000000000001"}]}}},
+        {"name": "Medicines - Export XLSX by category", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/medicines/export?categoryId=00000000-0000-0000-0000-000000000001", "host": ["{{gateway}}"], "path": ["medicines", "export"], "query": [{"key": "categoryId", "value": "00000000-0000-0000-0000-000000000001"}]}}},
+        {"name": "Medicines - Create (JSON)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"sku\": \"MD001\",\n  \"slug\": \"paracetamol-500mg\",\n  \"name\": \"Paracetamol 500mg\",\n  \"categoryId\": \"00000000-0000-0000-0000-000000000001\",\n  \"price\": 5000,\n  \"unit\": \"box\",\n  \"prescriptionRequired\": false,\n  \"manufacturer\": \"DHG Pharma\"\n}"}, "url": {"raw": "{{gateway}}/medicines", "host": ["{{gateway}}"], "path": ["medicines"]}}},
+        {"name": "Medicines - Create (multipart with image)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "multipart/form-data"}], "body": {"mode": "formdata", "formdata": [{"key": "payload", "type": "text", "value": "{\"sku\":\"MD002\",\"name\":\"Aspirin 500mg\",\"categoryId\":\"00000000-0000-0000-0000-000000000001\",\"price\":3000,\"unit\":\"box\",\"prescriptionRequired\":false}"}, {"key": "image", "type": "file", "src": "", "disabled": true}]}, "url": {"raw": "{{gateway}}/medicines", "host": ["{{gateway}}"], "path": ["medicines"]}}},
+        {"name": "Medicines - Update", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Paracetamol 500mg Updated\",\n  \"price\": 5500\n}"}, "url": {"raw": "{{gateway}}/medicines/{{medicineId}}", "host": ["{{gateway}}"], "path": ["medicines", "{{medicineId}}"]}}},
+        {"name": "Medicines - Update (multipart with image)", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "multipart/form-data"}], "body": {"mode": "formdata", "formdata": [{"key": "payload", "type": "text", "value": "{\"name\":\"Paracetamol Updated\",\"price\":5500}"}, {"key": "image", "type": "file", "src": "", "disabled": true}]}, "url": {"raw": "{{gateway}}/medicines/{{medicineId}}", "host": ["{{gateway}}"], "path": ["medicines", "{{medicineId}}"]}}},
+        {"name": "Medicines - Upload image", "request": {"method": "POST", "header": [], "body": {"mode": "formdata", "formdata": [{"key": "image", "type": "file", "src": "", "disabled": true}]}, "url": {"raw": "{{gateway}}/medicines/{{medicineId}}/image", "host": ["{{gateway}}"], "path": ["medicines", "{{medicineId}}", "image"]}}},
+        {"name": "Medicines - Get image binary", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/medicines/{{medicineId}}/image", "host": ["{{gateway}}"], "path": ["medicines", "{{medicineId}}", "image"]}}},
+        {"name": "Medicines - Soft delete", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/medicines/{{medicineId}}", "host": ["{{gateway}}"], "path": ["medicines", "{{medicineId}}"]}}},
+        {"name": "Search - Autocomplete (UC10)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/search?q=Para", "host": ["{{gateway}}"], "path": ["search"], "query": [{"key": "q", "value": "Para"}]}}},
+        {"name": "Search - Medicines autocomplete (spec)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/search/medicines/autocomplete?q=Para", "host": ["{{gateway}}"], "path": ["search", "medicines", "autocomplete"], "query": [{"key": "q", "value": "Para"}]}}},
+        {"name": "Search - Medicines full search", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/search/medicines?q=&inStock=true", "host": ["{{gateway}}"], "path": ["search", "medicines"], "query": [{"key": "q", "value": ""}, {"key": "categoryId", "value": "", "disabled": true}, {"key": "inStock", "value": "true"}]}}},
+        {"name": "Search - Full search (alias /full)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/search/full?q=Para", "host": ["{{gateway}}"], "path": ["search", "full"], "query": [{"key": "q", "value": "Para"}]}}}
       ]
     },
     {
-      "name": "UC02 - Audit Logs (user-service)",
+      "name": "04 - category-service",
       "item": [
-        {"name": "List Audit Logs", "request": {"method": "GET", "url": "{{gateway}}/api/v1/audit-logs"}}
+        {"name": "Categories - List", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/categories?page=0&size=20", "host": ["{{gateway}}"], "path": ["categories"], "query": [{"key": "search", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Categories - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/categories/00000000-0000-0000-0000-000000000001", "host": ["{{gateway}}"], "path": ["categories", "00000000-0000-0000-0000-000000000001"]}}},
+        {"name": "Categories - Get by slug", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/categories/slug/thuoc-giam-dau", "host": ["{{gateway}}"], "path": ["categories", "slug", "thuoc-giam-dau"]}}},
+        {"name": "Categories - Create", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Pain Relief\",\n  \"slug\": \"thuoc-giam-dau\",\n  \"parentId\": null,\n  \"description\": \"Analgesics and anti-inflammatory medicines\"\n}"}, "url": {"raw": "{{gateway}}/categories", "host": ["{{gateway}}"], "path": ["categories"]}}},
+        {"name": "Categories - Update", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Pain Relief Updated\",\n  \"description\": \"Updated description\"\n}"}, "url": {"raw": "{{gateway}}/categories/00000000-0000-0000-0000-000000000001", "host": ["{{gateway}}"], "path": ["categories", "00000000-0000-0000-0000-000000000001"]}}},
+        {"name": "Categories - Hard delete", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/categories/00000000-0000-0000-0000-000000000001", "host": ["{{gateway}}"], "path": ["categories", "00000000-0000-0000-0000-000000000001"]}}}
       ]
     },
     {
-      "name": "UC03 - Branches (branch-service)",
+      "name": "05 - supplier-service (UC11)",
       "item": [
-        {"name": "List Branches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches"}},
-        {"name": "Get Branch by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches/:id"}},
-        {"name": "Get Branch by Code", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches/code/:code"}},
-        {"name": "Get Branch Staff", "request": {"method": "GET", "url": "{{gateway}}/api/v1/branches/:id/staff"}},
-        {
-          "name": "Create Branch",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/branches",
-            "body": {"mode": "raw", "raw": "{\n  \"code\":\"HQ\",\n  \"name\":\"Headquarter\",\n  \"address\":\"12 Le Loi, District 1, HCMC\",\n  \"phone\":\"0281234567\"\n}"}
-          }
-        },
-        {
-          "name": "Update Branch",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/branches/:id",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"address\":\"\",\"phone\":\"\"}"}
-          }
-        },
-        {
-          "name": "Update Branch Manager",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/branches/:id/manager",
-            "body": {"mode": "raw", "raw": "{\"managerId\":\"<USER_UUID>\"}"}
-          }
-        },
-        {"name": "Delete Branch", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/branches/:id"}}
+        {"name": "Suppliers - List", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/suppliers?page=0&size=20", "host": ["{{gateway}}"], "path": ["suppliers"], "query": [{"key": "search", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Suppliers - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/suppliers/00000000-0000-0000-0000-000000000010", "host": ["{{gateway}}"], "path": ["suppliers", "00000000-0000-0000-0000-000000000010"]}}},
+        {"name": "Suppliers - Create", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"code\": \"SUP001\",\n  \"name\": \"DHG Pharma JSC\",\n  \"taxCode\": \"0301234567\",\n  \"address\": \"FPT Building, HCMC\",\n  \"phone\": \"0281234567\",\n  \"email\": \"contact@dhgpharma.vn\",\n  \"contactPerson\": \"Nguyen Van B\"\n}"}, "url": {"raw": "{{gateway}}/suppliers", "host": ["{{gateway}}"], "path": ["suppliers"]}}},
+        {"name": "Suppliers - Update", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"DHG Pharma JSC Updated\",\n  \"phone\": \"0287654321\"\n}"}, "url": {"raw": "{{gateway}}/suppliers/00000000-0000-0000-0000-000000000010", "host": ["{{gateway}}"], "path": ["suppliers", "00000000-0000-0000-0000-000000000010"]}}},
+        {"name": "Suppliers - History (audit trail)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/suppliers/00000000-0000-0000-0000-000000000010/history", "host": ["{{gateway}}"], "path": ["suppliers", "00000000-0000-0000-0000-000000000010", "history"]}}},
+        {"name": "Suppliers - Soft delete", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/suppliers/00000000-0000-0000-0000-000000000010", "host": ["{{gateway}}"], "path": ["suppliers", "00000000-0000-0000-0000-000000000010"]}}}
       ]
     },
     {
-      "name": "UC04 - Categories (category-service)",
+      "name": "06 - inventory-service (UC05 + FIFO + NSF-03)",
       "item": [
-        {"name": "List Categories", "request": {"method": "GET", "url": "{{gateway}}/api/v1/categories"}},
-        {"name": "Get Category by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/categories/:id"}},
-        {
-          "name": "Create Category",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/categories",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"slug\":\"\",\"icon\":\"\",\"parentId\":\"\"}"}
-          }
-        },
-        {
-          "name": "Update Category",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/categories/:id",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"icon\":\"\"}"}
-          }
-        },
-        {"name": "Delete Category", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/categories/:id"}}
+        {"name": "Inventory - List batches (current branch via X-Branch-Id)", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/inventory?branchId={{branchId}}", "host": ["{{gateway}}"], "path": ["inventory"], "query": [{"key": "branchId", "value": "{{branchId}}", "disabled": true}]}}},
+        {"name": "Inventory - List batches (alias /batches SDD 6.7)", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/inventory/batches?branchId={{branchId}}", "host": ["{{gateway}}"], "path": ["inventory", "batches"], "query": [{"key": "branchId", "value": "{{branchId}}", "disabled": true}]}}},
+        {"name": "Inventory - Get batch by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/inventory/00000000-0000-0000-0000-000000000020", "host": ["{{gateway}}"], "path": ["inventory", "00000000-0000-0000-0000-000000000020"]}}},
+        {"name": "Inventory - Get batch (alias /batches/{id})", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/inventory/batches/00000000-0000-0000-0000-000000000020", "host": ["{{gateway}}"], "path": ["inventory", "batches", "00000000-0000-0000-0000-000000000020"]}}},
+        {"name": "Inventory - Scan by code (barcode/QR)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/inventory/batches/scan/BTH-001", "host": ["{{gateway}}"], "path": ["inventory", "batches", "scan", "BTH-001"]}}},
+        {"name": "Inventory - Get batches by branch + medicine", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/inventory/branch/{{branchId}}/medicine/{{medicineId}}", "host": ["{{gateway}}"], "path": ["inventory", "branch", "{{branchId}}", "medicine", "{{medicineId}}"]}}},
+        {"name": "Inventory - Import (UC05) - creates batch with FIFO metadata", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{userId}}"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"batchNo\": \"BTH-001\",\n  \"barcode\": \"8931234500011\",\n  \"qty\": 100,\n  \"expiryDate\": \"2027-12-31\",\n  \"supplierId\": \"00000000-0000-0000-0000-000000000010\",\n  \"minStockLevel\": 10\n}"}, "url": {"raw": "{{gateway}}/inventory/import", "host": ["{{gateway}}"], "path": ["inventory", "import"]}}},
+        {"name": "Inventory - Export (UC05 AT1) FIFO decrement", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{userId}}"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"qty\": 5,\n  \"reason\": \"POS sale\"\n}"}, "url": {"raw": "{{gateway}}/inventory/export", "host": ["{{gateway}}"], "path": ["inventory", "export"]}}},
+        {"name": "Inventory - Consume (called by order-service after paid)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{userId}}"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"qty\": 12,\n  \"orderId\": \"{{orderId}}\"\n}"}, "url": {"raw": "{{gateway}}/inventory/consume", "host": ["{{gateway}}"], "path": ["inventory", "consume"]}}},
+        {"name": "Inventory - Transfer (UC05 AT2) atomic between branches", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{userId}}"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"fromBranchId\": \"{{branchId}}\",\n  \"toBranchId\": \"00000000-0000-0000-0000-00000000000a\",\n  \"qty\": 10,\n  \"reason\": \"Stock balancing\"\n}"}, "url": {"raw": "{{gateway}}/inventory/transfer", "host": ["{{gateway}}"], "path": ["inventory", "transfer"]}}},
+        {"name": "Inventory - Bulk import (JSON array)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "[\n  {\"medicineId\":\"{{medicineId}}\",\"branchId\":\"{{branchId}}\",\"batchNo\":\"BTH-002\",\"qty\":50,\"expiryDate\":\"2028-06-30\"}\n]"}, "url": {"raw": "{{gateway}}/inventory/bulk/import", "host": ["{{gateway}}"], "path": ["inventory", "bulk", "import"]}}},
+        {"name": "Inventory - Bulk import from CSV (multipart)", "request": {"method": "POST", "header": [], "body": {"mode": "formdata", "formdata": [{"key": "file", "type": "file", "src": "", "disabled": true}, {"key": "actorId", "value": "{{userId}}", "type": "text", "disabled": true}]}, "url": {"raw": "{{gateway}}/inventory/bulk/import", "host": ["{{gateway}}"], "path": ["inventory", "bulk", "import"]}}},
+        {"name": "Inventory - Bulk export CSV", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/inventory/bulk/export?branchId={{branchId}}", "host": ["{{gateway}}"], "path": ["inventory", "bulk", "export"], "query": [{"key": "branchId", "value": "{{branchId}}", "disabled": true}]}}},
+        {"name": "Inventory - Transactions (audit trail per batch)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/inventory/transactions?batchId=00000000-0000-0000-0000-000000000020", "host": ["{{gateway}}"], "path": ["inventory", "transactions"], "query": [{"key": "batchId", "value": "00000000-0000-0000-0000-000000000020"}]}}},
+        {"name": "Inventory - Low stock alert (BR02)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/inventory/low-stock", "host": ["{{gateway}}"], "path": ["inventory", "low-stock"]}}},
+        {"name": "Inventory - Expiring within N days (BR03, NSF-03)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/inventory/expiring?days=30", "host": ["{{gateway}}"], "path": ["inventory", "expiring"], "query": [{"key": "days", "value": "30"}]}}},
+        {"name": "Inventory - Stock level report", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/inventory/report/stock-level?branchId={{branchId}}", "host": ["{{gateway}}"], "path": ["inventory", "report", "stock-level"], "query": [{"key": "branchId", "value": "{{branchId}}", "disabled": true}]}}},
+        {"name": "Inventory - Movement report (filter by date/type)", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/inventory/report/movement?branchId={{branchId}}&type=IMPORT&fromDate=2026-01-01&toDate=2026-12-31", "host": ["{{gateway}}"], "path": ["inventory", "report", "movement"], "query": [{"key": "branchId", "value": "{{branchId}}", "disabled": true}, {"key": "type", "value": "IMPORT"}, {"key": "fromDate", "value": "2026-01-01"}, {"key": "toDate", "value": "2026-12-31"}]}}},
+        {"name": "Inventory Outbox - Order paid (consume stock FIFO)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Outbox-Event-Id", "value": "00000000-0000-0000-0000-000000000099"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"qty\": 1,\n  \"orderId\": \"{{orderId}}\"\n}"}, "url": {"raw": "{{gateway}}/inventory/orders/{{orderId}}/paid", "host": ["{{gateway}}"], "path": ["inventory", "orders", "{{orderId}}", "paid"]}}},
+        {"name": "Inventory Outbox - Order cancelled (restore stock - BR06)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Outbox-Event-Id", "value": "00000000-0000-0000-0000-00000000009a"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"qty\": 1,\n  \"orderId\": \"{{orderId}}\"\n}"}, "url": {"raw": "{{gateway}}/inventory/orders/{{orderId}}/cancelled", "host": ["{{gateway}}"], "path": ["inventory", "orders", "{{orderId}}", "cancelled"]}}}
       ]
     },
     {
-      "name": "UC04 - Medicines (catalog-service)",
+      "name": "07 - customer-service (UC08 Loyalty + BR07)",
       "item": [
-        {"name": "List Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines"}},
-        {"name": "List Medicines (paginated)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines?page=0&size=20"}},
-        {"name": "Get Medicine by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/:id"}},
-        {"name": "Get Medicine by SKU", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/sku/:sku"}},
-        {"name": "Count Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/count"}},
-        {"name": "Export Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/export"}},
-        {
-          "name": "Create Medicine",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/medicines",
-            "body": {"mode": "raw", "raw": "{\n  \"sku\":\"MD001\",\n  \"name\":\"Paracetamol 500mg\",\n  \"categoryId\":\"<CATEGORY_UUID>\",\n  \"supplierId\":\"<SUPPLIER_UUID>\",\n  \"price\":5000,\n  \"unit\":\"box\",\n  \"prescriptionRequired\":false\n}"}
-          }
-        },
-        {
-          "name": "Update Medicine",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/medicines/:id",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"price\":0}"}
-          }
-        },
-        {"name": "Upload Medicine Image", "request": {"method": "POST", "url": "{{gateway}}/api/v1/medicines/:id/image"}},
-        {"name": "Get Medicine Image", "request": {"method": "GET", "url": "{{gateway}}/api/v1/medicines/:id/image"}},
-        {"name": "Delete Medicine", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/medicines/:id"}}
+        {"name": "Customers - List (paginated, search)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/customers?page=0&size=20", "host": ["{{gateway}}"], "path": ["customers"], "query": [{"key": "search", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Customers - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/customers/{{customerId}}", "host": ["{{gateway}}"], "path": ["customers", "{{customerId}}"]}}},
+        {"name": "Customers - Get by phone", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/customers/phone/0901234567", "host": ["{{gateway}}"], "path": ["customers", "phone", "0901234567"]}}},
+        {"name": "Customers - Get by code (CUST-yyyy####)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/customers/code/CUST-20260001", "host": ["{{gateway}}"], "path": ["customers", "code", "CUST-20260001"]}}},
+        {"name": "Customers - Get tier (BRONZE/SILVER/GOLD/PLATINUM)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/customers/{{customerId}}/tier", "host": ["{{gateway}}"], "path": ["customers", "{{customerId}}", "tier"]}}},
+        {"name": "Customers - Get orders", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/customers/{{customerId}}/orders?page=0&size=20", "host": ["{{gateway}}"], "path": ["customers", "{{customerId}}", "orders"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Customers - Get loyalty points transactions", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/customers/{{customerId}}/points?page=0&size=20", "host": ["{{gateway}}"], "path": ["customers", "{{customerId}}", "points"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Customers - Get history (combined)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/customers/{{customerId}}/history?page=0&size=20", "host": ["{{gateway}}"], "path": ["customers", "{{customerId}}", "history"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Customers - Create (auto-generates CUST-yyyy####)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Nguyen Van A\",\n  \"phone\": \"0901234567\",\n  \"email\": \"a@pcms.vn\"\n}"}, "url": {"raw": "{{gateway}}/customers", "host": ["{{gateway}}"], "path": ["customers"]}}, "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.id) pm.environment.set('customerId', r.id);"]}}]},
+        {"name": "Customers - Update", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Nguyen Van A Updated\",\n  \"email\": \"a.updated@pcms.vn\"\n}"}, "url": {"raw": "{{gateway}}/customers/{{customerId}}", "host": ["{{gateway}}"], "path": ["customers", "{{customerId}}"]}}},
+        {"name": "Customers - Soft delete", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/customers/{{customerId}}", "host": ["{{gateway}}"], "path": ["customers", "{{customerId}}"]}}},
+        {"name": "Customers - Add points (idempotent, called by payment-service BR07)", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"points\": 57,\n  \"refOrderId\": \"{{orderId}}\",\n  \"reason\": \"ORDER_PAID:ORD-20260616-0001\"\n}"}, "url": {"raw": "{{gateway}}/customers/{{customerId}}/points/add", "host": ["{{gateway}}"], "path": ["customers", "{{customerId}}", "points", "add"]}}},
+        {"name": "Customer Portal - Register (B2C self-registration)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"email\": \"newbie@pcms.vn\",\n  \"password\": \"Welcome@123\",\n  \"name\": \"New B2C Customer\",\n  \"phone\": \"0912345678\"\n}"}, "url": {"raw": "{{gateway}}/customers/register", "host": ["{{gateway}}"], "path": ["customers", "register"]}}},
+        {"name": "Customer Portal - Get me (B2C)", "request": {"method": "GET", "header": [{"key": "X-Customer-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/customers/me", "host": ["{{gateway}}"], "path": ["customers", "me"]}}},
+        {"name": "Customer Portal - Update me (B2C)", "request": {"method": "PUT", "header": [{"key": "X-Customer-Id", "value": "{{customerId}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"0912345678\"\n}"}, "url": {"raw": "{{gateway}}/customers/me", "host": ["{{gateway}}"], "path": ["customers", "me"]}}}
       ]
     },
     {
-      "name": "UC04 - Search (catalog-service)",
+      "name": "08 - order-service (UC06 + Coupons + Saga + Outbox)",
       "item": [
-        {"name": "Search (general)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search?q=para"}},
-        {"name": "Autocomplete Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search/medicines/autocomplete?q=para"}},
-        {"name": "Search Medicines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search/medicines?q=para"}},
-        {"name": "Full Search", "request": {"method": "GET", "url": "{{gateway}}/api/v1/search/full?q=para"}}
+        {"name": "Orders - List (filter by customer/status/branch/date)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/orders?page=0&size=20", "host": ["{{gateway}}"], "path": ["orders"], "query": [{"key": "customerId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}, {"key": "branchId", "value": "", "disabled": true}, {"key": "dateFrom", "value": "", "disabled": true}, {"key": "dateTo", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Orders - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/orders/{{orderId}}", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}"]}}, "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.id) pm.environment.set('orderId', r.id);"]}}]},
+        {"name": "Orders - Get by orderNumber (ORD-yyyyMMdd-####)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/orders/number/ORD-20260630-0001", "host": ["{{gateway}}"], "path": ["orders", "number", "ORD-20260630-0001"]}}},
+        {"name": "Orders - Create (UC06 main flow; auto-applies BR04 bulk discount)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"items\": [\n    {\"medicineId\": \"{{medicineId}}\", \"quantity\": 12}\n  ],\n  \"notes\": \"Walk-in customer\"\n}"}, "url": {"raw": "{{gateway}}/orders", "host": ["{{gateway}}"], "path": ["orders"]}}, "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.id) pm.environment.set('orderId', r.id);"]}}]},
+        {"name": "Orders - Update (only PENDING_PAYMENT items)", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"items\": [\n    {\"medicineId\": \"{{medicineId}}\", \"quantity\": 10}\n  ]\n}"}, "url": {"raw": "{{gateway}}/orders/{{orderId}}", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}"]}}},
+        {"name": "Orders - Mark as PAID (called by payment-service; restores stock if was paid; BR07 loyalty)", "request": {"method": "PUT", "header": [{"key": "X-User-Id", "value": "{{userId}}"}], "url": {"raw": "{{gateway}}/orders/{{orderId}}/pay", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}", "pay"]}}},
+        {"name": "Orders - Approve (prescription-required flow)", "request": {"method": "POST", "header": [{"key": "X-User-Id", "value": "{{userId}}"}], "url": {"raw": "{{gateway}}/orders/{{orderId}}/approve", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}", "approve"]}}},
+        {"name": "Orders - Reject", "request": {"method": "POST", "header": [{"key": "X-User-Id", "value": "{{userId}}"}], "url": {"raw": "{{gateway}}/orders/{{orderId}}/reject", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}", "reject"]}}},
+        {"name": "Orders - Cancel (DELETE alias)", "request": {"method": "DELETE", "header": [{"key": "X-User-Id", "value": "{{userId}}"}], "url": {"raw": "{{gateway}}/orders/{{orderId}}", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}"]}}},
+        {"name": "Orders - Cancel (POST alias)", "request": {"method": "POST", "header": [{"key": "X-User-Id", "value": "{{userId}}"}], "url": {"raw": "{{gateway}}/orders/{{orderId}}/cancel", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}", "cancel"]}}},
+        {"name": "Orders - Recompute (preview BR04 discount + stock check)", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/orders/{{orderId}}/recompute", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}", "recompute"]}}},
+        {"name": "Coupons - List", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/coupons", "host": ["{{gateway}}"], "path": ["coupons"]}}},
+        {"name": "Coupons - Create", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"code\": \"WELCOME10\",\n  \"name\": \"Welcome 10% off\",\n  \"type\": \"PERCENT\",\n  \"value\": 10,\n  \"minOrderTotal\": 50000,\n  \"maxDiscount\": 20000,\n  \"validFrom\": \"2026-01-01\",\n  \"validTo\": \"2026-12-31\",\n  \"usageLimit\": 1000\n}"}, "url": {"raw": "{{gateway}}/coupons", "host": ["{{gateway}}"], "path": ["coupons"]}}},
+        {"name": "Coupons - Update", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Updated coupon name\",\n  \"maxDiscount\": 25000\n}"}, "url": {"raw": "{{gateway}}/coupons/00000000-0000-0000-0000-000000000050", "host": ["{{gateway}}"], "path": ["coupons", "00000000-0000-0000-0000-000000000050"]}}},
+        {"name": "Coupons - Deactivate (soft)", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/coupons/00000000-0000-0000-0000-000000000050", "host": ["{{gateway}}"], "path": ["coupons", "00000000-0000-0000-0000-000000000050"]}}},
+        {"name": "Outbox Admin - Retry dead-letter event", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/admin/outbox/retry/00000000-0000-0000-0000-000000000077", "host": ["{{gateway}}"], "path": ["admin", "outbox", "retry", "00000000-0000-0000-0000-000000000077"]}}},
+        {"name": "Saga Admin - Get saga instance + steps", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/admin/saga/00000000-0000-0000-0000-000000000088", "host": ["{{gateway}}"], "path": ["admin", "saga", "00000000-0000-0000-0000-000000000088"]}}},
+        {"name": "Saga Admin - Get saga by aggregate", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/admin/saga/by-aggregate/ORDER/{{orderId}}", "host": ["{{gateway}}"], "path": ["admin", "saga", "by-aggregate", "ORDER", "{{orderId}}"]}}},
+        {"name": "Saga Admin - Trigger manual compensation", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/admin/saga/00000000-0000-0000-0000-000000000088/compensate?reason=Manual%20ops%20fix", "host": ["{{gateway}}"], "path": ["admin", "saga", "00000000-0000-0000-0000-000000000088", "compensate"], "query": [{"key": "reason", "value": "Manual ops fix"}]}}},
+        {"name": "Saga Admin - List stuck sagas (>30min RUNNING)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/admin/saga/stuck", "host": ["{{gateway}}"], "path": ["admin", "saga", "stuck"]}}}
       ]
     },
     {
-      "name": "UC05 - Inventory (inventory-service)",
+      "name": "09 - payment-service (UC07 + Webhooks + Invoice)",
       "item": [
-        {"name": "List Inventory", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory"}},
-        {"name": "List Inventory Batches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/batches"}},
-        {"name": "Get Inventory by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/:id"}},
-        {"name": "Get Batch by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/batches/:id"}},
-        {"name": "Scan Batch Code", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/batches/scan/:code"}},
-        {"name": "Get Branch Medicine Inventory", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/branch/:branchId/medicine/:medicineId"}},
-        {
-          "name": "Import Stock",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/inventory/import",
-            "body": {"mode": "raw", "raw": "{\n  \"medicineId\":\"<MEDICINE_UUID>\",\n  \"branchId\":\"<BRANCH_UUID>\",\n  \"batchNo\":\"BTH-001\",\n  \"qty\":100,\n  \"expiryDate\":\"2027-12-31\",\n  \"actorId\":\"<USER_UUID>\"\n}"}
-          }
-        },
-        {
-          "name": "Export Stock",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/inventory/export",
-            "body": {"mode": "raw", "raw": "{\n  \"medicineId\":\"\",\n  \"branchId\":\"\",\n  \"batchNo\":\"\",\n  \"qty\":0,\n  \"actorId\":\"\"\n}"}
-          }
-        },
-        {
-          "name": "Transfer Stock",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/inventory/transfer",
-            "body": {"mode": "raw", "raw": "{\n  \"fromBranchId\":\"\",\n  \"toBranchId\":\"\",\n  \"medicineId\":\"\",\n  \"qty\":0\n}"}
-          }
-        },
-        {
-          "name": "Bulk Import (JSON)",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/inventory/bulk/import",
-            "body": {"mode": "raw", "raw": "[]"}
-          }
-        },
-        {
-          "name": "Bulk Import (multipart)",
-          "request": {
-            "method": "POST",
-            "url": "{{gateway}}/api/v1/inventory/bulk/import"
-          }
-        },
-        {"name": "Bulk Export", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/bulk/export"}},
-        {"name": "List Transactions", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/transactions"}},
-        {"name": "Low Stock Items", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/low-stock"}},
-        {"name": "Low Stock Alerts", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/alerts/low-stock"}},
-        {"name": "Expiring Batches", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/expiring?days=30"}},
-        {"name": "Expiry Alerts", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/alerts/expiry"}},
-        {"name": "Stock Level Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/report/stock-level"}},
-        {"name": "Movement Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/inventory/report/movement"}}
+        {"name": "Payments - List paginated", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/payments?page=0&size=20", "host": ["{{gateway}}"], "path": ["payments"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Payments - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/payments/{{paymentId}}", "host": ["{{gateway}}"], "path": ["payments", "{{paymentId}}"]}}, "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.id) pm.environment.set('paymentId', r.id);"]}}]},
+        {"name": "Payments - Get by invoiceNumber", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/payments/invoice/INV-20260630-0001", "host": ["{{gateway}}"], "path": ["payments", "invoice", "INV-20260630-0001"]}}},
+        {"name": "Payments - Get by orderId", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/payments/order/{{orderId}}", "host": ["{{gateway}}"], "path": ["payments", "order", "{{orderId}}"]}}},
+        {"name": "Payments - Process (CASH/CARD/QR - UC07)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"paymentMethod\": \"CASH\",\n  \"amount\": 57000,\n  \"tenderedAmount\": 60000,\n  \"staffId\": \"{{userId}}\"\n}"}, "url": {"raw": "{{gateway}}/payments", "host": ["{{gateway}}"], "path": ["payments"]}}},
+        {"name": "Payments - Refund (POST)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"amount\": 57000,\n  \"reason\": \"Customer return\"\n}"}, "url": {"raw": "{{gateway}}/payments/{{paymentId}}/refund", "host": ["{{gateway}}"], "path": ["payments", "{{paymentId}}", "refund"]}}},
+        {"name": "Payments - Refund legacy (PUT)", "request": {"method": "PUT", "header": [], "url": {"raw": "{{gateway}}/payments/{{paymentId}}/refund", "host": ["{{gateway}}"], "path": ["payments", "{{paymentId}}", "refund"]}}},
+        {"name": "Payments - Refund history", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/payments/{{paymentId}}/refund-history", "host": ["{{gateway}}"], "path": ["payments", "{{paymentId}}", "refund-history"]}}},
+        {"name": "Payments - Invoice (aggregate)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/payments/{{paymentId}}/invoice", "host": ["{{gateway}}"], "path": ["payments", "{{paymentId}}", "invoice"]}}},
+        {"name": "Payments - Print invoice (queue print job)", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/payments/{{paymentId}}/print?printerId=default", "host": ["{{gateway}}"], "path": ["payments", "{{paymentId}}", "print"], "query": [{"key": "printerId", "value": "default"}]}}},
+        {"name": "Webhook - Gateway callback (HMAC verify, idempotent)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Signature", "value": "sha256=COMPUTED_HMAC"}, {"key": "X-Event-Id", "value": "evt_001_unique"}], "body": {"mode": "raw", "raw": "{\n  \"id\": \"evt_001_unique\",\n  \"eventType\": \"payment.success\",\n  \"transactionRef\": \"TX_REF_FROM_GATEWAY\"\n}"}, "url": {"raw": "{{gateway}}/webhooks/payment-gateway", "host": ["{{gateway}}"], "path": ["webhooks", "payment-gateway"]}}},
+        {"name": "Webhook - Gateway alias /payments/webhook (SDD 6.9)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Signature", "value": "sha256=COMPUTED_HMAC"}, {"key": "X-Event-Id", "value": "evt_002_unique"}], "body": {"mode": "raw", "raw": "{\n  \"id\": \"evt_002_unique\",\n  \"eventType\": \"payment.success\",\n  \"transactionRef\": \"TX_REF_002\"\n}"}, "url": {"raw": "{{gateway}}/payments/webhook", "host": ["{{gateway}}"], "path": ["payments", "webhook"]}}}
       ]
     },
     {
-      "name": "UC06 - Orders (order-service)",
+      "name": "10 - prescription-service (UC12)",
       "item": [
-        {"name": "List Orders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders"}},
-        {"name": "List Orders (paginated)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders?page=0&size=20"}},
-        {"name": "Get Order by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders/:id"}},
-        {"name": "Get Order by Number", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders/number/:orderNumber"}},
-        {
-          "name": "Create Order",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/orders",
-            "body": {"mode": "raw", "raw": "{\n  \"customerId\":\"<CUSTOMER_UUID>\",\n  \"branchId\":\"<BRANCH_UUID>\",\n  \"staffId\":\"<USER_UUID>\",\n  \"items\":[\n    {\"medicineId\":\"<MED_UUID>\",\"quantity\":2},\n    {\"medicineId\":\"<MED_UUID>\",\"quantity\":12}\n  ]\n}"}
-          }
-        },
-        {
-          "name": "Update Order",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/orders/:id",
-            "body": {"mode": "raw", "raw": "{\"items\":[],\"notes\":\"\"}"}
-          }
-        },
-        {
-          "name": "Pay Order",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/orders/:id/pay",
-            "body": {"mode": "raw", "raw": "{\"paymentMethod\":\"CASH\",\"amount\":0}"}
-          }
-        },
-        {
-          "name": "Approve Order",
-          "request": {"method": "POST", "url": "{{gateway}}/api/v1/orders/:id/approve"}
-        },
-        {
-          "name": "Reject Order",
-          "request": {"method": "POST", "url": "{{gateway}}/api/v1/orders/:id/reject"}
-        },
-        {
-          "name": "Cancel Order",
-          "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/orders/:id?actorId=<USER_UUID>"}
-        },
-        {"name": "Delete Order", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/orders/:id"}}
+        {"name": "Prescriptions - List paginated", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/prescriptions?page=0&size=20", "host": ["{{gateway}}"], "path": ["prescriptions"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Prescriptions - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}"]}}, "event": [{"listen": "test", "script": {"exec": ["const r = pm.response.json();", "if (r.id) pm.environment.set('prescriptionId', r.id);"]}}]},
+        {"name": "Prescriptions - Get by code (RX-yyyy####)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/prescriptions/code/RX-20260001", "host": ["{{gateway}}"], "path": ["prescriptions", "code", "RX-20260001"]}}},
+        {"name": "Prescriptions - Create (auto-generates code)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"patientId\": \"{{customerId}}\",\n  \"doctorId\": \"00000000-0000-0000-0000-000000000066\",\n  \"diagnosis\": \"Common cold\",\n  \"notes\": \"Take after meal\",\n  \"items\": [\n    {\"medicineId\":\"{{medicineId}}\",\"dosage\":\"1 tablet\",\"frequency\":\"3 times/day\",\"duration\":\"5 days\",\"quantity\":15}\n  ],\n  \"draft\": false,\n  \"licenseNo\": \"MD-12345\"\n}"}, "url": {"raw": "{{gateway}}/prescriptions", "host": ["{{gateway}}"], "path": ["prescriptions"]}}},
+        {"name": "Prescriptions - Save as draft (AT1)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"patientId\": \"{{customerId}}\",\n  \"doctorId\": \"00000000-0000-0000-0000-000000000066\",\n  \"diagnosis\": \"Pending diagnosis\",\n  \"items\": [],\n  \"licenseNo\": \"MD-12345\"\n}"}, "url": {"raw": "{{gateway}}/prescriptions/draft", "host": ["{{gateway}}"], "path": ["prescriptions", "draft"]}}},
+        {"name": "Prescriptions - Update", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"diagnosis\": \"Updated diagnosis\",\n  \"notes\": \"Updated notes\"\n}"}, "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}"]}}},
+        {"name": "Prescriptions - Sign (PUT alias)", "request": {"method": "PUT", "header": [], "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}/sign", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}", "sign"]}}},
+        {"name": "Prescriptions - Sign (POST alias)", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}/sign", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}", "sign"]}}},
+        {"name": "Prescriptions - Link to order (B-16)", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}/link-order?orderId={{orderId}}", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}", "link-order"], "query": [{"key": "orderId", "value": "{{orderId}}"}]}}},
+        {"name": "Prescriptions - Print (GET)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}/print", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}", "print"]}}},
+        {"name": "Prescriptions - Print (POST alias)", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}/print", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}", "print"]}}},
+        {"name": "Prescriptions - Cancel (TICKET-303)", "request": {"method": "DELETE", "header": [{"key": "X-User-Id", "value": "{{userId}}"}], "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}"]}}}
       ]
     },
     {
-      "name": "UC06 - Coupons (order-service)",
+      "name": "11 - notification-service (UC13 + NSF-09 retry)",
       "item": [
-        {"name": "List Coupons", "request": {"method": "GET", "url": "{{gateway}}/api/v1/coupons"}},
-        {
-          "name": "Create Coupon",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/coupons",
-            "body": {"mode": "raw", "raw": "{\"code\":\"\",\"discountType\":\"PERCENT\",\"discountValue\":0,\"minSpend\":0}"}
-          }
-        },
-        {
-          "name": "Update Coupon",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/coupons/:id",
-            "body": {"mode": "raw", "raw": "{\"code\":\"\",\"active\":true}"}
-          }
-        },
-        {"name": "Delete Coupon", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/coupons/:id"}}
+        {"name": "Notifications - List (filter by status)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/notifications?recipientId={{customerId}}&status=all", "host": ["{{gateway}}"], "path": ["notifications"], "query": [{"key": "recipientId", "value": "{{customerId}}"}, {"key": "status", "value": "all"}]}}},
+        {"name": "Notifications - Unread only", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/notifications/unread?recipientId={{customerId}}", "host": ["{{gateway}}"], "path": ["notifications", "unread"], "query": [{"key": "recipientId", "value": "{{customerId}}"}]}}},
+        {"name": "Notifications - Get by ID", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/notifications/{{notificationId}}", "host": ["{{gateway}}"], "path": ["notifications", "{{notificationId}}"]}}},
+        {"name": "Notifications - Send (UC13 step 2-5)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"recipientId\": \"{{customerId}}\",\n  \"channel\": \"IN_APP\",\n  \"template\": \"ORDER_PAID\",\n  \"title\": \"Thanh toán thành công\",\n  \"body\": \"Đơn hàng {{orderId}} đã thanh toán\"\n}"}, "url": {"raw": "{{gateway}}/notifications", "host": ["{{gateway}}"], "path": ["notifications"]}}},
+        {"name": "Notifications - Bulk send (AT1)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"recipientIds\": [\"{{customerId}}\", \"00000000-0000-0000-0000-0000000000b1\"],\n  \"channel\": \"IN_APP\",\n  \"template\": \"PROMO\",\n  \"title\": \"Khuyến mãi 30/06\",\n  \"body\": \"Giảm 20% hôm nay\"\n}"}, "url": {"raw": "{{gateway}}/notifications/bulk", "host": ["{{gateway}}"], "path": ["notifications", "bulk"]}}},
+        {"name": "Notifications - Broadcast by role/branch", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"channel\": \"IN_APP\",\n  \"template\": \"ALERT\",\n  \"title\": \"Bảo trì hệ thống\",\n  \"body\": \"Hệ thống bảo trì từ 22:00\",\n  \"targetRoles\": [\"PHARMACIST\"],\n  \"branchIds\": [\"{{branchId}}\"]\n}"}, "url": {"raw": "{{gateway}}/notifications/broadcast", "host": ["{{gateway}}"], "path": ["notifications", "broadcast"]}}},
+        {"name": "Notifications - Compose (template-based)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"template\": \"LOW_STOCK\",\n  \"channel\": \"IN_APP\",\n  \"variables\": {\"medicine_name\":\"Paracetamol\",\"qty_on_hand\":5,\"min_qty\":10}\n}"}, "url": {"raw": "{{gateway}}/notifications/compose", "host": ["{{gateway}}"], "path": ["notifications", "compose"]}}},
+        {"name": "Notifications - Retry failed (NSF-09 manual)", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/notifications/{{notificationId}}/retry", "host": ["{{gateway}}"], "path": ["notifications", "{{notificationId}}", "retry"]}}},
+        {"name": "Notifications - Mark as read", "request": {"method": "PUT", "header": [], "url": {"raw": "{{gateway}}/notifications/{{notificationId}}/read", "host": ["{{gateway}}"], "path": ["notifications", "{{notificationId}}", "read"]}}},
+        {"name": "Notifications - Mark all as read", "request": {"method": "PUT", "header": [], "url": {"raw": "{{gateway}}/notifications/read-all?recipientId={{customerId}}", "host": ["{{gateway}}"], "path": ["notifications", "read-all"], "query": [{"key": "recipientId", "value": "{{customerId}}"}]}}},
+        {"name": "Notifications - Soft delete (TICKET-304, requires X-User-Id)", "request": {"method": "DELETE", "header": [{"key": "X-User-Id", "value": "{{userId}}"}], "url": {"raw": "{{gateway}}/notifications/{{notificationId}}", "host": ["{{gateway}}"], "path": ["notifications", "{{notificationId}}"]}}},
+        {"name": "Notification Templates - List", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/notifications/templates?active=true", "host": ["{{gateway}}"], "path": ["notifications", "templates"], "query": [{"key": "active", "value": "true"}]}}},
+        {"name": "Notification Templates - Create", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"code\": \"ORDER_PAID\",\n  \"name\": \"Order Paid\",\n  \"channel\": \"IN_APP\",\n  \"subjectTemplate\": \"Order {{order_number}} paid\",\n  \"bodyTemplate\": \"Thank you for your order of {{total}} VND\",\n  \"active\": true\n}"}, "url": {"raw": "{{gateway}}/notifications/templates", "host": ["{{gateway}}"], "path": ["notifications", "templates"]}}},
+        {"name": "Outbox Consumer - Order paid event", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Outbox-Event-Id", "value": "00000000-0000-0000-0000-0000000000e1"}], "body": {"mode": "raw", "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"orderNumber\": \"ORD-20260630-0001\",\n  \"customerId\": \"{{customerId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"total\": 57000,\n  \"paidAt\": \"2026-06-30T12:00:00Z\"\n}"}, "url": {"raw": "{{gateway}}/notifications/orders/paid", "host": ["{{gateway}}"], "path": ["notifications", "orders", "paid"]}}},
+        {"name": "Outbox Consumer - Low stock event (BR02)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Outbox-Event-Id", "value": "00000000-0000-0000-0000-0000000000e2"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"medicineName\": \"Paracetamol 500mg\",\n  \"branchId\": \"{{branchId}}\",\n  \"qtyOnHand\": 5,\n  \"minQty\": 10,\n  \"recipientId\": \"{{userId}}\"\n}"}, "url": {"raw": "{{gateway}}/notifications/inventory/low-stock", "host": ["{{gateway}}"], "path": ["notifications", "inventory", "low-stock"]}}},
+        {"name": "Outbox Consumer - Expiry alert (BR03/NSF-03)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Outbox-Event-Id", "value": "00000000-0000-0000-0000-0000000000e3"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"medicineName\": \"Paracetamol 500mg\",\n  \"branchId\": \"{{branchId}}\",\n  \"batchNo\": \"BTH-001\",\n  \"expiryDate\": \"2026-08-15\",\n  \"daysUntil\": 14,\n  \"recipientId\": \"{{userId}}\"\n}"}, "url": {"raw": "{{gateway}}/notifications/inventory/expiry", "host": ["{{gateway}}"], "path": ["notifications", "inventory", "expiry"]}}}
       ]
     },
     {
-      "name": "UC07 - Payments (payment-service)",
+      "name": "12 - report-service (UC09 + Export Excel/PDF)",
       "item": [
-        {"name": "List Payments", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments"}},
-        {"name": "Get Payment by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/:id"}},
-        {"name": "Get Payment by Invoice Number", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/invoice/:invoiceNumber"}},
-        {"name": "Get Payments by Order", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/order/:orderId"}},
-        {
-          "name": "Create Payment (Cash)",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/payments",
-            "body": {"mode": "raw", "raw": "{\n  \"orderId\":\"<ORDER_UUID>\",\n  \"paymentMethod\":\"CASH\",\n  \"amount\":100000,\n  \"tenderedAmount\":100000,\n  \"staffId\":\"<USER_UUID>\"\n}"}
-          }
-        },
-        {
-          "name": "Create Payment (QR)",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/payments",
-            "body": {"mode": "raw", "raw": "{\n  \"orderId\":\"<ORDER_UUID>\",\n  \"paymentMethod\":\"QR\",\n  \"amount\":100000,\n  \"transactionRef\":\"QR_TXN_12345\",\n  \"staffId\":\"<USER_UUID>\"\n}"}
-          }
-        },
-        {
-          "name": "Refund Payment",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/payments/:id/refund",
-            "body": {"mode": "raw", "raw": "{\"amount\":0,\"reason\":\"\"}"}
-          }
-        },
-        {
-          "name": "Update Refund",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/payments/:id/refund",
-            "body": {"mode": "raw", "raw": "{\"amount\":0,\"reason\":\"\"}"}
-          }
-        },
-        {"name": "Get Refund History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/:id/refund-history"}},
-        {"name": "Get Payment Invoice", "request": {"method": "GET", "url": "{{gateway}}/api/v1/payments/:id/invoice"}},
-        {"name": "Print Payment", "request": {"method": "POST", "url": "{{gateway}}/api/v1/payments/:id/print"}}
+        {"name": "Reports - Revenue (GET, query params)", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/reports/revenue?from=2026-01-01&to=2026-12-31&groupBy=day", "host": ["{{gateway}}"], "path": ["reports", "revenue"], "query": [{"key": "from", "value": "2026-01-01"}, {"key": "to", "value": "2026-12-31"}, {"key": "groupBy", "value": "day"}]}}},
+        {"name": "Reports - Revenue (POST body)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Branch-Id", "value": "{{branchId}}"}], "body": {"mode": "raw", "raw": "{\n  \"fromDate\": \"2026-01-01\",\n  \"toDate\": \"2026-12-31\",\n  \"branchId\": \"{{branchId}}\",\n  \"groupBy\": \"month\"\n}"}, "url": {"raw": "{{gateway}}/reports/revenue", "host": ["{{gateway}}"], "path": ["reports", "revenue"]}}},
+        {"name": "Reports - Inventory snapshot (GET)", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/reports/inventory", "host": ["{{gateway}}"], "path": ["reports", "inventory"]}}},
+        {"name": "Reports - Inventory snapshot (POST body)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Branch-Id", "value": "{{branchId}}"}], "body": {"mode": "raw", "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"fromDate\": \"2026-01-01\",\n  \"toDate\": \"2026-12-31\"\n}"}, "url": {"raw": "{{gateway}}/reports/inventory", "host": ["{{gateway}}"], "path": ["reports", "inventory"]}}},
+        {"name": "Reports - Staff performance (GET)", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/reports/staff?fromDate=2026-01-01&toDate=2026-12-31", "host": ["{{gateway}}"], "path": ["reports", "staff"], "query": [{"key": "fromDate", "value": "2026-01-01"}, {"key": "toDate", "value": "2026-12-31"}]}}},
+        {"name": "Reports - Staff performance (POST body)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Branch-Id", "value": "{{branchId}}"}], "body": {"mode": "raw", "raw": "{\n  \"fromDate\": \"2026-01-01\",\n  \"toDate\": \"2026-12-31\",\n  \"branchId\": \"{{branchId}}\"\n}"}, "url": {"raw": "{{gateway}}/reports/staff", "host": ["{{gateway}}"], "path": ["reports", "staff"]}}},
+        {"name": "Reports - Realtime stats (dashboard)", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/reports/realtime/stats", "host": ["{{gateway}}"], "path": ["reports", "realtime", "stats"]}}},
+        {"name": "Reports - Realtime recent orders", "request": {"method": "GET", "header": [{"key": "X-Branch-Id", "value": "{{branchId}}"}], "url": {"raw": "{{gateway}}/reports/realtime/recent-orders?limit=5", "host": ["{{gateway}}"], "path": ["reports", "realtime", "recent-orders"], "query": [{"key": "limit", "value": "5"}]}}},
+        {"name": "Reports - Export direct (xlsx/pdf sync)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/reports/export?type=revenue&format=excel&from=2026-01-01&to=2026-12-31", "host": ["{{gateway}}"], "path": ["reports", "export"], "query": [{"key": "type", "value": "revenue"}, {"key": "format", "value": "excel"}, {"key": "from", "value": "2026-01-01"}, {"key": "to", "value": "2026-12-31"}]}}},
+        {"name": "Reports - Queue Excel export (TICKET-305 async)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"type\": \"revenue\",\n  \"from\": \"2026-01-01\",\n  \"to\": \"2026-12-31\",\n  \"branchId\": \"{{branchId}}\",\n  \"format\": \"excel\",\n  \"emailTo\": \"ceo@pcms.vn\"\n}"}, "url": {"raw": "{{gateway}}/reports/export/excel", "host": ["{{gateway}}"], "path": ["reports", "export", "excel"]}}},
+        {"name": "Reports - Queue PDF export (TICKET-306)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"type\": \"inventory\",\n  \"from\": \"2026-01-01\",\n  \"to\": \"2026-12-31\",\n  \"branchId\": \"{{branchId}}\",\n  \"format\": \"pdf\",\n  \"emailTo\": \"ceo@pcms.vn\"\n}"}, "url": {"raw": "{{gateway}}/reports/export/pdf", "host": ["{{gateway}}"], "path": ["reports", "export", "pdf"]}}},
+        {"name": "Reports - Schedule report (cron)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{userId}}"}, {"key": "X-Branch-Id", "value": "{{branchId}}"}], "body": {"mode": "raw", "raw": "{\n  \"type\": \"revenue\",\n  \"format\": \"excel\",\n  \"branchId\": \"{{branchId}}\",\n  \"cronExpression\": \"0 0 8 * * *\",\n  \"recipientEmail\": \"ceo@pcms.vn\"\n}"}, "url": {"raw": "{{gateway}}/reports/schedule", "host": ["{{gateway}}"], "path": ["reports", "schedule"]}}},
+        {"name": "Reports - List schedules", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/reports/schedules", "host": ["{{gateway}}"], "path": ["reports", "schedules"]}}},
+        {"name": "Reports - Cancel schedule (TICKET-306)", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/reports/schedules/00000000-0000-0000-0000-0000000000f1", "host": ["{{gateway}}"], "path": ["reports", "schedules", "00000000-0000-0000-0000-0000000000f1"]}}}
       ]
     },
     {
-      "name": "UC08 - Customers (customer-service)",
+      "name": "13 - customer-portal-service (UC14 B2C + UC18/UC19)",
       "item": [
-        {"name": "List Customers", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers"}},
-        {"name": "List Customers (paginated)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers?page=0&size=20"}},
-        {"name": "Get Customer by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id"}},
-        {"name": "Get Customer by Phone", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/phone/:phone"}},
-        {"name": "Get Customer by Code", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/code/:code"}},
-        {"name": "Get Customer Tier", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id/tier"}},
-        {"name": "Get Customer Orders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id/orders"}},
-        {"name": "Get Customer Points", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id/points"}},
-        {"name": "Get Customer History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/:id/history"}},
-        {
-          "name": "Create Customer",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/customers",
-            "body": {"mode": "raw", "raw": "{\n  \"name\":\"Nguyen Van A\",\n  \"phone\":\"0901234567\",\n  \"email\":\"nguyenvana@example.com\",\n  \"address\":\"123 Nguyen Hue, Q1, HCMC\"\n}"}
-          }
-        },
-        {
-          "name": "Register Customer",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/customers/register",
-            "body": {"mode": "raw", "raw": "{\n  \"name\":\"\",\n  \"phone\":\"\",\n  \"email\":\"\",\n  \"password\":\"\"\n}"}
-          }
-        },
-        {
-          "name": "Update Customer",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/customers/:id",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"phone\":\"\",\"email\":\"\"}"}
-          }
-        },
-        {
-          "name": "Add Points to Customer",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/customers/:id/points/add",
-            "body": {"mode": "raw", "raw": "{\"points\":0,\"reason\":\"\"}"}
-          }
-        },
-        {"name": "Delete Customer", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/customers/:id"}}
+        {"name": "Shop - Home page (SHOP-HOME)", "request": {"method": "GET", "header": [{"key": "X-Customer-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/shop/home?customerId={{customerId}}", "host": ["{{gateway}}"], "path": ["shop", "home"], "query": [{"key": "customerId", "value": "{{customerId}}", "disabled": true}]}}},
+        {"name": "Shop - Product detail (SHOP-PDP)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/shop/pdp/{{medicineId}}", "host": ["{{gateway}}"], "path": ["shop", "pdp", "{{medicineId}}"]}}},
+        {"name": "Shop - Search (SHOP-SEARCH)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/shop/search?q=Para&page=0&size=20", "host": ["{{gateway}}"], "path": ["shop", "search"], "query": [{"key": "q", "value": "Para"}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Shop - Lookup drug (A-Z)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/shop/lookup/drug?q=Para&aToZ=P", "host": ["{{gateway}}"], "path": ["shop", "lookup", "drug"], "query": [{"key": "q", "value": "Para"}, {"key": "aToZ", "value": "P"}]}}},
+        {"name": "Shop - Lookup ingredient", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/shop/lookup/ingredient?q=paracetamol", "host": ["{{gateway}}"], "path": ["shop", "lookup", "ingredient"], "query": [{"key": "q", "value": "paracetamol"}]}}},
+        {"name": "Shop - Lookup herb", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/shop/lookup/herb?q=gung", "host": ["{{gateway}}"], "path": ["shop", "lookup", "herb"], "query": [{"key": "q", "value": "gung"}]}}},
+        {"name": "Store - Locator (filter by province/district)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/store/locator?province=Ho%20Chi%20Minh&page=0&size=20", "host": ["{{gateway}}"], "path": ["store", "locator"], "query": [{"key": "province", "value": "Ho Chi Minh"}, {"key": "district", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Store - Detail by branchId", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/store/locator/{{branchId}}", "host": ["{{gateway}}"], "path": ["store", "locator", "{{branchId}}"]}}},
+        {"name": "Vaccines - List active (VACCINE-HOME)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/vaccines?manufacturer=AstraZeneca&page=0&size=20", "host": ["{{gateway}}"], "path": ["vaccines"], "query": [{"key": "manufacturer", "value": "AstraZeneca"}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Vaccines - Slots (VACCINE-BOOKING)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/vaccines/{{medicineId}}/slots?branchId={{branchId}}&date=2026-07-15", "host": ["{{gateway}}"], "path": ["vaccines", "{{medicineId}}", "slots"], "query": [{"key": "branchId", "value": "{{branchId}}", "disabled": true}, {"key": "date", "value": "2026-07-15"}]}}},
+        {"name": "Vaccine Bookings - Create (VACCINE-BOOKING)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Customer-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"vaccineId\": \"{{medicineId}}\",\n  \"slotId\": \"00000000-0000-0000-0000-000000000200\",\n  \"branchId\": \"{{branchId}}\",\n  \"memberId\": \"{{customerId}}\"\n}"}, "url": {"raw": "{{gateway}}/vaccine-bookings", "host": ["{{gateway}}"], "path": ["vaccine-bookings"]}}},
+        {"name": "Vaccine Bookings - My bookings", "request": {"method": "GET", "header": [{"key": "X-Customer-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/vaccine-bookings/me?status=SCHEDULED", "host": ["{{gateway}}"], "path": ["vaccine-bookings", "me"], "query": [{"key": "status", "value": "SCHEDULED"}]}}},
+        {"name": "Vaccine Bookings - Cancel", "request": {"method": "DELETE", "header": [{"key": "X-Customer-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/vaccine-bookings/00000000-0000-0000-0000-000000000201?reason=Reschedule", "host": ["{{gateway}}"], "path": ["vaccine-bookings", "00000000-0000-0000-0000-000000000201"], "query": [{"key": "reason", "value": "Reschedule"}]}}},
+        {"name": "Vaccination Ledger - My history", "request": {"method": "GET", "header": [{"key": "X-Customer-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/vaccination-ledger/me?page=0&size=20", "host": ["{{gateway}}"], "path": ["vaccination-ledger", "me"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Reviews - List by medicine (T11)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/reviews?medicineId=00000000-0000-0000-0000-000000000010", "host": ["{{gateway}}"], "path": ["reviews"], "query": [{"key": "medicineId", "value": "00000000-0000-0000-0000-000000000010"}]}}},
+        {"name": "Reviews - My reviews (T11)", "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}], "url": {"raw": "{{gateway}}/reviews/me", "host": ["{{gateway}}"], "path": ["reviews", "me"]}}},
+        {"name": "Reviews - Create or update (T11)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"00000000-0000-0000-0000-000000000010\",\n  \"rating\": 5,\n  \"comment\": \"Thuốc hiệu quả\"\n}"}, "url": {"raw": "{{gateway}}/reviews", "host": ["{{gateway}}"], "path": ["reviews"]}}},
+        {"name": "Health Articles - List", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/health-articles?category=Prevention&page=0&size=20", "host": ["{{gateway}}"], "path": ["health-articles"], "query": [{"key": "category", "value": "Prevention"}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Health Articles - Get by slug (increment view)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/health-articles/covid-prevention", "host": ["{{gateway}}"], "path": ["health-articles", "covid-prevention"]}}},
+        {"name": "Diseases - List (filter audience/season)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/diseases?audience=ADULT&season=WINTER", "host": ["{{gateway}}"], "path": ["diseases"], "query": [{"key": "audience", "value": "ADULT"}, {"key": "season", "value": "WINTER"}]}}},
+        {"name": "Verify Origin - QR/barcode scan", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"code\": \"8931234500011\"\n}"}, "url": {"raw": "{{gateway}}/verify-origin/scan", "host": ["{{gateway}}"], "path": ["verify-origin", "scan"]}}},
+        {"name": "Addresses - List mine (FR14.21)", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/addresses", "host": ["{{gateway}}"], "path": ["addresses"]}}},
+        {"name": "Addresses - Get by id", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/addresses/00000000-0000-0000-0000-000000000300", "host": ["{{gateway}}"], "path": ["addresses", "00000000-0000-0000-0000-000000000300"]}}},
+        {"name": "Addresses - Create", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"label\": \"Home\",\n  \"receiverName\": \"Nguyen Van A\",\n  \"receiverPhone\": \"0901234567\",\n  \"addressLine\": \"123 Nguyen Hue\",\n  \"province\": \"Ho Chi Minh\",\n  \"district\": \"District 1\",\n  \"ward\": \"Ben Nghe\",\n  \"isDefault\": true\n}"}, "url": {"raw": "{{gateway}}/addresses", "host": ["{{gateway}}"], "path": ["addresses"]}}},
+        {"name": "Addresses - Update (partial)", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"label\": \"Home Updated\"\n}"}, "url": {"raw": "{{gateway}}/addresses/00000000-0000-0000-0000-000000000300", "host": ["{{gateway}}"], "path": ["addresses", "00000000-0000-0000-0000-000000000300"]}}},
+        {"name": "Addresses - Set as default (transactional)", "request": {"method": "PUT", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/addresses/00000000-0000-0000-0000-000000000300/default", "host": ["{{gateway}}"], "path": ["addresses", "00000000-0000-0000-0000-000000000300", "default"]}}},
+        {"name": "Addresses - Soft delete", "request": {"method": "DELETE", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/addresses/00000000-0000-0000-0000-000000000300", "host": ["{{gateway}}"], "path": ["addresses", "00000000-0000-0000-0000-000000000300"]}}},
+        {"name": "Family - List members", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/family", "host": ["{{gateway}}"], "path": ["family"]}}},
+        {"name": "Family - Get member by id", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/family/00000000-0000-0000-0000-000000000400", "host": ["{{gateway}}"], "path": ["family", "00000000-0000-0000-0000-000000000400"]}}},
+        {"name": "Family - Add member", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"fullName\": \"Nguyen Van B (Son)\",\n  \"relationship\": \"SON\",\n  \"dateOfBirth\": \"2015-05-20\",\n  \"gender\": \"MALE\"\n}"}, "url": {"raw": "{{gateway}}/family", "host": ["{{gateway}}"], "path": ["family"]}}},
+        {"name": "Family - Update member", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"fullName\": \"Updated name\"\n}"}, "url": {"raw": "{{gateway}}/family/00000000-0000-0000-0000-000000000400", "host": ["{{gateway}}"], "path": ["family", "00000000-0000-0000-0000-000000000400"]}}},
+        {"name": "Family - Soft delete member", "request": {"method": "DELETE", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/family/00000000-0000-0000-0000-000000000400", "host": ["{{gateway}}"], "path": ["family", "00000000-0000-0000-0000-000000000400"]}}},
+        {"name": "Favorites - List my medicines", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/favorites?page=0&size=20", "host": ["{{gateway}}"], "path": ["favorites"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Favorites - Add (idempotent)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"note\": \"For headache\"\n}"}, "url": {"raw": "{{gateway}}/favorites", "host": ["{{gateway}}"], "path": ["favorites"]}}},
+        {"name": "Favorites - Remove", "request": {"method": "DELETE", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/favorites/{{medicineId}}", "host": ["{{gateway}}"], "path": ["favorites", "{{medicineId}}"]}}},
+        {"name": "Favorites - Check existence", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/favorites/{{medicineId}}/check", "host": ["{{gateway}}"], "path": ["favorites", "{{medicineId}}", "check"]}}},
+        {"name": "Cart - Get current", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/cart", "host": ["{{gateway}}"], "path": ["cart"]}}},
+        {"name": "Cart - Add item (auto-create cart)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"medicineId\": \"{{medicineId}}\",\n  \"quantity\": 2\n}"}, "url": {"raw": "{{gateway}}/cart/items", "host": ["{{gateway}}"], "path": ["cart", "items"]}}},
+        {"name": "Cart - Update item qty (recompute BR04)", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"quantity\": 12\n}"}, "url": {"raw": "{{gateway}}/cart/items/00000000-0000-0000-0000-000000000500", "host": ["{{gateway}}"], "path": ["cart", "items", "00000000-0000-0000-0000-000000000500"]}}},
+        {"name": "Cart - Remove item", "request": {"method": "DELETE", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/cart/items/00000000-0000-0000-0000-000000000500", "host": ["{{gateway}}"], "path": ["cart", "items", "00000000-0000-0000-0000-000000000500"]}}},
+        {"name": "Cart - Clear all items", "request": {"method": "DELETE", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/cart", "host": ["{{gateway}}"], "path": ["cart"]}}},
+        {"name": "Cart - Checkout preview (subtotal/discount/total)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"addressId\": \"00000000-0000-0000-0000-000000000300\",\n  \"voucherCode\": \"WELCOME10\",\n  \"paymentMethod\": \"CASH\"\n}"}, "url": {"raw": "{{gateway}}/cart/checkout/preview", "host": ["{{gateway}}"], "path": ["cart", "checkout", "preview"]}}},
+        {"name": "Cart - Checkout confirm (creates order)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"addressId\": \"00000000-0000-0000-0000-000000000300\",\n  \"voucherCode\": \"WELCOME10\",\n  \"paymentMethod\": \"CASH\",\n  \"notes\": \"Leave at door\"\n}"}, "url": {"raw": "{{gateway}}/cart/checkout/confirm", "host": ["{{gateway}}"], "path": ["cart", "checkout", "confirm"]}}},
+        {"name": "Order Tracking - Track by orderId", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/orders/{{orderId}}/track", "host": ["{{gateway}}"], "path": ["orders", "{{orderId}}", "track"]}}},
+        {"name": "Order Tracking - My order history (B2C)", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/orders/history?page=0&size=20", "host": ["{{gateway}}"], "path": ["orders", "history"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Prescription History - Mine (TICKET-705)", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/prescriptions/me?page=0&size=20", "host": ["{{gateway}}"], "path": ["prescriptions", "me"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Prescription History - Re-download PDF", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/prescriptions/{{prescriptionId}}/re-download", "host": ["{{gateway}}"], "path": ["prescriptions", "{{prescriptionId}}", "re-download"]}}},
+        {"name": "Vouchers - List active for me", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/vouchers", "host": ["{{gateway}}"], "path": ["vouchers"]}}},
+        {"name": "Vouchers - Preview discount (does NOT consume)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"voucherCode\": \"WELCOME10\"\n}"}, "url": {"raw": "{{gateway}}/vouchers/apply?cartTotal=100000", "host": ["{{gateway}}"], "path": ["vouchers", "apply"], "query": [{"key": "cartTotal", "value": "100000"}]}}},
+        {"name": "Vouchers - My usage history", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/vouchers/history", "host": ["{{gateway}}"], "path": ["vouchers", "history"]}}},
+        {"name": "Wallet - Get (balance + tier + perks + tx)", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/wallet", "host": ["{{gateway}}"], "path": ["wallet"]}}},
+        {"name": "Wallet - Transactions paginated", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/wallet/transactions?page=0&size=20", "host": ["{{gateway}}"], "path": ["wallet", "transactions"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Wallet - Redeem points for reward", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"rewardId\": \"00000000-0000-0000-0000-000000000600\",\n  \"pointsToRedeem\": 50\n}"}, "url": {"raw": "{{gateway}}/wallet/redeem", "host": ["{{gateway}}"], "path": ["wallet", "redeem"]}}},
+        {"name": "Installment - Quote (Home Credit 1.5%/mo, FE Credit 1.2%/mo)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"amount\": 1000000,\n  \"months\": 6,\n  \"provider\": \"HOME_CREDIT\"\n}"}, "url": {"raw": "{{gateway}}/installment/quote", "host": ["{{gateway}}"], "path": ["installment", "quote"]}}},
+        {"name": "Installment - Confirm application (stub)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"quoteId\": \"00000000-0000-0000-0000-000000000601\",\n  \"customerName\": \"Nguyen Van A\",\n  \"identityNo\": \"079123456789\",\n  \"phone\": \"0901234567\"\n}"}, "url": {"raw": "{{gateway}}/installment/confirm", "host": ["{{gateway}}"], "path": ["installment", "confirm"]}}},
+        {"name": "Notification Settings - Get (auto-create defaults)", "request": {"method": "GET", "header": [{"key": "X-User-Id", "value": "{{customerId}}"}], "url": {"raw": "{{gateway}}/notif-settings", "host": ["{{gateway}}"], "path": ["notif-settings"]}}},
+        {"name": "Notification Settings - Replace all", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"emailEnabled\": true,\n  \"smsEnabled\": false,\n  \"pushEnabled\": true,\n  \"lowStockAlert\": true,\n  \"expiryAlert\": true,\n  \"orderUpdate\": true,\n  \"promo\": false\n}"}, "url": {"raw": "{{gateway}}/notif-settings", "host": ["{{gateway}}"], "path": ["notif-settings"]}}},
+        {"name": "Notification Settings - Patch (partial)", "request": {"method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{customerId}}"}], "body": {"mode": "raw", "raw": "{\n  \"promo\": true\n}"}, "url": {"raw": "{{gateway}}/notif-settings", "host": ["{{gateway}}"], "path": ["notif-settings"]}}},
+        {"name": "Video Admin - List all (admin)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/admin/videos?category=edu&page=0&size=20", "host": ["{{gateway}}"], "path": ["admin", "videos"], "query": [{"key": "category", "value": "edu"}, {"key": "status", "value": "", "disabled": true}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}]}}},
+        {"name": "Video Admin - Get by id", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/admin/videos/00000000-0000-0000-0000-000000000700", "host": ["{{gateway}}"], "path": ["admin", "videos", "00000000-0000-0000-0000-000000000700"]}}},
+        {"name": "Video Admin - Create (YouTube embed)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"title\": \"How to use inhaler\",\n  \"youtubeId\": \"dQw4w9WgXcQ\",\n  \"category\": \"edu\",\n  \"description\": \"Tutorial\",\n  \"durationSec\": 240\n}"}, "url": {"raw": "{{gateway}}/admin/videos", "host": ["{{gateway}}"], "path": ["admin", "videos"]}}},
+        {"name": "Video Admin - Update (partial)", "request": {"method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"title\": \"Updated title\"\n}"}, "url": {"raw": "{{gateway}}/admin/videos/00000000-0000-0000-0000-000000000700", "host": ["{{gateway}}"], "path": ["admin", "videos", "00000000-0000-0000-0000-000000000700"]}}},
+        {"name": "Video Admin - Soft delete", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/admin/videos/00000000-0000-0000-0000-000000000700", "host": ["{{gateway}}"], "path": ["admin", "videos", "00000000-0000-0000-0000-000000000700"]}}}
       ]
     },
     {
-      "name": "UC08 - Customers Me (customer-service)",
+      "name": "14 - pharmacist-workbench-service (UC16)",
       "item": [
-        {"name": "Get Current Customer (Me)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/customers/me"}},
-        {
-          "name": "Update Current Customer (Me)",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/customers/me",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"phone\":\"\",\"email\":\"\",\"address\":\"\"}"}
-          }
-        }
+        {"name": "Consultations - Start (text/voice/video)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{userId}}"}], "body": {"mode": "raw", "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"channel\": \"TEXT\",\n  \"topic\": \"Drug interaction check\",\n  \"initialMessage\": \"Hi, can I take paracetamol with aspirin?\"\n}"}, "url": {"raw": "{{gateway}}/consultations", "host": ["{{gateway}}"], "path": ["consultations"]}}},
+        {"name": "Consultations - Get by id", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/consultations/00000000-0000-0000-0000-000000000800", "host": ["{{gateway}}"], "path": ["consultations", "00000000-0000-0000-0000-000000000800"]}}},
+        {"name": "Consultations - End session", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/consultations/00000000-0000-0000-0000-000000000800/end", "host": ["{{gateway}}"], "path": ["consultations", "00000000-0000-0000-0000-000000000800", "end"]}}},
+        {"name": "Consultations - Append message", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "text/plain"}], "body": {"mode": "raw", "raw": "I recommend you take paracetamol alone, not with aspirin."}, "url": {"raw": "{{gateway}}/consultations/00000000-0000-0000-0000-000000000800/messages", "host": ["{{gateway}}"], "path": ["consultations", "00000000-0000-0000-0000-000000000800", "messages"]}}},
+        {"name": "Consultations - List for customer", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/consultations/by-customer/{{customerId}}", "host": ["{{gateway}}"], "path": ["consultations", "by-customer", "{{customerId}}"]}}},
+        {"name": "Consultations - List active for pharmacist", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/consultations/by-pharmacist/{{userId}}", "host": ["{{gateway}}"], "path": ["consultations", "by-pharmacist", "{{userId}}"]}}},
+        {"name": "Customer 360 - Full profile (RX-CUST-PROFILE-360)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/rx/customers/{{customerId}}/profile-360", "host": ["{{gateway}}"], "path": ["rx", "customers", "{{customerId}}", "profile-360"]}}},
+        {"name": "Follow-up - Schedule (3/7/14-day after purchase)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"medicineId\": \"{{medicineId}}\",\n  \"orderId\": \"{{orderId}}\",\n  \"scheduledAt\": \"2026-07-05T09:00:00Z\",\n  \"daysAfterPurchase\": 7\n}"}, "url": {"raw": "{{gateway}}/follow-ups", "host": ["{{gateway}}"], "path": ["follow-ups"]}}},
+        {"name": "Follow-up - List for customer", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/follow-ups/by-customer/{{customerId}}", "host": ["{{gateway}}"], "path": ["follow-ups", "by-customer", "{{customerId}}"]}}},
+        {"name": "Follow-up - Record customer response (TAKEN_OK/SIDE_EFFECT/NO_EFFECT)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"response\": \"TAKEN_OK\",\n  \"note\": \"No side effects\"\n}"}, "url": {"raw": "{{gateway}}/follow-ups/00000000-0000-0000-0000-000000000810/response", "host": ["{{gateway}}"], "path": ["follow-ups", "00000000-0000-0000-0000-000000000810", "response"]}}},
+        {"name": "Follow-up - Cancel", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/follow-ups/00000000-0000-0000-0000-000000000810", "host": ["{{gateway}}"], "path": ["follow-ups", "00000000-0000-0000-0000-000000000810"]}}},
+        {"name": "VIP Mark - Mark customer (BRONZE/SILVER/GOLD/PLATINUM)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-User-Id", "value": "{{userId}}"}], "body": {"mode": "raw", "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"tier\": \"GOLD\",\n  \"loyaltyScore\": 850\n}"}, "url": {"raw": "{{gateway}}/vip-marks", "host": ["{{gateway}}"], "path": ["vip-marks"]}}},
+        {"name": "VIP Mark - Get by customer", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/vip-marks/by-customer/{{customerId}}", "host": ["{{gateway}}"], "path": ["vip-marks", "by-customer", "{{customerId}}"]}}},
+        {"name": "VIP Mark - List by tier", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/vip-marks/by-tier/GOLD", "host": ["{{gateway}}"], "path": ["vip-marks", "by-tier", "GOLD"]}}},
+        {"name": "VIP Mark - List all (sorted by loyalty)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/vip-marks", "host": ["{{gateway}}"], "path": ["vip-marks"]}}},
+        {"name": "VIP Mark - Unmark customer", "request": {"method": "DELETE", "header": [], "url": {"raw": "{{gateway}}/vip-marks/{{customerId}}", "host": ["{{gateway}}"], "path": ["vip-marks", "{{customerId}}"]}}}
       ]
     },
     {
-      "name": "UC09 - Reports (report-service)",
+      "name": "15 - ecom-ops-service (UC19 Flash Sales)",
       "item": [
-        {"name": "Revenue Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/revenue?from=2026-06-01&to=2026-06-30&groupBy=day"}},
-        {
-          "name": "Generate Revenue Report",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/reports/revenue",
-            "body": {"mode": "raw", "raw": "{\"from\":\"\",\"to\":\"\",\"groupBy\":\"day\",\"branchId\":\"\"}"}
-          }
-        },
-        {"name": "Inventory Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/inventory?branchId=<UUID>"}},
-        {
-          "name": "Generate Inventory Report",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/reports/inventory",
-            "body": {"mode": "raw", "raw": "{\"from\":\"\",\"to\":\"\",\"branchId\":\"\"}"}
-          }
-        },
-        {"name": "Staff Report", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/staff"}},
-        {"name": "Real-time Stats", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/realtime/stats"}},
-        {"name": "Recent Orders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/realtime/recent-orders"}},
-        {"name": "Export Reports", "request": {"method": "GET", "url": "{{gateway}}/api/v1/reports/export"}},
-        {"name": "Export to Excel", "request": {"method": "POST", "url": "{{gateway}}/api/v1/reports/export/excel"}},
-        {"name": "Export to PDF", "request": {"method": "POST", "url": "{{gateway}}/api/v1/reports/export/pdf"}}
+        {"name": "Flash Sales - Create (admin)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Paracetamol Flash Sale 30/06\",\n  \"medicineId\": \"{{medicineId}}\",\n  \"discountPercent\": 20,\n  \"originalPrice\": 5000,\n  \"flashPrice\": 4000,\n  \"totalSlots\": 100,\n  \"startsAt\": \"2026-06-30T10:00:00Z\",\n  \"endsAt\": \"2026-06-30T22:00:00Z\",\n  \"branchId\": \"{{branchId}}\"\n}"}, "url": {"raw": "{{gateway}}/admin/flash-sales", "host": ["{{gateway}}"], "path": ["admin", "flash-sales"]}}},
+        {"name": "Flash Sales - List active (public - SHOP-FLASH-SALE)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/admin/flash-sales/active", "host": ["{{gateway}}"], "path": ["admin", "flash-sales", "active"]}}},
+        {"name": "Flash Sales - List all (admin)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/admin/flash-sales", "host": ["{{gateway}}"], "path": ["admin", "flash-sales"]}}},
+        {"name": "Flash Sales - Get by id", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/admin/flash-sales/00000000-0000-0000-0000-000000000900", "host": ["{{gateway}}"], "path": ["admin", "flash-sales", "00000000-0000-0000-0000-000000000900"]}}},
+        {"name": "Flash Sales - Cancel", "request": {"method": "POST", "header": [], "url": {"raw": "{{gateway}}/admin/flash-sales/00000000-0000-0000-0000-000000000900/cancel", "host": ["{{gateway}}"], "path": ["admin", "flash-sales", "00000000-0000-0000-0000-000000000900", "cancel"]}}},
+        {"name": "Public Ecom - List active flash sales (/ecom-ops/...)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/ecom-ops/flash-sales/active", "host": ["{{gateway}}"], "path": ["ecom-ops", "flash-sales", "active"]}}},
+        {"name": "Public Ecom - Flash sale details", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/ecom-ops/flash-sales/00000000-0000-0000-0000-000000000900", "host": ["{{gateway}}"], "path": ["ecom-ops", "flash-sales", "00000000-0000-0000-0000-000000000900"]}}}
       ]
     },
     {
-      "name": "UC10 - Suppliers (supplier-service)",
+      "name": "16 - health-tools-service (UC18 Health Quiz)",
       "item": [
-        {"name": "List Suppliers", "request": {"method": "GET", "url": "{{gateway}}/api/v1/suppliers"}},
-        {"name": "Get Supplier by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/suppliers/:id"}},
-        {
-          "name": "Create Supplier",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/suppliers",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"code\":\"\",\"address\":\"\",\"phone\":\"\",\"email\":\"\"}"}
-          }
-        },
-        {
-          "name": "Update Supplier",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/suppliers/:id",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"address\":\"\",\"phone\":\"\"}"}
-          }
-        },
-        {"name": "Get Supplier History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/suppliers/:id/history"}},
-        {"name": "Delete Supplier", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/suppliers/:id"}}
-      ]
-    },
-    {
-      "name": "UC12 - Prescriptions (prescription-service)",
-      "item": [
-        {"name": "List Prescriptions", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions"}},
-        {"name": "Get Prescription by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/:id"}},
-        {"name": "Get Prescription by Code", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/code/:code"}},
-        {
-          "name": "Create Prescription",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/prescriptions",
-            "body": {"mode": "raw", "raw": "{\n  \"patientId\":\"<CUSTOMER_UUID>\",\n  \"doctorId\":\"<USER_UUID>\",\n  \"diagnosis\":\"Common cold\",\n  \"notes\":\"Drink warm water\",\n  \"licenseNo\":\"PH-LIC-001\"\n}"}
-          }
-        },
-        {
-          "name": "Create Draft Prescription",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/prescriptions/draft",
-            "body": {"mode": "raw", "raw": "{\"patientId\":\"\"}"}
-          }
-        },
-        {
-          "name": "Update Prescription",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/prescriptions/:id",
-            "body": {"mode": "raw", "raw": "{\"diagnosis\":\"\",\"notes\":\"\"}"}
-          }
-        },
-        {"name": "Sign Prescription (PUT)", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/prescriptions/:id/sign"}},
-        {"name": "Sign Prescription (POST)", "request": {"method": "POST", "url": "{{gateway}}/api/v1/prescriptions/:id/sign"}},
-        {"name": "Link Order to Prescription", "request": {"method": "POST", "url": "{{gateway}}/api/v1/prescriptions/:id/link-order"}},
-        {"name": "Print Prescription", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/:id/print"}},
-        {"name": "Print Prescription (POST)", "request": {"method": "POST", "url": "{{gateway}}/api/v1/prescriptions/:id/print"}},
-        {"name": "Delete Prescription", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/prescriptions/:id"}}
-      ]
-    },
-    {
-      "name": "UC13 - Notifications (notification-service)",
-      "item": [
-        {"name": "List Notifications", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications"}},
-        {"name": "List Unread Notifications", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications/unread"}},
-        {"name": "Get Notification by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications/:id"}},
-        {
-          "name": "Create Notification",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/notifications",
-            "body": {"mode": "raw", "raw": "{\"recipientId\":\"\",\"title\":\"\",\"message\":\"\",\"type\":\"\"}"}
-          }
-        },
-        {
-          "name": "Create Bulk Notifications",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/notifications/bulk",
-            "body": {"mode": "raw", "raw": "{\"recipientIds\":[],\"title\":\"\",\"message\":\"\"}"}
-          }
-        },
-        {"name": "Broadcast Notification", "request": {"method": "POST", "url": "{{gateway}}/api/v1/notifications/broadcast"}},
-        {"name": "Compose Notification", "request": {"method": "POST", "url": "{{gateway}}/api/v1/notifications/compose"}},
-        {"name": "Retry Notification", "request": {"method": "POST", "url": "{{gateway}}/api/v1/notifications/:id/retry"}},
-        {"name": "Mark as Read", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/notifications/:id/read"}},
-        {"name": "Mark All as Read", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/notifications/read-all"}},
-        {"name": "Delete Notification", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/notifications/:id"}}
-      ]
-    },
-    {
-      "name": "UC13 - Notification Templates (notification-service)",
-      "item": [
-        {"name": "List Templates", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notifications/templates"}},
-        {
-          "name": "Create Template",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/notifications/templates",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"subject\":\"\",\"body\":\"\",\"type\":\"\"}"}
-          }
-        }
-      ]
-    },
-    {
-      "name": "Health Tools (health-tools-service)",
-      "item": [
-        {"name": "List Quizzes", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health/quizzes"}},
-        {"name": "Get Quiz by Slug", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health/quizzes/:slug"}},
-        {
-          "name": "Submit Quiz",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/health/quizzes/:slug/submit",
-            "body": {"mode": "raw", "raw": "{\"answers\":{}}"}
-          }
-        },
-        {"name": "Get My Quiz Results", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health/quiz-results/me"}}
-      ]
-    },
-    {
-      "name": "Rx Console - Consultations (pharmacist-workbench-service)",
-      "item": [
-        {
-          "name": "Create Consultation",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/consultations",
-            "body": {"mode": "raw", "raw": "{\"customerId\":\"\",\"pharmacistId\":\"\",\"topic\":\"\"}"}
-          }
-        },
-        {"name": "Get Consultation by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/consultations/:id"}},
-        {"name": "End Consultation", "request": {"method": "POST", "url": "{{gateway}}/api/v1/consultations/:id/end"}},
-        {
-          "name": "Add Message to Consultation",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/consultations/:id/messages",
-            "body": {"mode": "raw", "raw": "{\"message\":\"\"}"}
-          }
-        },
-        {"name": "Get Consultations by Customer", "request": {"method": "GET", "url": "{{gateway}}/api/v1/consultations/by-customer/:customerId"}},
-        {"name": "Get Consultations by Pharmacist", "request": {"method": "GET", "url": "{{gateway}}/api/v1/consultations/by-pharmacist/:pharmacistId"}}
-      ]
-    },
-    {
-      "name": "Rx Console - Customer 360 (pharmacist-workbench-service)",
-      "item": [
-        {"name": "Get Customer Profile 360", "request": {"method": "GET", "url": "{{gateway}}/api/v1/rx/customers/:id/profile-360"}}
-      ]
-    },
-    {
-      "name": "Rx Console - Follow-ups (pharmacist-workbench-service)",
-      "item": [
-        {
-          "name": "Create Follow-up",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/follow-ups",
-            "body": {"mode": "raw", "raw": "{\"customerId\":\"\",\"notes\":\"\",\"dueDate\":\"\"}"}
-          }
-        },
-        {"name": "Get Follow-ups by Customer", "request": {"method": "GET", "url": "{{gateway}}/api/v1/follow-ups/by-customer/:customerId"}},
-        {
-          "name": "Respond to Follow-up",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/follow-ups/:id/response",
-            "body": {"mode": "raw", "raw": "{\"response\":\"\"}"}
-          }
-        },
-        {"name": "Delete Follow-up", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/follow-ups/:id"}}
-      ]
-    },
-    {
-      "name": "Rx Console - AI Features (pharmacist-workbench-service)",
-      "item": [
-        {
-          "name": "AI Cross-sell",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/rx/cross-sell",
-            "body": {"mode": "raw", "raw": "{\"customerId\":\"\",\"currentMedicines\":[]}"}
-          }
-        },
-        {
-          "name": "AI Drug Check",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/rx/drug-check",
-            "body": {"mode": "raw", "raw": "{\"medicines\":[],\"symptoms\":[]}"}
-          }
-        }
-      ]
-    },
-    {
-      "name": "Rx Console - VIP Marks (pharmacist-workbench-service)",
-      "item": [
-        {
-          "name": "Create VIP Mark",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/vip-marks",
-            "body": {"mode": "raw", "raw": "{\"customerId\":\"\",\"reason\":\"\",\"tier\":\"\"}"}
-          }
-        },
-        {"name": "Get VIP Marks by Customer", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vip-marks/by-customer/:customerId"}},
-        {"name": "Get VIP Marks by Tier", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vip-marks/by-tier/:tier"}},
-        {"name": "List VIP Marks", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vip-marks"}},
-        {"name": "Delete VIP Mark", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/vip-marks/:customerId"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Addresses (customer-portal-service)",
-      "item": [
-        {"name": "List Addresses", "request": {"method": "GET", "url": "{{gateway}}/api/v1/addresses"}},
-        {"name": "Get Address by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/addresses/:id"}},
-        {
-          "name": "Create Address",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/addresses",
-            "body": {"mode": "raw", "raw": "{\"label\":\"Nhà\",\"name\":\"\",\"phone\":\"\",\"line\":\"\",\"province\":\"\",\"isDefault\":false}"}
-          }
-        },
-        {
-          "name": "Update Address",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/addresses/:id",
-            "body": {"mode": "raw", "raw": "{\"label\":\"\",\"name\":\"\",\"phone\":\"\",\"line\":\"\",\"province\":\"\"}"}
-          }
-        },
-        {"name": "Delete Address", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/addresses/:id"}},
-        {"name": "Set Default Address", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/addresses/:id/default"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Family (customer-portal-service)",
-      "item": [
-        {"name": "List Family Members", "request": {"method": "GET", "url": "{{gateway}}/api/v1/family"}},
-        {"name": "Get Family Member by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/family/:id"}},
-        {
-          "name": "Add Family Member",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/family",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"relation\":\"\",\"birthYear\":1990,\"allergies\":[],\"conditions\":[]}"}
-          }
-        },
-        {
-          "name": "Update Family Member",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/family/:id",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"allergies\":[],\"conditions\":[]}"}
-          }
-        },
-        {"name": "Remove Family Member", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/family/:id"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Favorites (customer-portal-service)",
-      "item": [
-        {"name": "List Favorites", "request": {"method": "GET", "url": "{{gateway}}/api/v1/favorites"}},
-        {
-          "name": "Add Favorite",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/favorites",
-            "body": {"mode": "raw", "raw": "{\"medicineId\":\"\"}"}
-          }
-        },
-        {"name": "Remove Favorite", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/favorites/:medicineId"}},
-        {"name": "Check if Favorite", "request": {"method": "GET", "url": "{{gateway}}/api/v1/favorites/:medicineId/check"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Cart (customer-portal-service)",
-      "item": [
-        {"name": "Get Cart", "request": {"method": "GET", "url": "{{gateway}}/api/v1/cart"}},
-        {
-          "name": "Add Item to Cart",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/cart/items",
-            "body": {"mode": "raw", "raw": "{\"medicineId\":\"\",\"quantity\":1}"}
-          }
-        },
-        {
-          "name": "Update Cart Item",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/cart/items/:itemId",
-            "body": {"mode": "raw", "raw": "{\"quantity\":1}"}
-          }
-        },
-        {"name": "Remove Cart Item", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/cart/items/:itemId"}},
-        {"name": "Clear Cart", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/cart"}},
-        {
-          "name": "Checkout Preview",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/cart/checkout/preview",
-            "body": {"mode": "raw", "raw": "{\"addressId\":\"\",\"voucherCode\":\"\"}"}
-          }
-        },
-        {
-          "name": "Checkout Confirm",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/cart/checkout/confirm",
-            "body": {"mode": "raw", "raw": "{\"addressId\":\"\",\"paymentMethod\":\"\",\"voucherCode\":\"\"}"}
-          }
-        }
-      ]
-    },
-    {
-      "name": "Customer Portal - Wallet (customer-portal-service)",
-      "item": [
-        {"name": "Get Wallet", "request": {"method": "GET", "url": "{{gateway}}/api/v1/wallet"}},
-        {"name": "Get Wallet Transactions", "request": {"method": "GET", "url": "{{gateway}}/api/v1/wallet/transactions"}},
-        {
-          "name": "Redeem Points",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/wallet/redeem",
-            "body": {"mode": "raw", "raw": "{\"rewardId\":\"\"}"}
-          }
-        }
-      ]
-    },
-    {
-      "name": "Customer Portal - Orders (customer-portal-service)",
-      "item": [
-        {"name": "Get Order Tracking", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders/:id/track"}},
-        {"name": "Get Order History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/orders/history"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Vouchers (customer-portal-service)",
-      "item": [
-        {"name": "List Vouchers", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vouchers"}},
-        {
-          "name": "Apply Voucher",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/vouchers/apply",
-            "body": {"mode": "raw", "raw": "{\"code\":\"\"}"}
-          }
-        },
-        {"name": "Get Voucher History", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vouchers/history"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Shop (customer-portal-service)",
-      "item": [
-        {"name": "Shop Home", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/home"}},
-        {"name": "Product Detail Page", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/pdp/:id"}},
-        {"name": "Search Products", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/search?q=para"}},
-        {"name": "Lookup Drug", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/lookup/drug?q=para"}},
-        {"name": "Lookup Ingredient", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/lookup/ingredient?q=para"}},
-        {"name": "Lookup Herb", "request": {"method": "GET", "url": "{{gateway}}/api/v1/shop/lookup/herb?q=para"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Store (customer-portal-service)",
-      "item": [
-        {"name": "Locate Stores", "request": {"method": "GET", "url": "{{gateway}}/api/v1/store/locator"}},
-        {"name": "Get Store Details", "request": {"method": "GET", "url": "{{gateway}}/api/v1/store/locator/:branchId"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Health Articles (customer-portal-service)",
-      "item": [
-        {"name": "List Health Articles", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health-articles"}},
-        {"name": "Get Health Article by Slug", "request": {"method": "GET", "url": "{{gateway}}/api/v1/health-articles/:slug"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Diseases (customer-portal-service)",
-      "item": [
-        {"name": "List Diseases", "request": {"method": "GET", "url": "{{gateway}}/api/v1/diseases"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Verify Origin (customer-portal-service)",
-      "item": [
-        {
-          "name": "Scan Origin Verification",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/verify-origin/scan",
-            "body": {"mode": "raw", "raw": "{\"code\":\"\"}"}
-          }
-        }
-      ]
-    },
-    {
-      "name": "Customer Portal - Installment (customer-portal-service)",
-      "item": [
-        {
-          "name": "Get Installment Quote",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/installment/quote",
-            "body": {"mode": "raw", "raw": "{\"amount\":0,\"tenureMonths\":3}"}
-          }
-        },
-        {
-          "name": "Confirm Installment",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/installment/confirm",
-            "body": {"mode": "raw", "raw": "{\"quoteId\":\"\",\"paymentMethod\":\"\"}"}
-          }
-        }
-      ]
-    },
-    {
-      "name": "Customer Portal - Notifications Settings (customer-portal-service)",
-      "item": [
-        {"name": "Get Notification Settings", "request": {"method": "GET", "url": "{{gateway}}/api/v1/notif-settings"}},
-        {
-          "name": "Update Notification Settings",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/notif-settings",
-            "body": {"mode": "raw", "raw": "{\"email\":true,\"sms\":false,\"push\":true}"}
-          }
-        }
-      ]
-    },
-    {
-      "name": "Customer Portal - Vaccines (customer-portal-service)",
-      "item": [
-        {"name": "List Vaccines", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vaccines"}},
-        {"name": "Get Vaccine Slots", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vaccines/:id/slots"}},
-        {
-          "name": "Book Vaccine",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/vaccine-bookings",
-            "body": {"mode": "raw", "raw": "{\"vaccineId\":\"\",\"slotId\":\"\",\"customerId\":\"\"}"}
-          }
-        },
-        {"name": "Get My Vaccine Bookings", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vaccine-bookings/me"}},
-        {"name": "Cancel Vaccine Booking", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/vaccine-bookings/:id"}},
-        {"name": "Get Vaccination Ledger", "request": {"method": "GET", "url": "{{gateway}}/api/v1/vaccination-ledger/me"}}
-      ]
-    },
-    {
-      "name": "Customer Portal - Prescriptions (customer-portal-service)",
-      "item": [
-        {"name": "Get My Prescriptions", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/me"}},
-        {"name": "Re-download Prescription", "request": {"method": "GET", "url": "{{gateway}}/api/v1/prescriptions/:id/re-download"}}
-      ]
-    },
-    {
-      "name": "Admin - Videos (customer-portal-service)",
-      "item": [
-        {"name": "List Videos", "request": {"method": "GET", "url": "{{gateway}}/api/v1/admin/videos"}},
-        {"name": "Get Video by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/admin/videos/:id"}},
-        {
-          "name": "Create Video",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/admin/videos",
-            "body": {"mode": "raw", "raw": "{\"title\":\"\",\"url\":\"\",\"thumbnail\":\"\",\"duration\":0}"}
-          }
-        },
-        {
-          "name": "Update Video",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/admin/videos/:id",
-            "body": {"mode": "raw", "raw": "{\"title\":\"\",\"url\":\"\"}"}
-          }
-        },
-        {"name": "Delete Video", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/admin/videos/:id"}}
-      ]
-    },
-    {
-      "name": "Mobile BFF (mobile-bff)",
-      "item": [
-        {"name": "Mobile Home", "request": {"method": "GET", "url": "{{gateway}}/api/v1/mobile/home"}},
-        {"name": "Nearby Pharmacies", "request": {"method": "GET", "url": "{{gateway}}/api/v1/mobile/nearby-pharmacies"}},
-        {
-          "name": "Create Medication Reminder",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/mobile/medication-reminders",
-            "body": {"mode": "raw", "raw": "{\"medicineName\":\"\",\"dosage\":\"\",\"times\":[],\"startDate\":\"\",\"endDate\":\"\"}"}
-          }
-        },
-        {"name": "List Medication Reminders", "request": {"method": "GET", "url": "{{gateway}}/api/v1/mobile/medication-reminders"}},
-        {"name": "Deactivate Reminder", "request": {"method": "PUT", "url": "{{gateway}}/api/v1/mobile/medication-reminders/:id/deactivate"}},
-        {"name": "Delete Reminder", "request": {"method": "DELETE", "url": "{{gateway}}/api/v1/mobile/medication-reminders/:id"}}
-      ]
-    },
-    {
-      "name": "Ecom Ops - Flash Sales (ecom-ops-service)",
-      "item": [
-        {"name": "Get Active Flash Sales", "request": {"method": "GET", "url": "{{gateway}}/api/v1/ecom-ops/flash-sales/active"}},
-        {"name": "Get Flash Sale by ID", "request": {"method": "GET", "url": "{{gateway}}/api/v1/ecom-ops/flash-sales/:id"}}
-      ]
-    },
-    {
-      "name": "Admin - Flash Sales (ecom-ops-service)",
-      "item": [
-        {
-          "name": "Create Flash Sale",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "url": "{{gateway}}/api/v1/admin/flash-sales",
-            "body": {"mode": "raw", "raw": "{\"name\":\"\",\"startTime\":\"\",\"endTime\":\"\",\"discountPercent\":0,\"maxQuantity\":0}"}
-          }
-        },
-        {"name": "List All Flash Sales", "request": {"method": "GET", "url": "{{gateway}}/api/v1/admin/flash-sales"}},
-        {"name": "Get Flash Sale by ID (Admin)", "request": {"method": "GET", "url": "{{gateway}}/api/v1/admin/flash-sales/:id"}},
-        {"name": "Cancel Flash Sale", "request": {"method": "POST", "url": "{{gateway}}/api/v1/admin/flash-sales/:id/cancel"}}
+        {"name": "Health Quiz - List all 8 quizzes", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/health/quizzes", "host": ["{{gateway}}"], "path": ["health", "quizzes"]}}},
+        {"name": "Health Quiz - Get by slug (HEALTH-QUIZ-LIST)", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/health/quizzes/diabetes-risk", "host": ["{{gateway}}"], "path": ["health", "quizzes", "diabetes-risk"]}}},
+        {"name": "Health Quiz - Submit answers (HEALTH-QUIZ-RESULT)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"answers\": [\n    {\"questionId\":\"q1\",\"value\":\"yes\"},\n    {\"questionId\":\"q2\",\"value\":\"3\"}\n  ]\n}"}, "url": {"raw": "{{gateway}}/health/quizzes/diabetes-risk/submit", "host": ["{{gateway}}"], "path": ["health", "quizzes", "diabetes-risk", "submit"]}}},
+        {"name": "Health Quiz - My results history", "request": {"method": "GET", "header": [], "url": {"raw": "{{gateway}}/health/quiz-results/me?customerId={{customerId}}", "host": ["{{gateway}}"], "path": ["health", "quiz-results", "me"], "query": [{"key": "customerId", "value": "{{customerId}}"}]}}}
       ]
     }
   ]

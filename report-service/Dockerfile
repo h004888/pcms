@@ -1,15 +1,11 @@
-# Stage 1: Build
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY pom.xml .
-COPY ../pom.xml ../pom.xml
-RUN mvn -B -q -f ../pom.xml -pl report-service -am dependency:go-offline
 COPY . .
-RUN mvn -B -q -f ../pom.xml -pl report-service -am clean package -DskipTests
+RUN mvn -B dependency:go-offline -pl report-service -am -q 2>/dev/null || true
+RUN mvn -B -pl report-service -am clean package -DskipTests
 
-# Stage 2: Run
 FROM eclipse-temurin:21.0.11_10-jre-alpine
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/report-service/target/*.jar app.jar
 EXPOSE 8092
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

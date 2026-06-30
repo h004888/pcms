@@ -6,15 +6,29 @@ spring:
     name: notification-service
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_notification?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:123}
+    username: ${MYSQL_USER:pcms_user}
+    password: ${MYSQL_PASSWORD:pcms_pass}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  # B-11: SMTP config for email notifications — OPT-IN via env vars.
+  # mail.host="" rỗng nếu MAIL_HOST không set → MailSender bean không khởi tạo
+  # → MailHealthIndicator không register → /actuator/health không có "mail".
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USER:}
+    password: ${MAIL_PASS:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:true}
 
 # Notification retry policy (NSF-09)
 notification:
@@ -23,5 +37,16 @@ notification:
     backoff-ms: 1000
   channels:
     in-app: true
-    email: false
-    sms: false
+    email: ${NOTIFICATION_EMAIL_ENABLED:true}
+    sms: ${NOTIFICATION_SMS_ENABLED:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  # Tắt MailHealthIndicator khi chưa config mail thật; tránh log noise khi dev.
+  # Khi bật mail thật, set MAIL_HOST và bật lại enabled=true để monitor SMTP.
+  health:
+    mail:
+      enabled: false

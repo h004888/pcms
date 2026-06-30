@@ -100,10 +100,12 @@ public class ShopHomeServiceImpl implements ShopHomeService {
 
     private CategoryTeaserResponse toCategoryTeaser(Map<String, Object> m) {
         Object id = m.get("id");
+        Object slug = m.get("slug");
         Object name = m.getOrDefault("name", "");
         Object image = m.getOrDefault("imageUrl", "");
         return new CategoryTeaserResponse(
                 id != null ? id.toString() : null,
+                slug != null ? slug.toString() : null,
                 name.toString(),
                 image.toString(),
                 0L // productCount: will be enriched once catalog-service exposes count endpoint

@@ -39,6 +39,11 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.getById(id));
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<CategoryResponse> getBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(categoryService.getBySlug(slug));
+    }
+
     @PostMapping
     public ResponseEntity<CategoryResponse> create(@Valid @RequestBody CreateCategoryRequest request) {
         return ResponseEntity.ok(categoryService.create(request));

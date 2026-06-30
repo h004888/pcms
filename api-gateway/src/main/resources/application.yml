@@ -126,13 +126,6 @@ spring:
                 - Path=/api/v1/rx/**,/api/v1/consultations/**,/api/v1/follow-ups/**,/api/v1/vip-marks/**
               filters:
                 - StripPrefix=2
-            # Mobile BFF (UC17) - Sprint 10
-            - id: mobile-bff
-              uri: lb://mobile-bff
-              predicates:
-                - Path=/api/v1/mobile/**
-              filters:
-                - StripPrefix=2
             # Health Tools (UC18) - Sprint 10
             - id: health-tools-service
               uri: lb://health-tools-service
@@ -145,13 +138,6 @@ spring:
               uri: lb://ecom-ops-service
               predicates:
                 - Path=/api/v1/ecom-ops/**,/api/v1/admin/vouchers/**,/api/v1/admin/flash-sales/**,/api/v1/admin/reviews/**
-              filters:
-                - StripPrefix=2
-            # AI Engine (UC15) - Sprint 8 (Python FastAPI)
-            - id: ai-engine-service
-              uri: lb://ai-engine-service
-              predicates:
-                - Path=/api/v1/ai/**
               filters:
                 - StripPrefix=2
             # Admin Video routes - explicit paths for /admin/videos/**
@@ -175,6 +161,7 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+    registry-fetch-interval-seconds: 5
 
 management:
   endpoints:

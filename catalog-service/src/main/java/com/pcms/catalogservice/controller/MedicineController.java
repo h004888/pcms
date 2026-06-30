@@ -61,6 +61,11 @@ public class MedicineController {
         return ResponseEntity.ok(medicineService.getBySku(sku));
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<MedicineResponse> getBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(medicineService.getBySlug(slug));
+    }
+
     @GetMapping("/count")
     public ResponseEntity<Long> countByCategory(@RequestParam UUID categoryId) {
         return ResponseEntity.ok(medicineService.countByCategoryId(categoryId));

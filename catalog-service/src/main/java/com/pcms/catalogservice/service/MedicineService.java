@@ -23,6 +23,8 @@ public interface MedicineService {
 
         MedicineResponse getBySku(String sku);
 
+        MedicineResponse getBySlug(String slug);
+
         MedicineResponse create(CreateMedicineRequest request);
 
         MedicineResponse create(CreateMedicineRequest request, MultipartFile image);
@@ -36,6 +38,8 @@ public interface MedicineService {
         void softDelete(UUID id);
 
         long countByCategoryId(UUID categoryId);
+
+        int backfillSlugs();
 
         PageResponse<MedicineResponse> search(String search,
                         UUID categoryId,

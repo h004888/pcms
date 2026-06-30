@@ -79,6 +79,15 @@ public class HealthContentServiceImpl implements HealthContentService {
         return PageResponse.of(p, this::toDiseaseResponse);
     }
 
+    // SPRINT 1 - T07: detail by slug, 404 nếu không có
+    @Override
+    @Transactional(readOnly = true)
+    public DiseaseInfoResponse getDiseaseBySlug(String slug) {
+        DiseaseInfo d = diseaseRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("DiseaseInfo", "slug=" + slug));
+        return toDiseaseResponse(d);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public VerifyOriginResponse verifyOrigin(ScanCodeRequest request) {

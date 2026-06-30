@@ -19,18 +19,23 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-  # B-11: SMTP config for email notifications (MailHog in dev)
+  # B-11: SMTP config for email notifications — OPT-IN via env vars.
+  # Triệt để: nếu MAIL_HOST không được set, host="" rỗng → Spring Boot
+  # không khởi tạo MailSender bean → MailHealthIndicator không được register
+  # → /actuator/health không có component "mail" → không còn MailConnectException.
+  # Khi cần gửi email thật, set MAIL_HOST (vd: smtp.gmail.com) + MAIL_PORT + creds.
   mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:1025}
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
     username: ${MAIL_USER:}
     password: ${MAIL_PASS:}
     properties:
       mail:
         smtp:
-          auth: false
+          auth: ${MAIL_SMTP_AUTH:true}
           starttls:
-            enable: false
+            enable: ${MAIL_SMTP_STARTTLS:true}
+  # Tắt MailHealthIndicator được khai báo ở top-level management phía dưới file.
 
 # Notification retry policy (NSF-09)
 notification:
@@ -56,3 +61,8 @@ management:
     web:
       exposure:
         include: "*"
+  # Tắt MailHealthIndicator: chỉ chạy khi mail host thật; tránh log noise khi dev.
+  # Khi bật mail thật, comment dòng dưới và set MAIL_HOST env var.
+  health:
+    mail:
+      enabled: false

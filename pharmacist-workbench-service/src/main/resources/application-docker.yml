@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: pharmacist-workbench-service
+  cloud:
+    config:
+      enabled: false
+  datasource:
+    url: jdbc:mysql://mysql:3306/pcms_pharmacist_workbench?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: pcms_user
+    password: pcms_pass
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true

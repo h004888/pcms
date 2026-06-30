@@ -1,0 +1,30 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  profiles:
+    active: native
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration$GitRepositoryConfiguration
+      - org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration$JGitRepositoryConfiguration
+      - org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration$SvnRepositoryConfiguration
+      - org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration$VaultRepositoryConfiguration
+  cloud:
+    config:
+      server:
+        git:
+          uri: file:///tmp/git-config-repo
+          force-pull: false
+          ignore-local-repo: true
+        native:
+          search-locations: file:/app/config
+          order: 0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

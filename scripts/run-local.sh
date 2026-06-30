@@ -91,7 +91,6 @@ BUSINESS_SERVICES=(
   ecom-ops-service
   health-tools-service
   inventory-service
-  mobile-bff
   notification-service
   order-service
   payment-service

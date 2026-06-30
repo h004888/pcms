@@ -47,6 +47,13 @@ public class HealthContentController {
         return ResponseEntity.ok(service.listDiseases(audience, season, page, size));
     }
 
+    // SPRINT 1 - T07: detail by slug
+    @GetMapping("/diseases/{slug}")
+    @Operation(summary = "Get disease info by slug")
+    public ResponseEntity<DiseaseInfoResponse> getDiseaseBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(service.getDiseaseBySlug(slug));
+    }
+
     @PostMapping("/verify-origin/scan")
     @Operation(summary = "Scan QR/barcode to verify drug origin (SHOP-VERIFY-ORIGIN)")
     public ResponseEntity<VerifyOriginResponse> verifyOrigin(@Valid @RequestBody ScanCodeRequest request) {

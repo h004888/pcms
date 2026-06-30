@@ -21,6 +21,12 @@ public interface MedicineRepository extends JpaRepository<Medicine, UUID> {
 
     boolean existsBySku(String sku);
 
+    Optional<Medicine> findBySlug(String slug);
+
+    boolean existsBySlug(String slug);
+
+    boolean existsBySlugAndIdNot(String slug, UUID id);
+
     long countByCategoryId(UUID categoryId);
 
     List<Medicine> findByCategoryId(UUID categoryId);

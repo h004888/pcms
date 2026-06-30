@@ -13,9 +13,13 @@ public interface CategoryService {
 
     CategoryResponse getById(UUID id);
 
+    CategoryResponse getBySlug(String slug);
+
     CategoryResponse create(CreateCategoryRequest request);
 
     CategoryResponse update(UUID id, UpdateCategoryRequest request);
 
     void delete(UUID id);
+
+    int backfillSlugs();
 }

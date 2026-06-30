@@ -15,7 +15,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "categories", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_category_name", columnNames = "name")
+        @UniqueConstraint(name = "uk_category_name", columnNames = "name"),
+        @UniqueConstraint(name = "uk_category_slug", columnNames = "slug")
 })
 @EntityListeners(AuditingEntityListener.class)
 public class Category {
@@ -26,6 +27,9 @@ public class Category {
 
     @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(length = 150)
+    private String slug;
 
     @Column(length = 255)
     private String description;
@@ -64,6 +68,14 @@ public class Category {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 
     public String getDescription() {

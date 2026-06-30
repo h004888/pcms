@@ -1,7 +1,6 @@
 package com.pcms.pharmacistworkbench.service;
 
 import com.pcms.common.exception.ResourceNotFoundException;
-import com.pcms.pharmacistworkbench.client.AiEngineClient;
 import com.pcms.pharmacistworkbench.client.CustomerClient;
 import com.pcms.pharmacistworkbench.dto.response.CustomerProfile360Response;
 import org.slf4j.Logger;
@@ -22,11 +21,9 @@ public class Customer360Service {
     private static final Logger log = LoggerFactory.getLogger(Customer360Service.class);
 
     private final CustomerClient customerClient;
-    private final AiEngineClient aiEngineClient;
 
-    public Customer360Service(CustomerClient customerClient, AiEngineClient aiEngineClient) {
+    public Customer360Service(CustomerClient customerClient) {
         this.customerClient = customerClient;
-        this.aiEngineClient = aiEngineClient;
     }
 
     @Transactional(readOnly = true)
@@ -57,19 +54,6 @@ public class Customer360Service {
             history = Map.of();
         }
 
-        // AI summary
-        String aiSummary = "AI summary unavailable";
-        try {
-            Map<String, Object> aiResponse = aiEngineClient.summary(Map.of(
-                    "customerId", customerId.toString(),
-                    "history", history
-            ));
-            Object s = aiResponse.get("summary");
-            if (s != null) aiSummary = s.toString();
-        } catch (Exception e) {
-            log.warn("AI summary failed for {}: {}", customerId, e.getMessage());
-        }
-
         @SuppressWarnings("unchecked")
         List<Object> recentOrders = (List<Object>) orders.getOrDefault("data", List.of());
         @SuppressWarnings("unchecked")
@@ -87,7 +71,7 @@ public class Customer360Service {
                 recentOrders,
                 recentPrescriptions,
                 (String) customer.getOrDefault("preferredPharmacist", null),
-                aiSummary,
+                "AI summary disabled",
                 null
         );
     }

@@ -10,6 +10,7 @@ import java.util.UUID;
 public record MedicineResponse(
         UUID id,
         String sku,
+        String slug,
         String name,
         UUID categoryId,
         UUID supplierId,
@@ -17,6 +18,9 @@ public record MedicineResponse(
         String unit,
         Boolean prescriptionRequired,
         String imageUrl,
+        String description,
+        String usage,
+        String ingredients,
         MedicineStatus status,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -25,6 +29,7 @@ public record MedicineResponse(
         return new MedicineResponse(
                 m.getId(),
                 m.getSku(),
+                m.getSlug(),
                 m.getName(),
                 m.getCategoryId(),
                 m.getSupplierId(),
@@ -32,6 +37,9 @@ public record MedicineResponse(
                 m.getUnit(),
                 m.getPrescriptionRequired(),
                 m.getImageUrl(),
+                m.getDescription(),
+                m.getUsage(),
+                m.getIngredients(),
                 m.getStatus(),
                 m.getCreatedAt(),
                 m.getUpdatedAt()

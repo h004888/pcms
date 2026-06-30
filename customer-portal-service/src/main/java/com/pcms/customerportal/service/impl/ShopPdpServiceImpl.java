@@ -59,8 +59,12 @@ public class ShopPdpServiceImpl implements ShopPdpService {
         return new ProductDetailResponse(
                 str(medicine.get("id")),
                 str(medicine.get("sku")),
+                str(medicine.get("slug")),
                 str(medicine.get("name")),
-                new CategoryRef(str(medicine.get("categoryId")), str(medicine.get("categoryName"))),
+                new CategoryRef(
+                        str(medicine.get("categoryId")),
+                        str(medicine.get("categorySlug")),
+                        str(medicine.get("categoryName"))),
                 toBigDecimal(medicine.get("price")),
                 str(medicine.get("unit")),
                 str(medicine.get("imageUrl")),

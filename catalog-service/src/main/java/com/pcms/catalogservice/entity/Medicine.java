@@ -12,17 +12,25 @@ import java.util.UUID;
 
 /**
  * UC04 + UC10 - Medicine - SRS §3.1.6 Entity 3
- * Cross-service FK: category_id (category-service), supplier_id
- * (supplier-service)
+ *
+ * Note: category_id and supplier_id are foreign keys by domain (in pcms_category
+ * and pcms_supplier databases), but database-per-service pattern means we
+ * intentionally do NOT enforce them at the DB level. Cross-service FKs would
+ * couple this service to other services' schemas, breaking the bounded-context
+ * isolation. We keep the columns as plain UUIDs and rely on application-level
+ * validation via Feign clients + the data.sql seed uses placeholder UUIDs
+ * (documented inline) that don't require cross-DB referential integrity.
  */
 @Entity
 @Table(name = "medicines", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_medicine_sku", columnNames = "sku")
+        @UniqueConstraint(name = "uk_medicine_sku", columnNames = "sku"),
+        @UniqueConstraint(name = "uk_medicine_slug", columnNames = "slug")
 }, indexes = {
         @Index(name = "idx_medicine_name", columnList = "name"),
         @Index(name = "idx_medicine_category", columnList = "category_id"),
         @Index(name = "idx_medicine_price", columnList = "price"),
-        @Index(name = "idx_medicine_status", columnList = "status")
+        @Index(name = "idx_medicine_status", columnList = "status"),
+        @Index(name = "idx_medicine_slug", columnList = "slug")
 })
 @EntityListeners(AuditingEntityListener.class)
 public class Medicine {
@@ -33,6 +41,9 @@ public class Medicine {
 
     @Column(nullable = false, length = 20)
     private String sku;
+
+    @Column(length = 220)
+    private String slug;
 
     @Column(nullable = false, length = 200)
     private String name;
@@ -54,6 +65,15 @@ public class Medicine {
 
     @Column(name = "image_url", length = 255)
     private String imageUrl;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "usage", columnDefinition = "TEXT")
+    private String usage;
+
+    @Column(name = "ingredients", columnDefinition = "TEXT")
+    private String ingredients;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -93,6 +113,14 @@ public class Medicine {
 
     public void setSku(String sku) {
         this.sku = sku;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 
     public String getName() {
@@ -149,6 +177,30 @@ public class Medicine {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getUsage() {
+        return usage;
+    }
+
+    public void setUsage(String usage) {
+        this.usage = usage;
+    }
+
+    public String getIngredients() {
+        return ingredients;
+    }
+
+    public void setIngredients(String ingredients) {
+        this.ingredients = ingredients;
     }
 
     public MedicineStatus getStatus() {

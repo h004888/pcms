@@ -11,6 +11,7 @@ import com.pcms.catalogservice.enums.MedicineStatus;
 import com.pcms.catalogservice.repository.MedicineRepository;
 import com.pcms.catalogservice.service.ImageStorageService;
 import com.pcms.catalogservice.service.MedicineService;
+import com.pcms.catalogservice.util.SlugUtil;
 import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -72,6 +74,14 @@ public class MedicineServiceImpl implements MedicineService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public MedicineResponse getBySlug(String slug) {
+        Medicine medicine = medicineRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Medicine", slug));
+        return MedicineResponse.from(medicine);
+    }
+
+    @Override
     @Transactional
     public MedicineResponse create(CreateMedicineRequest request) {
         validateCategory(request.categoryId());
@@ -82,6 +92,7 @@ public class MedicineServiceImpl implements MedicineService {
         }
         Medicine medicine = new Medicine();
         medicine.setSku(sku);
+        medicine.setSlug(uniqueSlug(request.name()));
         medicine.setName(request.name());
         medicine.setCategoryId(request.categoryId());
         medicine.setSupplierId(request.supplierId());
@@ -90,6 +101,9 @@ public class MedicineServiceImpl implements MedicineService {
         medicine.setPrescriptionRequired(
                 request.prescriptionRequired() != null ? request.prescriptionRequired() : Boolean.FALSE);
         medicine.setImageUrl(request.imageUrl());
+        medicine.setDescription(request.description());
+        medicine.setUsage(request.usage());
+        medicine.setIngredients(request.ingredients());
         medicine.setStatus(MedicineStatus.ACTIVE);
         Medicine saved = medicineRepository.save(medicine);
         return MedicineResponse.from(saved);
@@ -110,8 +124,12 @@ public class MedicineServiceImpl implements MedicineService {
     public MedicineResponse update(UUID id, UpdateMedicineRequest request) {
         Medicine medicine = medicineRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Medicine", id));
-        if (request.name() != null)
+        if (request.name() != null) {
+            if (!medicine.getName().equals(request.name())) {
+                medicine.setSlug(uniqueSlug(request.name(), id));
+            }
             medicine.setName(request.name());
+        }
         if (request.categoryId() != null) {
             validateCategory(request.categoryId());
             medicine.setCategoryId(request.categoryId());
@@ -128,6 +146,12 @@ public class MedicineServiceImpl implements MedicineService {
             medicine.setPrescriptionRequired(request.prescriptionRequired());
         if (request.imageUrl() != null)
             medicine.setImageUrl(request.imageUrl());
+        if (request.description() != null)
+            medicine.setDescription(request.description());
+        if (request.usage() != null)
+            medicine.setUsage(request.usage());
+        if (request.ingredients() != null)
+            medicine.setIngredients(request.ingredients());
         if (request.status() != null)
             medicine.setStatus(request.status());
         Medicine saved = medicineRepository.save(medicine);
@@ -172,6 +196,20 @@ public class MedicineServiceImpl implements MedicineService {
     }
 
     @Override
+    public int backfillSlugs() {
+        List<Medicine> missing = medicineRepository.findByStatus(MedicineStatus.ACTIVE).stream()
+                .filter(m -> m.getSlug() == null || m.getSlug().isBlank())
+                .toList();
+        int updated = 0;
+        for (Medicine m : missing) {
+            m.setSlug(uniqueSlug(m.getName(), m.getId()));
+            medicineRepository.save(m);
+            updated++;
+        }
+        return updated;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PageResponse<MedicineResponse> search(String search,
             UUID categoryId,
@@ -196,6 +234,27 @@ public class MedicineServiceImpl implements MedicineService {
             sku = "MED-%06d".formatted(next++);
         } while (medicineRepository.existsBySku(sku));
         return sku;
+    }
+
+    private String uniqueSlug(String name) {
+        return uniqueSlug(name, null);
+    }
+
+    private String uniqueSlug(String name, UUID excludeId) {
+        String base = SlugUtil.slugify(name);
+        if (base.isEmpty()) {
+            base = "medicine";
+        }
+        String candidate = base;
+        int suffix = 2;
+        while (true) {
+            boolean exists = (excludeId == null)
+                    ? medicineRepository.existsBySlug(candidate)
+                    : medicineRepository.existsBySlugAndIdNot(candidate, excludeId);
+            if (!exists) return candidate;
+            candidate = base + "-" + suffix;
+            suffix++;
+        }
     }
 
     private void validateCategory(UUID categoryId) {

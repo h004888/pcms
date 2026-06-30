@@ -8,6 +8,7 @@ import com.pcms.categoryservice.entity.Category;
 import com.pcms.categoryservice.enums.CategoryStatus;
 import com.pcms.categoryservice.repository.CategoryRepository;
 import com.pcms.categoryservice.service.CategoryService;
+import com.pcms.categoryservice.util.SlugUtil;
 import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
@@ -58,6 +59,14 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public CategoryResponse getBySlug(String slug) {
+        Category category = repository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Category", slug));
+        return toResponse(category);
+    }
+
+    @Override
     @CacheEvict(value = "categorySearch", allEntries = true)
     public CategoryResponse create(CreateCategoryRequest request) {
         if (repository.existsByName(request.name())) {
@@ -65,6 +74,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
         Category category = new Category();
         category.setName(request.name());
+        category.setSlug(uniqueSlug(request.name()));
         category.setDescription(request.description());
         category.setStatus(CategoryStatus.ACTIVE);
         return toResponse(repository.save(category));
@@ -78,12 +88,36 @@ public class CategoryServiceImpl implements CategoryService {
         if (!category.getName().equals(request.name()) && repository.existsByNameAndIdNot(request.name(), id)) {
             throw new DuplicateResourceException("name", request.name());
         }
+        if (!category.getName().equals(request.name())) {
+            category.setSlug(uniqueSlug(request.name(), id));
+        }
         category.setName(request.name());
         category.setDescription(request.description());
         if (request.status() != null) {
             category.setStatus(request.status());
         }
         return toResponse(repository.save(category));
+    }
+
+    private String uniqueSlug(String name) {
+        return uniqueSlug(name, null);
+    }
+
+    private String uniqueSlug(String name, UUID excludeId) {
+        String base = SlugUtil.slugify(name);
+        if (base.isEmpty()) {
+            base = "category";
+        }
+        String candidate = base;
+        int suffix = 2;
+        while (true) {
+            boolean exists = (excludeId == null)
+                    ? repository.existsBySlug(candidate)
+                    : repository.existsBySlugAndIdNot(candidate, excludeId);
+            if (!exists) return candidate;
+            candidate = base + "-" + suffix;
+            suffix++;
+        }
     }
 
     @Override
@@ -99,6 +133,20 @@ public class CategoryServiceImpl implements CategoryService {
         }
         category.setStatus(CategoryStatus.INACTIVE);
         repository.save(category);
+    }
+
+    @Override
+    public int backfillSlugs() {
+        List<Category> missing = repository.findByStatus(CategoryStatus.ACTIVE).stream()
+                .filter(c -> c.getSlug() == null || c.getSlug().isBlank())
+                .toList();
+        int updated = 0;
+        for (Category c : missing) {
+            c.setSlug(uniqueSlug(c.getName(), c.getId()));
+            repository.save(c);
+            updated++;
+        }
+        return updated;
     }
 
     private Page<CategoryResponse> page(List<CategoryResponse> mapped, Pageable pageable) {
@@ -122,6 +170,7 @@ public class CategoryServiceImpl implements CategoryService {
         return new CategoryResponse(
                 entity.getId(),
                 entity.getName(),
+                entity.getSlug(),
                 entity.getDescription(),
                 entity.getStatus(),
                 entity.getCreatedAt(),

@@ -18,6 +18,7 @@ import java.util.List;
 public record ProductDetailResponse(
         String id,
         String sku,
+        String slug,
         String name,
         CategoryRef category,
         BigDecimal price,
@@ -33,9 +34,9 @@ public record ProductDetailResponse(
         List<RelatedProduct> relatedProducts
 ) {
 
-    public record CategoryRef(String id, String name) {}
+    public record CategoryRef(String id, String slug, String name) {}
 
     public record StockByBranch(String branchId, String branchName, Integer qty) {}
 
-    public record RelatedProduct(String id, String name, BigDecimal price, String imageUrl) {}
+    public record RelatedProduct(String id, String slug, String name, BigDecimal price, String imageUrl) {}
 }

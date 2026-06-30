@@ -15,5 +15,8 @@ public record UpdateMedicineRequest(
                 @Size(max = 20, message = "Đơn vị tính không được vượt quá 20 ký tự") String unit,
                 Boolean prescriptionRequired,
                 String imageUrl,
+                String description,
+                String usage,
+                String ingredients,
                 MedicineStatus status) {
 }

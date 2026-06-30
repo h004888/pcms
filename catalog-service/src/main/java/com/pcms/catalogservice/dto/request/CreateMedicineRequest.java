@@ -16,5 +16,8 @@ public record CreateMedicineRequest(
                 @NotNull(message = "Giá bán không được để trống") @DecimalMin(value = "0.01", message = "Giá bán phải lớn hơn 0") BigDecimal price,
                 @NotBlank(message = "Đơn vị tính không được để trống") @Size(max = 20, message = "Đơn vị tính không được vượt quá 20 ký tự") String unit,
                 Boolean prescriptionRequired,
-                String imageUrl) {
+                String imageUrl,
+                String description,
+                String usage,
+                String ingredients) {
 }
