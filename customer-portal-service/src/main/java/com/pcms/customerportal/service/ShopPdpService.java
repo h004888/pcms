@@ -17,4 +17,5 @@ import java.util.UUID;
 public interface ShopPdpService {
 
     ProductDetailResponse getProductDetail(UUID medicineId);
+    ProductDetailResponse getProductDetailBySlug(String slug);
 }

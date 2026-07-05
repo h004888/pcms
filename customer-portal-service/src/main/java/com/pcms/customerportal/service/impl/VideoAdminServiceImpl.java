@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -37,6 +38,15 @@ public class VideoAdminServiceImpl implements VideoAdminService {
             p = videoRepository.findAll(PageRequest.of(page, size));
         }
         return PageResponse.of(p, this::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<VideoResponse> listActive() {
+        return videoRepository.findTop6ByStatusOrderByCreatedAtDesc("ACTIVE")
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Override

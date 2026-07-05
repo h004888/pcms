@@ -40,7 +40,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     public PageResponse<Map<String, Object>> search(String q, int page, int size) {
-        Map<String, Object> raw = catalogClient.searchMedicines(q, page, size);
+        List<Map<String, Object>> raw = catalogClient.searchMedicines(q, page, size);
         return toPageResponse(raw, page, size);
     }
 
@@ -99,11 +99,9 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     }
 
     @SuppressWarnings("unchecked")
-    private PageResponse<Map<String, Object>> toPageResponse(Map<String, Object> raw, int page, int size) {
-        List<Map<String, Object>> data = (List<Map<String, Object>>) raw.getOrDefault("data", List.of());
-        long total = ((Number) raw.getOrDefault("total", 0)).longValue();
-        int totalPages = ((Number) raw.getOrDefault("totalPages",
-                (int) Math.ceil((double) total / Math.max(size, 1)))).intValue();
+    private PageResponse<Map<String, Object>> toPageResponse(List<Map<String, Object>> data, int page, int size) {
+        long total = data.size();
+        int totalPages = (int) Math.ceil((double) total / Math.max(size, 1));
         return new PageResponse<>(data, page, size, total, totalPages);
     }
 }

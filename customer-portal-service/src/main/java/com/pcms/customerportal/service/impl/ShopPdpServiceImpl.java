@@ -9,6 +9,7 @@ import com.pcms.customerportal.dto.response.ProductDetailResponse.RelatedProduct
 import com.pcms.customerportal.dto.response.ProductDetailResponse.StockByBranch;
 import com.pcms.customerportal.repository.ProductReviewRepository;
 import com.pcms.customerportal.service.ShopPdpService;
+import com.pcms.customerportal.service.ShopSearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -33,13 +34,16 @@ public class ShopPdpServiceImpl implements ShopPdpService {
     private final CatalogClient catalogClient;
     private final InventoryClient inventoryClient;
     private final ProductReviewRepository reviewRepo;
+    private final ShopSearchService searchService;
 
     public ShopPdpServiceImpl(CatalogClient catalogClient,
                               InventoryClient inventoryClient,
-                              ProductReviewRepository reviewRepo) {
+                              ProductReviewRepository reviewRepo,
+                              ShopSearchService searchService) {
         this.catalogClient = catalogClient;
         this.inventoryClient = inventoryClient;
         this.reviewRepo = reviewRepo;
+        this.searchService = searchService;
     }
 
     @Override
@@ -50,6 +54,31 @@ public class ShopPdpServiceImpl implements ShopPdpService {
         if (medicine == null || medicine.isEmpty()) {
             throw new ResourceNotFoundException("MSG31", "Medicine not found: " + medicineId);
         }
+
+        return buildResponse(medicine);
+    }
+
+    @Override
+    public ProductDetailResponse getProductDetailBySlug(String slug) {
+        log.debug("Building SHOP-PDP by slug {}", slug);
+
+        // Use public lookupDrug (searches catalog by name/slug, no auth needed)
+        var page = searchService.lookupDrug(slug, null, 0, 5);
+        List<Map<String, Object>> data = page.data() != null ? page.data() : List.of();
+        Map<String, Object> medicine = data.stream()
+                .filter(m -> slug.equals(m.get("slug")))
+                .findFirst()
+                .orElse(null);
+
+        if (medicine == null || medicine.isEmpty()) {
+            throw new ResourceNotFoundException("MSG31", "Medicine not found by slug: " + slug);
+        }
+
+        return buildResponse(medicine);
+    }
+
+    private ProductDetailResponse buildResponse(Map<String, Object> medicine) {
+        UUID medicineId = UUID.fromString(str(medicine.get("id")));
 
         Double avgRating = reviewRepo.averageRating(medicineId);
         Long reviewCount = reviewRepo.countByMedicineIdAndStatus(medicineId, "APPROVED");

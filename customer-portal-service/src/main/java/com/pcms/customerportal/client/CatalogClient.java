@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,7 +29,7 @@ public interface CatalogClient {
 
     @GetMapping("/search/medicines")
     @CircuitBreaker(name = "catalogService", fallbackMethod = "fallbackSearch")
-    Map<String, Object> searchMedicines(
+    List<Map<String, Object>> searchMedicines(
             @RequestParam(name = "q", required = false, defaultValue = "") String q,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size);
@@ -38,8 +39,8 @@ public interface CatalogClient {
         return Map.of();
     }
 
-    default Map<String, Object> fallbackSearch(String q, int page, int size, Throwable throwable) {
+    default List<Map<String, Object>> fallbackSearch(String q, int page, int size, Throwable throwable) {
         log.warn("catalog-service unavailable while searching '{}': {}", q, throwable.getMessage());
-        return Map.of("data", java.util.List.of(), "page", page, "size", size, "total", 0, "totalPages", 0);
+        return List.of();
     }
 }

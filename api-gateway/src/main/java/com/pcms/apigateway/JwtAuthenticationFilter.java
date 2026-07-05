@@ -74,7 +74,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/v1/categories",
             "/api/v1/health-articles",
             "/api/v1/diseases",
-            "/api/v1/videos"
+            "/api/v1/videos",
+            // Catalog & search — public read access
+            "/api/v1/medicines",
+            "/api/v1/search",
+            // Store locator — public
+            "/api/v1/store",
+            "/api/v1/branches"
     );
 
     private final String secret;

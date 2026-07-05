@@ -8,7 +8,6 @@ import com.pcms.customerportal.service.ShopPdpService;
 import com.pcms.customerportal.service.ShopSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,6 +53,12 @@ public class ShopController {
     @Operation(summary = "SHOP-PDP - product detail page")
     public ResponseEntity<ProductDetailResponse> pdp(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(pdpService.getProductDetail(id));
+    }
+
+    @GetMapping("/pdp/slug/{slug}")
+    @Operation(summary = "SHOP-PDP by slug - product detail by URL slug")
+    public ResponseEntity<ProductDetailResponse> pdpBySlug(@PathVariable("slug") String slug) {
+        return ResponseEntity.ok(pdpService.getProductDetailBySlug(slug));
     }
 
     @GetMapping("/search")
