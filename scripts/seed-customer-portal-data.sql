@@ -104,9 +104,11 @@ INSERT INTO videos (id, title, youtube_id, thumbnail_url, duration_sec, category
 (UUID_TO_BIN('cddddddd-4444-4444-4444-444444444444'), 'Bảo quản thuốc trong mùa nóng', 'thuoc-mua-nong', 'https://i.ytimg.com/vi/thuoc-mua-nong/maxresdefault.jpg', 115, 'huong-dan', 'Dược sĩ tư vấn', 'PUBLISHED', 750, NOW(), NOW());
 
 -- ============= HOME BANNERS =============
-INSERT INTO home_banners (id, title, image_url, link_url, sort_order, status, start_at, end_at, created_at, updated_at) VALUES
-(UUID_TO_BIN('ceeeeeee-1111-1111-1111-111111111111'), 'FPT Long Châu - Đồng hành cùng sức khỏe Việt', 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1200', '/mobile', 1, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW()),
-(UUID_TO_BIN('cfffffff-2222-2222-2222-222222222222'), 'Chương trình Tích điểm đổi quà', 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1200', '/wallet', 2, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW());
+INSERT INTO home_banners (id, title, image_url, link_url, position, sort_order, status, start_at, end_at, created_at, updated_at) VALUES
+(UUID_TO_BIN('ceeeeeee-1111-1111-1111-111111111111'), 'FPT Long Châu - Đồng hành cùng sức khỏe Việt', 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1200', '/mobile', 'HERO', 1, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW()),
+(UUID_TO_BIN('cfffffff-2222-2222-2222-222222222222'), 'Chương trình Tích điểm đổi quà', 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1200', '/wallet', 'HERO', 2, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW()),
+(UUID_TO_BIN('caaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1'), 'TRỢ LÝ DINH DƯỠNG TẬN TÌNH', '/promos/dinh-duong-1.png', '/dinh-duong', 'SUB_PROMO', 1, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW()),
+(UUID_TO_BIN('caaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2'), 'DINH DƯỠNG ĐÚNG CÁCH', '/promos/dinh-duong-2.png', '/dinh-duong', 'SUB_PROMO', 2, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW());
 
 -- ============= REVIEWS (SPRINT 3 - T11) =============
 -- Note: medicineId tham chiếu catalog-service (UUID). Khi test cần có sẵn
@@ -115,6 +117,23 @@ INSERT INTO review (id, customer_id, medicine_id, rating, comment, created_at, u
 (UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000010'), 5, 'Thuốc tốt, hiệu quả rõ rệt.', NOW(), NOW()),
 (UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000002'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000011'), 4, 'Hơi đắng nhưng chịu được.', NOW(), NOW()),
 (UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000003'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('00000000-0000-0000-0000-000000000010'), 3, 'Tạm ổn, sẽ dùng tiếp.', NOW(), NOW());
+
+-- ============= QUICK LINKS (Phase 5 - SHOP-HOME hot categories strip) =============
+INSERT INTO quick_links (id, label, icon, href, sort_order, status, created_at, updated_at) VALUES
+(UUID_TO_BIN('faaaaaaa-1111-1111-1111-111111111111'), 'Cẩm nang Thuốc', 'Stethoscope', '/cam-nang', 1, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('faaaaaaa-2222-2222-2222-222222222222'), 'Tư vấn dược sĩ', 'MessageCircle', '/tu-van', 2, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('faaaaaaa-3333-3333-3333-333333333333'), 'Đơn của tôi', 'FileText', '/don-hang', 3, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('faaaaaaa-4444-4444-4444-444444444444'), 'Tìm nhà thuốc', 'MapPin', '/he-thong-cua-hang', 4, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('faaaaaaa-5555-5555-5555-555555555555'), 'Tiêm Vắc xin', 'Syringe', '/tiem-chung', 5, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('faaaaaaa-6666-6666-6666-666666666666'), 'Tra thuốc chính hãng', 'Shield', '/tra-cuu-thuoc', 6, 'ACTIVE', NOW(), NOW());
+
+-- ============= BRANDS (Phase 1 - SHOP-HOME) =============
+INSERT INTO brands (id, name, logo_url, sort_order, status, created_at, updated_at) VALUES
+(UUID_TO_BIN('f1111111-1111-1111-1111-111111111111'), 'JOHNSON''S', '/brands/johnson.png', 1, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('f2222222-2222-2222-2222-222222222222'), 'Abbott', '/brands/abbott.png', 2, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('f3333333-3333-3333-3333-333333333333'), 'DUREX', '/brands/durex.png', 3, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('f4444444-4444-4444-4444-444444444444'), 'OMRON', '/brands/omron.png', 4, 'ACTIVE', NOW(), NOW()),
+(UUID_TO_BIN('f5555555-5555-5555-5555-555555555555'), 'Blackmores', '/brands/blackmores.png', 5, 'ACTIVE', NOW(), NOW());
 
 -- ============= SUMMARY =============
 SELECT '✅ Seed customer-portal completed!' AS status;

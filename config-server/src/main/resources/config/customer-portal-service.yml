@@ -2,17 +2,31 @@
 # UC14 Customer Portal, UC18 Health Tools, UC19 E-commerce Operations
 server:
   port: 8093
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+app:
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
 spring:
   application:
     name: customer-portal-service
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_customer_portal?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pcms_customer_portal?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true&characterEncoding=UTF-8
     username: ${MYSQL_USER:root}
     password: ${MYSQL_PASSWORD:123}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+jwt:
+  secret: "pcms-jwt-secret-key-must-be-at-least-32-bytes-long-for-hs256-signing-2026"

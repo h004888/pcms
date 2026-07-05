@@ -50,9 +50,10 @@ public abstract class BaseSecurityConfig {
                     org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/**", "/healthz", "/readyz").permitAll()
-                .anyRequest().permitAll()
             );
         customize(http);
+        // Always end with anyRequest() so subclasses can add matchers BEFORE the catch-all.
+        http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();
     }
 

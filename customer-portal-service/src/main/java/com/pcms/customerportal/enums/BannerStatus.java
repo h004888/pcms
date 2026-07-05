@@ -9,5 +9,6 @@ package com.pcms.customerportal.enums;
 public enum BannerStatus {
     ACTIVE,
     INACTIVE,
-    SCHEDULED
+    SCHEDULED,
+    DELETED
 }

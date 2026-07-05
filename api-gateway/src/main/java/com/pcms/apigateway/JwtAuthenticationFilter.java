@@ -64,7 +64,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/webhooks/payment-gateway", "/api/v1/webhooks/payment-gateway",
             "/actuator",
             "/healthz",
-            "/readyz"
+            "/readyz",
+            // Customer-facing public routes (Sprint 4 home integration)
+            "/api/v1/shop/home",
+            "/api/v1/shop/pdp",
+            "/api/v1/shop/search",
+            "/api/v1/shop/lookup",
+            "/api/v1/ecom-ops/flash-sales",
+            "/api/v1/categories",
+            "/api/v1/health-articles",
+            "/api/v1/diseases",
+            "/api/v1/videos"
     );
 
     private final String secret;
@@ -141,6 +151,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void unauthorized(HttpServletResponse response, String path,
                               String message, String messageVi) throws IOException {
+        // Add CORS headers so browser doesn't block error responses
+        response.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, X-Correlation-Id, Idempotency-Key, X-Requested-With");
+        response.setHeader("Access-Control-Allow-Credentials", "true");
+
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 

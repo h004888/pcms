@@ -4,6 +4,7 @@ import com.pcms.common.security.JwtClaims;
 import com.pcms.userservice.dto.request.ChangePasswordRequest;
 import com.pcms.userservice.dto.request.ForgotPasswordRequest;
 import com.pcms.userservice.dto.request.LoginRequest;
+import com.pcms.userservice.dto.request.RegisterRequest;
 import com.pcms.userservice.dto.request.ResendVerificationRequest;
 import com.pcms.userservice.dto.request.ResetPasswordRequest;
 import com.pcms.userservice.dto.request.VerifyEmailRequest;
@@ -16,6 +17,7 @@ import com.pcms.userservice.service.EmailVerificationService;
 import com.pcms.userservice.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,6 +53,14 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest) {
         return ResponseEntity.ok(userService.login(request, httpRequest.getRemoteAddr()));
+    }
+
+    /** POST /api/v1/auth/register - Sprint 4: Customer self-registration */
+    @PostMapping("/register")
+    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(userService.register(request, httpRequest.getRemoteAddr()));
     }
 
     /** POST /api/v1/auth/forgot-password - UC01 forgot password */

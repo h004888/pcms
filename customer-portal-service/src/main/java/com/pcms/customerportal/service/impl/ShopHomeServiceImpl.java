@@ -1,17 +1,22 @@
 package com.pcms.customerportal.service.impl;
 
 import com.pcms.customerportal.client.CategoryClient;
+import com.pcms.customerportal.client.OrderClient;
 import com.pcms.customerportal.dto.response.HomePageResponse;
 import com.pcms.customerportal.dto.response.HomePageResponse.BannerResponse;
 import com.pcms.customerportal.dto.response.HomePageResponse.BestSellerResponse;
 import com.pcms.customerportal.dto.response.HomePageResponse.BrandResponse;
 import com.pcms.customerportal.dto.response.HomePageResponse.CategoryTeaserResponse;
 import com.pcms.customerportal.dto.response.HomePageResponse.HealthQuizTeaserResponse;
+import com.pcms.customerportal.dto.response.HomePageResponse.QuickLinkResponse;
 import com.pcms.customerportal.dto.response.HomePageResponse.VideoResponse;
+import com.pcms.customerportal.entity.Brand;
 import com.pcms.customerportal.entity.HomeBanner;
 import com.pcms.customerportal.entity.Video;
 import com.pcms.customerportal.enums.BannerStatus;
+import com.pcms.customerportal.repository.BrandRepository;
 import com.pcms.customerportal.repository.HomeBannerRepository;
+import com.pcms.customerportal.repository.QuickLinkRepository;
 import com.pcms.customerportal.repository.VideoRepository;
 import com.pcms.customerportal.service.ShopHomeService;
 import org.slf4j.Logger;
@@ -26,12 +31,6 @@ import java.util.UUID;
 
 /**
  * Default implementation of ShopHomeService.
- *
- * <p>Best-sellers / orders aggregation is intentionally a stub. Per the
- * plan, once order-service exposes a top-N-Medicines endpoint, this can
- * call it via Feign (deferred to Sprint 5 - order tracking phase).
- *
- * <p>Brands stub is also empty until a brand entity is added in a later sprint.
  */
 @Service
 public class ShopHomeServiceImpl implements ShopHomeService {
@@ -41,13 +40,22 @@ public class ShopHomeServiceImpl implements ShopHomeService {
     private final HomeBannerRepository bannerRepo;
     private final VideoRepository videoRepo;
     private final CategoryClient categoryClient;
+    private final BrandRepository brandRepository;
+    private final OrderClient orderClient;
+    private final QuickLinkRepository quickLinkRepository;
 
     public ShopHomeServiceImpl(HomeBannerRepository bannerRepo,
                                VideoRepository videoRepo,
-                               CategoryClient categoryClient) {
+                               CategoryClient categoryClient,
+                               BrandRepository brandRepository,
+                               OrderClient orderClient,
+                               QuickLinkRepository quickLinkRepository) {
         this.bannerRepo = bannerRepo;
         this.videoRepo = videoRepo;
         this.categoryClient = categoryClient;
+        this.brandRepository = brandRepository;
+        this.orderClient = orderClient;
+        this.quickLinkRepository = quickLinkRepository;
     }
 
     @Override
@@ -55,40 +63,73 @@ public class ShopHomeServiceImpl implements ShopHomeService {
         log.debug("Building SHOP-HOME payload (customerId={})", customerId);
         return new HomePageResponse(
                 loadHeroBanners(),
+                loadSubPromos(),
                 loadBestSellers(),
                 loadFeaturedCategories(),
                 loadBrands(),
                 new HealthQuizTeaserResponse(true, "/health-quiz"),
-                loadVideosTeaser()
+                loadVideosTeaser(),
+                loadQuickLinks()
         );
     }
 
     private List<BannerResponse> loadHeroBanners() {
         try {
-            return bannerRepo.findVisible(BannerStatus.ACTIVE, LocalDateTime.now())
+            return bannerRepo.findVisibleByPosition(BannerStatus.ACTIVE, "HERO", LocalDateTime.now())
                     .stream()
                     .map(b -> new BannerResponse(b.getId().toString(), b.getTitle(),
                             b.getImageUrl(), b.getLinkUrl()))
                     .toList();
         } catch (Exception e) {
-            log.warn("Failed to load home banners: {}", e.getMessage());
+            log.warn("Failed to load hero banners: {}", e.getMessage());
             return List.of();
         }
     }
 
-    /**
-     * Stub: would aggregate from order-service top-N medicines in the last 30 days.
-     * TODO(sprint5): wire OrderClient.feignTopSellers(period=30d, limit=12)
-     */
+    private List<BannerResponse> loadSubPromos() {
+        try {
+            return bannerRepo.findVisibleByPosition(BannerStatus.ACTIVE, "SUB_PROMO", LocalDateTime.now())
+                    .stream()
+                    .map(b -> new BannerResponse(b.getId().toString(), b.getTitle(),
+                            b.getImageUrl(), b.getLinkUrl()))
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Failed to load sub-promos: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     private List<BestSellerResponse> loadBestSellers() {
-        log.debug("bestSellers: stub (order-service aggregation pending)");
-        return List.of();
+        try {
+            List<Map<String, Object>> raw = orderClient.getTopMedicines(30, 10);
+            return raw.stream()
+                    .map(this::toBestSeller)
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Failed to load best sellers from order-service: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private BestSellerResponse toBestSeller(Map<String, Object> m) {
+        Object id = m.get("medicineId");
+        Object name = m.getOrDefault("medicineName", "");
+        Object price = m.getOrDefault("price", 0);
+        Object soldCount = m.getOrDefault("soldCount", 0);
+        return new BestSellerResponse(
+                id != null ? id.toString() : null,
+                "",  // slug: enriched later from catalog-service
+                name.toString(),
+                price instanceof Number ? java.math.BigDecimal.valueOf(((Number) price).doubleValue()) : java.math.BigDecimal.ZERO,
+                "",  // imageUrl: enriched later from catalog-service
+                soldCount instanceof Number ? ((Number) soldCount).longValue() : 0L
+        );
     }
 
     private List<CategoryTeaserResponse> loadFeaturedCategories() {
         try {
-            List<Map<String, Object>> raw = categoryClient.list(0, 50);
-            return raw.stream()
+            var page = categoryClient.list(0, 50);
+            return page.data().stream()
                     .limit(6)
                     .map(this::toCategoryTeaser)
                     .toList();
@@ -113,8 +154,34 @@ public class ShopHomeServiceImpl implements ShopHomeService {
     }
 
     private List<BrandResponse> loadBrands() {
-        // Stub: brand entity not yet introduced in this service.
-        return List.of();
+        try {
+            return brandRepository.findByStatusOrderBySortOrderAsc("ACTIVE")
+                    .stream()
+                    .map(b -> new BrandResponse(
+                            b.getId().toString(),
+                            b.getName(),
+                            b.getLogoUrl()))
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Failed to load brands: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<QuickLinkResponse> loadQuickLinks() {
+        try {
+            return quickLinkRepository.findByStatusOrderBySortOrderAsc("ACTIVE")
+                    .stream()
+                    .map(ql -> new QuickLinkResponse(
+                            ql.getId().toString(),
+                            ql.getLabel(),
+                            ql.getIcon(),
+                            ql.getHref()))
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Failed to load quick links: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     private List<VideoResponse> loadVideosTeaser() {

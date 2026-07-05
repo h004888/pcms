@@ -19,6 +19,12 @@ public class FlashSaleItem extends BaseEntity {
     @Column(name = "medicine_id", nullable = false)
     private UUID medicineId;
 
+    @Column(name = "medicine_name", length = 200)
+    private String medicineName;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @Column(name = "original_price", nullable = false, precision = 15, scale = 2)
     private java.math.BigDecimal originalPrice;
 
@@ -35,6 +41,10 @@ public class FlashSaleItem extends BaseEntity {
     public void setFlashSaleId(UUID flashSaleId) { this.flashSaleId = flashSaleId; }
     public UUID getMedicineId() { return medicineId; }
     public void setMedicineId(UUID medicineId) { this.medicineId = medicineId; }
+    public String getMedicineName() { return medicineName; }
+    public void setMedicineName(String medicineName) { this.medicineName = medicineName; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public java.math.BigDecimal getOriginalPrice() { return originalPrice; }
     public void setOriginalPrice(java.math.BigDecimal originalPrice) { this.originalPrice = originalPrice; }
     public java.math.BigDecimal getSalePrice() { return salePrice; }

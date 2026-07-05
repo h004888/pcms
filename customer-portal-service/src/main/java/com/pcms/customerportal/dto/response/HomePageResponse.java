@@ -7,21 +7,24 @@ import java.util.List;
  *
  * <p>Composed of:
  * <ul>
- *   <li>heroBanners — from home_banners table</li>
- *   <li>bestSellers — top medicines 30 days (placeholder until order-service Feign added)</li>
+ *   <li>heroBanners — from home_banners table (position='HERO')</li>
+ *   <li>subPromos — from home_banners table (position='SUB_PROMO')</li>
+ *   <li>bestSellers — top medicines 30 days (from order-service Feign)</li>
  *   <li>featuredCategories — from category-service Feign</li>
- *   <li>brands — placeholder for now</li>
+ *   <li>brands — from brands table</li>
  *   <li>healthQuizTeaser — static CTA for HEALTH-QUIZ-LIST</li>
  *   <li>videosTeaser — top 6 most-viewed videos</li>
  * </ul>
  */
 public record HomePageResponse(
         List<BannerResponse> heroBanners,
+        List<BannerResponse> subPromos,
         List<BestSellerResponse> bestSellers,
         List<CategoryTeaserResponse> featuredCategories,
         List<BrandResponse> brands,
         HealthQuizTeaserResponse healthQuizTeaser,
-        List<VideoResponse> videosTeaser
+        List<VideoResponse> videosTeaser,
+        List<QuickLinkResponse> quickLinks
 ) {
 
     public record BannerResponse(String id, String title, String imageUrl, String linkUrl) {}
@@ -36,4 +39,6 @@ public record HomePageResponse(
     public record HealthQuizTeaserResponse(boolean available, String url) {}
 
     public record VideoResponse(String id, String title, String thumbnailUrl, String youtubeId) {}
+
+    public record QuickLinkResponse(String id, String label, String icon, String href) {}
 }

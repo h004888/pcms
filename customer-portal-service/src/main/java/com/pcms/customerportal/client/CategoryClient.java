@@ -1,5 +1,6 @@
 package com.pcms.customerportal.client;
 
+import com.pcms.common.dto.PageResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,16 +26,16 @@ public interface CategoryClient {
 
     @GetMapping("/categories")
     @CircuitBreaker(name = "categoryService", fallbackMethod = "fallbackList")
-    List<Map<String, Object>> list(@RequestParam(name = "page", defaultValue = "0") int page,
-                                  @RequestParam(name = "size", defaultValue = "50") int size);
+    PageResponse<Map<String, Object>> list(@RequestParam(name = "page", defaultValue = "0") int page,
+                                          @RequestParam(name = "size", defaultValue = "50") int size);
 
     @GetMapping("/categories/{id}")
     @CircuitBreaker(name = "categoryService", fallbackMethod = "fallbackGetById")
     Map<String, Object> getById(@PathVariable("id") String id);
 
-    default List<Map<String, Object>> fallbackList(int page, int size, Throwable throwable) {
+    default PageResponse<Map<String, Object>> fallbackList(int page, int size, Throwable throwable) {
         log.warn("category-service unavailable while listing categories: {}", throwable.getMessage());
-        return List.of();
+        return PageResponse.empty(page, size);
     }
 
     default Map<String, Object> fallbackGetById(String id, Throwable throwable) {

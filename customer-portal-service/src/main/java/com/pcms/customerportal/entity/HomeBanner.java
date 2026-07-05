@@ -37,6 +37,9 @@ public class HomeBanner {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
 
+    @Column(name = "position", length = 20, nullable = false)
+    private String position = "HERO";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private BannerStatus status = BannerStatus.ACTIVE;
@@ -63,6 +66,8 @@ public class HomeBanner {
     public void setLinkUrl(String linkUrl) { this.linkUrl = linkUrl; }
     public Integer getSortOrder() { return sortOrder; }
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+    public String getPosition() { return position; }
+    public void setPosition(String position) { this.position = position; }
     public BannerStatus getStatus() { return status; }
     public void setStatus(BannerStatus status) { this.status = status; }
     public LocalDateTime getStartAt() { return startAt; }

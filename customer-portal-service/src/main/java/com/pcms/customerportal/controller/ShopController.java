@@ -8,6 +8,7 @@ import com.pcms.customerportal.service.ShopPdpService;
 import com.pcms.customerportal.service.ShopSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,7 +43,7 @@ public class ShopController {
         this.searchService = searchService;
     }
 
-    @GetMapping("/home")
+    @GetMapping(value = "/home", produces = "application/json;charset=UTF-8")
     @Operation(summary = "SHOP-HOME - hero banners, best sellers, categories, videos")
     public ResponseEntity<HomePageResponse> home(
             @RequestParam(name = "customerId", required = false) UUID customerId) {

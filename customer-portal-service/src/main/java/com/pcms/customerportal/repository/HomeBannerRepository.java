@@ -27,4 +27,19 @@ public interface HomeBannerRepository extends JpaRepository<HomeBanner, UUID> {
             """)
     List<HomeBanner> findVisible(@Param("status") BannerStatus status,
                                  @Param("now") LocalDateTime now);
+
+    /**
+     * Visible banners filtered by position (HERO / SUB_PROMO / etc.).
+     */
+    @Query("""
+            SELECT b FROM HomeBanner b
+            WHERE b.status = :status
+              AND b.position = :position
+              AND (b.startAt IS NULL OR b.startAt <= :now)
+              AND (b.endAt   IS NULL OR b.endAt   >= :now)
+            ORDER BY b.sortOrder ASC, b.createdAt DESC
+            """)
+    List<HomeBanner> findVisibleByPosition(@Param("status") BannerStatus status,
+                                           @Param("position") String position,
+                                           @Param("now") LocalDateTime now);
 }

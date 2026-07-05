@@ -12,6 +12,9 @@ import com.pcms.userservice.dto.request.ChangePasswordRequest;
 import com.pcms.userservice.dto.request.CreateUserRequest;
 import com.pcms.userservice.dto.request.ForgotPasswordRequest;
 import com.pcms.userservice.dto.request.LoginRequest;
+import com.pcms.userservice.client.CustomerClient;
+import com.pcms.userservice.dto.request.RegisterRequest;
+import com.pcms.userservice.dto.request.CustomerRegisterRequest;
 import com.pcms.userservice.dto.request.ResendVerificationRequest;
 import com.pcms.userservice.dto.request.ResetPasswordRequest;
 import com.pcms.userservice.dto.request.UpdateUserRequest;
@@ -75,6 +78,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailVerificationService emailVerificationService;
+    private final CustomerClient customerClient;
 
     public UserServiceImpl(UserRepository repository,
             RefreshTokenRepository refreshTokenRepository,
@@ -83,7 +87,8 @@ public class UserServiceImpl implements UserService {
             AuditLogRepository auditLogRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            EmailVerificationService emailVerificationService) {
+            EmailVerificationService emailVerificationService,
+            CustomerClient customerClient) {
         this.repository = repository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.tokenBlacklistRepository = tokenBlacklistRepository;
@@ -92,6 +97,7 @@ public class UserServiceImpl implements UserService {
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.emailVerificationService = emailVerificationService;
+        this.customerClient = customerClient;
     }
 
     @Override
@@ -206,6 +212,58 @@ public class UserServiceImpl implements UserService {
                 .append(user.lastLoginAt() == null ? "" : user.lastLoginAt()).append(',')
                 .append(user.createdAt() == null ? "" : user.createdAt()).append('\n'));
         return csv.toString();
+    }
+
+    @Override
+    public LoginResponse register(RegisterRequest request, String ipAddress) {
+        // 1. Check email uniqueness
+        if (repository.existsByEmail(request.email())) {
+            throw new DuplicateResourceException("Email", request.email());
+        }
+
+        // 2. Create user account with CUSTOMER role
+        User user = new User();
+        user.setEmail(request.email());
+        user.setFullName(request.fullName());
+        user.setPhone(request.phone());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setRole(Role.CUSTOMER);
+        user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerified(false);
+        user.setFailedLoginCount(0);
+        User saved = repository.save(user);
+
+        // 2.5 Sync-create customer record via Feign (Sprint 4)
+        // If customer-service is down, the @CircuitBreaker fallback
+        // returns DEFERRED status — registration still succeeds and the
+        // customer record will be lazy-created on first profile access.
+        customerClient.register(new CustomerRegisterRequest(
+                saved.getFullName(),
+                saved.getPhone(),
+                saved.getEmail(),
+                null,  // address - not collected during registration
+                null,  // dob     - not collected during registration
+                null   // gender  - not collected during registration
+        ));
+
+        // 3. Generate tokens (auto-login after register)
+        String accessToken = jwtService.generateAccessToken(saved);
+        String refreshToken = jwtService.generateRefreshToken(saved);
+        persistRefreshToken(saved, refreshToken);
+
+        saved.setLastLoginAt(LocalDateTime.now());
+        saved.setLastLoginIp(ipAddress);
+        repository.save(saved);
+
+        audit("REGISTER_SUCCESS", saved.getId(), saved.getId(), ipAddress, "Customer registered via portal");
+
+        // 4. Return LoginResponse — same shape as login so FE can use it directly
+        return new LoginResponse(
+                accessToken,
+                refreshToken,
+                "Bearer",
+                ACCESS_TOKEN_EXPIRES_IN_SECONDS,
+                LoginResponse.UserInfo.from(saved));
     }
 
     @Override

@@ -11,7 +11,7 @@ spring:
     password: pcms_pass
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
 eureka:
   client:
     service-url:

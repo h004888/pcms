@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -135,5 +136,20 @@ public interface OrderClient {
     default Map<String, Object> fallbackGetPaymentByOrder(String orderId, Throwable t) {
         log.warn("order-service unavailable while fetching payment for order {}: {}", orderId, t.getMessage());
         return Map.of();
+    }
+
+    /**
+     * GET /orders/analytics/top-medicines — top N best-selling medicines.
+     * Used by SHOP-HOME best-sellers section.
+     */
+    @GetMapping("/orders/analytics/top-medicines")
+    @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackTopMedicines")
+    List<Map<String, Object>> getTopMedicines(
+            @RequestParam(name = "periodDays", defaultValue = "30") int periodDays,
+            @RequestParam(name = "limit", defaultValue = "10") int limit);
+
+    default List<Map<String, Object>> fallbackTopMedicines(int periodDays, int limit, Throwable t) {
+        log.warn("order-service unavailable for top-medicines: {}", t.getMessage());
+        return List.of();
     }
 }

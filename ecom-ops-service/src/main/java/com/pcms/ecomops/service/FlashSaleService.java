@@ -12,6 +12,7 @@ import com.pcms.ecomops.repository.FlashSaleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -104,14 +105,30 @@ public class FlashSaleService {
     private FlashSaleResponse toResponse(FlashSale sale) {
         List<FlashSaleItem> items = itemRepository.findByFlashSaleId(sale.getId());
         List<FlashSaleItemResponse> itemResponses = items.stream()
-                .map(i -> new FlashSaleItemResponse(
-                        i.getId(), i.getFlashSaleId(), i.getMedicineId(),
-                        i.getOriginalPrice(), i.getSalePrice(),
-                        i.getQtyLimit(), i.getSoldQty()))
+                .map(this::toItemResponse)
                 .toList();
         return new FlashSaleResponse(
                 sale.getId(), sale.getName(), sale.getDescription(),
                 sale.getStartsAt(), sale.getEndsAt(), sale.getDiscountPct(),
                 sale.getMaxQtyPerUser(), sale.getStatus(), itemResponses);
+    }
+
+    private FlashSaleItemResponse toItemResponse(FlashSaleItem item) {
+        int discountPct = 0;
+        if (item.getOriginalPrice() != null
+                && item.getOriginalPrice().compareTo(java.math.BigDecimal.ZERO) > 0) {
+            discountPct = item.getOriginalPrice()
+                    .subtract(item.getSalePrice())
+                    .multiply(java.math.BigDecimal.valueOf(100))
+                    .divide(item.getOriginalPrice(), 0, RoundingMode.HALF_UP)
+                    .intValue();
+        }
+        return new FlashSaleItemResponse(
+                item.getId(), item.getFlashSaleId(), item.getMedicineId(),
+                item.getMedicineName() != null ? item.getMedicineName() : "",
+                item.getImageUrl() != null ? item.getImageUrl() : "",
+                item.getOriginalPrice(), item.getSalePrice(),
+                discountPct,
+                item.getQtyLimit(), item.getSoldQty());
     }
 }

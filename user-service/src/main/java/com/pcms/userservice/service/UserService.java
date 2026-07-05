@@ -5,6 +5,7 @@ import com.pcms.userservice.dto.request.ChangePasswordRequest;
 import com.pcms.userservice.dto.request.CreateUserRequest;
 import com.pcms.userservice.dto.request.ForgotPasswordRequest;
 import com.pcms.userservice.dto.request.LoginRequest;
+import com.pcms.userservice.dto.request.RegisterRequest;
 import com.pcms.userservice.dto.request.ResendVerificationRequest;
 import com.pcms.userservice.dto.request.ResetPasswordRequest;
 import com.pcms.userservice.dto.request.UpdateUserRequest;
@@ -71,4 +72,7 @@ public interface UserService {
     void verifyEmail(VerifyEmailRequest request, String ipAddress);
 
     void resendVerification(ResendVerificationRequest request, String ipAddress);
+
+    /** Sprint 4: Customer self-registration from portal. Creates user account + returns tokens. */
+    LoginResponse register(RegisterRequest request, String ipAddress);
 }
