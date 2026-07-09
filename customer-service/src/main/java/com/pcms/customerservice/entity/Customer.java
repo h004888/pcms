@@ -59,9 +59,9 @@ public class Customer {
     @Column(nullable = false)
     private Integer points = 0;
 
-    /** Customer tier: 0-999 Bronze, 1000-4999 Silver, 5000+ Gold. */
+    /** B10: Tier auto-calculated from points (BRONZE/SILVER/GOLD). 0-999 Bronze, 1000-4999 Silver, 5000+ Gold. */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 10)
     private LoyaltyTier tier = LoyaltyTier.BRONZE;
 
     @CreatedDate

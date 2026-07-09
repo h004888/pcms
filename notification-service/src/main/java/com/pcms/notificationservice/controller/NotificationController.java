@@ -6,12 +6,19 @@ import com.pcms.notificationservice.dto.request.BulkNotificationRequest;
 import com.pcms.notificationservice.dto.request.ComposeNotificationRequest;
 import com.pcms.notificationservice.dto.request.CreateNotificationRequest;
 import com.pcms.notificationservice.dto.response.NotificationResponse;
+import com.pcms.notificationservice.entity.NotificationTemplate;
 import com.pcms.notificationservice.enums.NotificationStatus;
+import com.pcms.notificationservice.repository.NotificationRepository;
+import com.pcms.notificationservice.repository.NotificationTemplateRepository;
 import com.pcms.notificationservice.service.NotificationSenderService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,9 +32,15 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationSenderService senderService;
+    private final NotificationRepository notificationRepository;
+    private final NotificationTemplateRepository templateRepository;
 
-    public NotificationController(NotificationSenderService senderService) {
+    public NotificationController(NotificationSenderService senderService,
+                                  NotificationRepository notificationRepository,
+                                  NotificationTemplateRepository templateRepository) {
         this.senderService = senderService;
+        this.notificationRepository = notificationRepository;
+        this.templateRepository = templateRepository;
     }
 
     @GetMapping
@@ -105,10 +118,24 @@ public class NotificationController {
         return ResponseEntity.ok(senderService.markAsRead(id));
     }
 
+    /** PUT /notifications/read-all — mark all of a recipient's unread as read. */
     @PutMapping("/read-all")
     public ResponseEntity<Map<String, Object>> markAllRead(@RequestParam UUID recipientId) {
         int updated = senderService.markAllAsRead(recipientId);
         return ResponseEntity.ok(Map.of("updated", updated));
+    }
+
+    /** B8: GET /notifications/templates — list all templates. */
+    @GetMapping("/templates")
+    public ResponseEntity<List<NotificationTemplate>> listTemplates() {
+        return ResponseEntity.ok(templateRepository.findAll());
+    }
+
+    /** B8: POST /notifications/templates — create template. */
+    @PostMapping("/templates")
+    public ResponseEntity<NotificationTemplate> createTemplate(
+            @RequestBody NotificationTemplate template) {
+        return ResponseEntity.ok(templateRepository.save(template));
     }
 
     /**

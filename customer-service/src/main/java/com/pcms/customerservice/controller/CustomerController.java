@@ -1,6 +1,7 @@
 package com.pcms.customerservice.controller;
 
 import com.pcms.common.dto.PageResponse;
+import com.pcms.customerservice.client.OrderClient;
 import com.pcms.customerservice.dto.request.AddPointsRequest;
 import com.pcms.customerservice.dto.request.CreateCustomerRequest;
 import com.pcms.customerservice.dto.request.UpdateCustomerRequest;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -26,9 +28,11 @@ import java.util.UUID;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final OrderClient orderClient;
 
-    public CustomerController(CustomerService customerService) {
+    public CustomerController(CustomerService customerService, OrderClient orderClient) {
         this.customerService = customerService;
+        this.orderClient = orderClient;
     }
 
     @GetMapping
@@ -87,6 +91,12 @@ public class CustomerController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(customerService.getHistory(id, page, size));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
+        customerService.softDelete(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**

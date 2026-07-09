@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+/**
+ * B11: Self-service portal for customers.
+ * Public routes — no auth required for register; /me uses header X-Customer-Id.
+ */
 @RestController
 @RequestMapping("/customers")
 public class CustomerPortalController {

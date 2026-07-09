@@ -96,7 +96,7 @@ public class ReportController {
                 request.toDate())));
     }
 
-    /** Staff performance report. */
+    /** Staff performance report (GET with query params). */
     @GetMapping("/staff")
     public ResponseEntity<StaffReportResponse> staffGet(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
@@ -107,7 +107,7 @@ public class ReportController {
                 new StaffReportRequest(fromDate, toDate, resolveBranchId(branchId, currentBranchId))));
     }
 
-    /** Staff performance report. */
+    /** Staff performance report (POST with JSON body). */
     @PostMapping("/staff")
     public ResponseEntity<StaffReportResponse> staff(
             @Valid @RequestBody StaffReportRequest request,
@@ -118,6 +118,7 @@ public class ReportController {
                 resolveBranchId(request.branchId(), currentBranchId))));
     }
 
+    /** B9: GET /api/v1/reports/realtime/stats — today's summary. */
     @GetMapping("/realtime/stats")
     public ResponseEntity<Map<String, Object>> realtimeStats(
             @RequestParam(required = false) UUID branchId,

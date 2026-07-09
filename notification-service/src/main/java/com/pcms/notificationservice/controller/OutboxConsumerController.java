@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Consumers for events dispatched by the order/inventory outbox publisher.
+ * B6 + B7: Outbox event consumers.
+ * Called by order-service (order.paid) and inventory-service (low-stock, expiry).
  *
- * <p>
- * Idempotency is guaranteed by {@code X-Outbox-Event-Id}. Re-delivery of the
+ * <p>Idempotency is guaranteed by {@code X-Outbox-Event-Id}. Re-delivery of the
  * same event returns success without creating duplicate notifications.
  */
 @RestController

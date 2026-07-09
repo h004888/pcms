@@ -1,7 +1,8 @@
 package com.pcms.customerservice.enums;
 
 /**
- * Loyalty tier derived from current points balance.
+ * B10: Loyalty tier auto-calculated from points balance.
+ * 0–999 Bronze, 1000–4999 Silver, 5000+ Gold.
  */
 public enum LoyaltyTier {
     BRONZE,

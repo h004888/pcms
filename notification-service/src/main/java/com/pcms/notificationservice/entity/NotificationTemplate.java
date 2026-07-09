@@ -1,16 +1,7 @@
 package com.pcms.notificationservice.entity;
 
 import com.pcms.notificationservice.enums.NotificationChannel;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -18,17 +9,27 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * B8: Notification templates with variable substitution.
+ * Variables use {{name}} syntax, e.g. {{customer_name}}, {{order_id}}.
+ */
 @Entity
-@Table(name = "notification_templates", uniqueConstraints = @UniqueConstraint(name = "uk_notification_template_code_channel", columnNames = {
-        "code", "channel" }))
+@Table(name = "notification_templates", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_notification_template_code_channel", columnNames = { "code", "channel" }),
+        @UniqueConstraint(name = "uk_template_key", columnNames = "template_key")
+})
 @EntityListeners(AuditingEntityListener.class)
 public class NotificationTemplate {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false, length = 80)
     private String code;
+
+    @Column(name = "template_key", length = 50)
+    private String templateKey;   // e.g. NTPL-ORDER-PAID (B8 alias for code)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -67,75 +68,24 @@ public class NotificationTemplate {
         this.active = true;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public NotificationChannel getChannel() {
-        return channel;
-    }
-
-    public void setChannel(NotificationChannel channel) {
-        this.channel = channel;
-    }
-
-    public String getTitleTemplate() {
-        return titleTemplate;
-    }
-
-    public void setTitleTemplate(String titleTemplate) {
-        this.titleTemplate = titleTemplate;
-    }
-
-    public String getBodyTemplate() {
-        return bodyTemplate;
-    }
-
-    public void setBodyTemplate(String bodyTemplate) {
-        this.bodyTemplate = bodyTemplate;
-    }
-
-    public String getVariables() {
-        return variables;
-    }
-
-    public void setVariables(String variables) {
-        this.variables = variables;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
+    public String getTemplateKey() { return templateKey; }
+    public void setTemplateKey(String templateKey) { this.templateKey = templateKey; }
+    public NotificationChannel getChannel() { return channel; }
+    public void setChannel(NotificationChannel channel) { this.channel = channel; }
+    public String getTitleTemplate() { return titleTemplate; }
+    public void setTitleTemplate(String titleTemplate) { this.titleTemplate = titleTemplate; }
+    public String getBodyTemplate() { return bodyTemplate; }
+    public void setBodyTemplate(String bodyTemplate) { this.bodyTemplate = bodyTemplate; }
+    public String getVariables() { return variables; }
+    public void setVariables(String variables) { this.variables = variables; }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

@@ -34,7 +34,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -139,9 +138,6 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     public int broadcast(BroadcastRequest request) {
         List<UUID> explicitRecipients = request.resolveRecipients();
         List<UUID> recipients = new ArrayList<>(explicitRecipients);
-        // When audience uses roles/branches but no explicit users, leave the
-        // list empty (resolution to a downstream user-service is not part of
-        // this service).
         if (recipients.isEmpty()) {
             log.warn("Broadcast skipped: no resolvable recipients");
             return 0;
@@ -264,20 +260,16 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
     @Override
     public NotificationResponse softDelete(UUID id, UUID currentUserId) {
         if (currentUserId == null) {
-            // Defensive: gateway should always forward a user id. If not, treat
-            // as forbidden (don't trust an unauthenticated delete).
             throw new org.springframework.security.access.AccessDeniedException(
                     "Current user id is required");
         }
         Notification n = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification", id));
 
-        // Already soft-deleted - idempotent return.
         if (n.getStatus() == NotificationStatus.DELETED) {
             return toResponse(n);
         }
 
-        // Authorization check: only the recipient can delete their own notification.
         if (!currentUserId.equals(n.getRecipientId())) {
             throw new org.springframework.security.access.AccessDeniedException(
                     "Only the recipient can delete this notification");

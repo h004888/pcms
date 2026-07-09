@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/** Feign client to fetch order history from order-service. */
 @FeignClient(name = "order-service")
 public interface OrderClient {
+
     @GetMapping("/orders")
     PageResponse<CustomerOrderSummaryResponse> getOrdersByCustomer(
             @RequestParam("customerId") UUID customerId,

@@ -3,12 +3,16 @@ package com.pcms.reportservice.service.impl;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.reportservice.client.InventoryClient;
 import com.pcms.reportservice.client.OrderClient;
+import com.pcms.reportservice.dto.CreateScheduleRequest;
 import com.pcms.reportservice.dto.InventoryReportRequest;
 import com.pcms.reportservice.dto.InventoryReportResponse;
 import com.pcms.reportservice.dto.RevenueReportRequest;
 import com.pcms.reportservice.dto.RevenueReportResponse;
+import com.pcms.reportservice.dto.ScheduleResponse;
 import com.pcms.reportservice.dto.StaffReportRequest;
 import com.pcms.reportservice.dto.StaffReportResponse;
+import com.pcms.reportservice.entity.ReportSchedule;
+import com.pcms.reportservice.repository.ReportScheduleRepository;
 import com.pcms.reportservice.service.ReportService;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -31,17 +35,20 @@ public class ReportServiceImpl implements ReportService {
 
     private final OrderClient orderClient;
     private final InventoryClient inventoryClient;
-    private final com.pcms.reportservice.service.impl.ExcelExportService excelExportService;
-    private final com.pcms.reportservice.service.impl.PdfExportService pdfExportService;
+    private final ExcelExportService excelExportService;
+    private final PdfExportService pdfExportService;
+    private final ReportScheduleRepository scheduleRepository;
 
     public ReportServiceImpl(OrderClient orderClient,
-            InventoryClient inventoryClient,
-            com.pcms.reportservice.service.impl.ExcelExportService excelExportService,
-            com.pcms.reportservice.service.impl.PdfExportService pdfExportService) {
+                              InventoryClient inventoryClient,
+                              ExcelExportService excelExportService,
+                              PdfExportService pdfExportService,
+                              ReportScheduleRepository scheduleRepository) {
         this.orderClient = orderClient;
         this.inventoryClient = inventoryClient;
         this.excelExportService = excelExportService;
         this.pdfExportService = pdfExportService;
+        this.scheduleRepository = scheduleRepository;
     }
 
     @Override
@@ -209,8 +216,8 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public Object export(String type, String format, LocalDate from, LocalDate to) {
         validateRange(from, to);
-        java.util.List<String> headers = new java.util.ArrayList<>();
-        java.util.List<java.util.Map<String, Object>> rows = new java.util.ArrayList<>();
+        List<String> headers = new ArrayList<>();
+        List<Map<String, Object>> rows = new ArrayList<>();
         String title = String.format("%s Report (%s to %s)",
                 type.substring(0, 1).toUpperCase() + type.substring(1), from, to);
 
@@ -250,7 +257,7 @@ public class ReportServiceImpl implements ReportService {
                 rows.add(exportRow);
             }
         } else {
-            throw new com.pcms.common.exception.InvalidOperationException(
+            throw new InvalidOperationException(
                     "Unknown report type: " + type,
                     "Loại báo cáo không hợp lệ: " + type);
         }
@@ -261,10 +268,64 @@ public class ReportServiceImpl implements ReportService {
         } else if ("pdf".equalsIgnoreCase(format)) {
             return pdfExportService.exportToPdf(title, headers, rows);
         } else {
-            throw new com.pcms.common.exception.InvalidOperationException(
+            throw new InvalidOperationException(
                     "Unknown export format: " + format + " (supported: excel, pdf)",
                     "Định dạng xuất không hỗ trợ: " + format);
         }
+    }
+
+    @Override
+    public Map<String, Object> realtimeStats() {
+        LocalDate today = LocalDate.now();
+        Map<String, Object> ordersResp = orderClient.getOrders(null, 0, 1000);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> allOrders =
+                (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
+
+        long todayOrders = 0;
+        double todayRevenue = 0.0;
+        for (Map<String, Object> order : allOrders) {
+            String createdAtStr = (String) order.get("createdAt");
+            if (createdAtStr == null) continue;
+            try {
+                LocalDateTime created = LocalDateTime.parse(createdAtStr);
+                if (created.toLocalDate().equals(today)) {
+                    todayOrders++;
+                    todayRevenue += ((Number) order.getOrDefault("total", 0)).doubleValue();
+                }
+            } catch (Exception ignored) {}
+        }
+
+        List<Map<String, Object>> lowStock = inventoryClient.getLowStock();
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("date", today.toString());
+        result.put("todayOrders", todayOrders);
+        result.put("todayRevenue", todayRevenue);
+        result.put("totalOrders", allOrders.size());
+        result.put("lowStockCount", lowStock.size());
+        return result;
+    }
+
+    @Override
+    public ScheduleResponse createSchedule(CreateScheduleRequest request) {
+        ReportSchedule schedule = new ReportSchedule();
+        schedule.setType(request.reportType());
+        schedule.setFormat(request.format());
+        schedule.setBranchId(request.branchId());
+        schedule.setCronExpression("0 0 * * *"); // default daily midnight
+        schedule.setRecipientEmail(request.recipients());
+        schedule.setActive(true);
+        schedule.setNextRunAt(LocalDateTime.now().plusDays(1));
+        return ScheduleResponse.from(scheduleRepository.save(schedule));
+    }
+
+    @Override
+    public List<ScheduleResponse> listSchedules() {
+        return scheduleRepository.findByActiveTrueOrderByCreatedAtDesc()
+                .stream()
+                .map(ScheduleResponse::from)
+                .toList();
     }
 
     private void validateRange(LocalDate from, LocalDate to) {
@@ -277,28 +338,6 @@ public class ReportServiceImpl implements ReportService {
             throw new InvalidOperationException(
                     "fromDate must be before toDate",
                     "Ngày bắt đầu phải trước ngày kết thúc");
-        }
-    }
-
-    private void appendInventoryRows(InventoryReportResponse response, List<Map<String, Object>> rows) {
-        for (Map<String, Object> section : response.data()) {
-            if (!"stockDetails".equals(section.get("section"))) {
-                continue;
-            }
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> stockItems = (List<Map<String, Object>>) section.getOrDefault("items", List.of());
-            for (Map<String, Object> item : stockItems) {
-                Number qty = (Number) item.getOrDefault("qtyOnHand", 0);
-                Number min = (Number) item.getOrDefault("minStockLevel", 0);
-                String status = qty.intValue() < min.intValue() ? "LOW" : "OK";
-                Map<String, Object> exportRow = new LinkedHashMap<>();
-                exportRow.put("Medicine", valueOrBlank(item.get("medicineId")));
-                exportRow.put("Branch", valueOrBlank(item.get("branchId")));
-                exportRow.put("Stock", qty);
-                exportRow.put("Min Level", min);
-                exportRow.put("Status", status);
-                rows.add(exportRow);
-            }
         }
     }
 
