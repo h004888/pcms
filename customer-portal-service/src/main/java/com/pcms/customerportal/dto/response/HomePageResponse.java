@@ -1,5 +1,6 @@
 package com.pcms.customerportal.dto.response;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -8,37 +9,34 @@ import java.util.List;
  * <p>Composed of:
  * <ul>
  *   <li>heroBanners — from home_banners table (position='HERO')</li>
- *   <li>subPromos — from home_banners table (position='SUB_PROMO')</li>
  *   <li>bestSellers — top medicines 30 days (from order-service Feign)</li>
  *   <li>featuredCategories — from category-service Feign</li>
- *   <li>brands — from brands table</li>
- *   <li>healthQuizTeaser — static CTA for HEALTH-QUIZ-LIST</li>
- *   <li>videosTeaser — top 6 most-viewed videos</li>
+ *   <li>flashSales — active flash sales with items</li>
+ *   <li>quickLinks — from quick_links table</li>
  * </ul>
  */
 public record HomePageResponse(
         List<BannerResponse> heroBanners,
-        List<BannerResponse> subPromos,
         List<BestSellerResponse> bestSellers,
         List<CategoryTeaserResponse> featuredCategories,
-        List<BrandResponse> brands,
-        HealthQuizTeaserResponse healthQuizTeaser,
-        List<VideoResponse> videosTeaser,
-        List<QuickLinkResponse> quickLinks
+        List<QuickLinkResponse> quickLinks,
+        List<FlashSaleTeaserResponse> flashSales
 ) {
 
     public record BannerResponse(String id, String title, String imageUrl, String linkUrl) {}
 
-    public record BestSellerResponse(String id, String slug, String name, java.math.BigDecimal price,
+    public record BestSellerResponse(String id, String slug, String name, BigDecimal price,
                                      String imageUrl, Long soldCount) {}
 
     public record CategoryTeaserResponse(String id, String slug, String name, String imageUrl, Long productCount) {}
 
-    public record BrandResponse(String id, String name, String logoUrl) {}
-
-    public record HealthQuizTeaserResponse(boolean available, String url) {}
-
-    public record VideoResponse(String id, String title, String thumbnailUrl, String youtubeId) {}
-
     public record QuickLinkResponse(String id, String label, String icon, String href) {}
+
+    public record FlashSaleTeaserResponse(String id, String name, String description,
+                                          BigDecimal discountPct, String startsAt, String endsAt,
+                                          List<FlashSaleItemResponse> items) {}
+
+    public record FlashSaleItemResponse(String id, String medicineName,
+                                        BigDecimal originalPrice, BigDecimal salePrice,
+                                        String imageUrl, int qtyLimit, int soldQty) {}
 }

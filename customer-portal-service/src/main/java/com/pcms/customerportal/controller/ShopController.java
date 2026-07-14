@@ -11,8 +11,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import javax.sql.DataSource;
 
 /**
  * B2C Shop controller - thin, delegates to services.
@@ -33,13 +40,16 @@ public class ShopController {
     private final ShopHomeService homeService;
     private final ShopPdpService pdpService;
     private final ShopSearchService searchService;
+    private final DataSource dataSource;
 
     public ShopController(ShopHomeService homeService,
                           ShopPdpService pdpService,
-                          ShopSearchService searchService) {
+                          ShopSearchService searchService,
+                          DataSource dataSource) {
         this.homeService = homeService;
         this.pdpService = pdpService;
         this.searchService = searchService;
+        this.dataSource = dataSource;
     }
 
     @GetMapping(value = "/home", produces = "application/json;charset=UTF-8")
@@ -96,5 +106,33 @@ public class ShopController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
         return ResponseEntity.ok(searchService.lookupHerb(q, page, size));
+    }
+
+    @GetMapping("/flash-sales")
+    @Operation(summary = "SHOP-FLASH-SALES - active flash sales with items")
+    public ResponseEntity<List<Map<String, Object>>> flashSales() {
+        var jdbc = new org.springframework.jdbc.core.JdbcTemplate(dataSource);
+        var sales = jdbc.queryForList(
+            "SELECT fs.id, fs.name, fs.description, fs.discount_pct, " +
+            "fs.starts_at, fs.ends_at " +
+            "FROM pcms_ecom_ops.flash_sales fs " +
+            "WHERE fs.status = 'ACTIVE' AND fs.starts_at <= NOW() AND fs.ends_at > NOW() " +
+            "ORDER BY fs.starts_at DESC"
+        );
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (var sale : sales) {
+            Map<String, Object> s = new HashMap<>(sale);
+            var items = jdbc.queryForList(
+                "SELECT fsi.id, fsi.medicine_name, fsi.original_price, fsi.sale_price, " +
+                "fsi.image_url, fsi.qty_limit, fsi.sold_qty " +
+                "FROM pcms_ecom_ops.flash_sale_items fsi " +
+                "WHERE fsi.flash_sale_id = ?", s.get("id")
+            );
+            // Convert byte[] id to string
+            s.put("id", s.get("id").toString());
+            s.put("items", items);
+            result.add(s);
+        }
+        return ResponseEntity.ok(result);
     }
 }

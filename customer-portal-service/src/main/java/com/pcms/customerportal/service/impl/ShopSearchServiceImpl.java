@@ -5,6 +5,7 @@ import com.pcms.customerportal.client.CatalogClient;
 import com.pcms.customerportal.repository.HerbRepository;
 import com.pcms.customerportal.repository.IngredientRepository;
 import com.pcms.customerportal.service.ShopSearchService;
+import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -40,8 +41,16 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     public PageResponse<Map<String, Object>> search(String q, int page, int size) {
-        List<Map<String, Object>> raw = catalogClient.searchMedicines(q, page, size);
-        return toPageResponse(raw, page, size);
+        try {
+            List<Map<String, Object>> raw = catalogClient.searchMedicines(q, page, size);
+            return toPageResponse(raw, page, size);
+        } catch (FeignException e) {
+            log.error("Catalog service unavailable while searching '{}': status={}", q, e.status(), e);
+            throw new RuntimeException("Không thể kết nối đến dịch vụ danh mục thuốc. Vui lòng thử lại sau.");
+        } catch (Exception e) {
+            log.error("Unexpected error while searching '{}': {}", q, e.getMessage(), e);
+            throw new RuntimeException("Đã xảy ra lỗi khi tìm kiếm. Vui lòng thử lại sau.");
+        }
     }
 
     @Override
