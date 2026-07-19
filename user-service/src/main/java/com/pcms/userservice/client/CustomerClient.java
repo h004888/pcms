@@ -17,22 +17,17 @@ import java.util.Map;
 public interface CustomerClient {
 
     /**
-     * Create a customer profile in customer-service.
-     * Called right after the User account is persisted.
+     * Provision Customer.id = User.id after a CUSTOMER User is persisted.
      */
-    @PostMapping("/customers/register")
+    @PostMapping("/customers/internal/provision")
     @CircuitBreaker(name = "customerService", fallbackMethod = "fallbackRegister")
     Map<String, Object> register(@RequestBody CustomerRegisterRequest request);
 
     /**
-     * Fallback when customer-service is unavailable.
-     * Returns DEFERRED status so the registration can still succeed —
-     * the customer record will be lazily created on first profile access.
+     * Registration must not issue an authenticated CUSTOMER account without
+     * a matching customer profile.
      */
     default Map<String, Object> fallbackRegister(CustomerRegisterRequest request, Throwable t) {
-        return Map.of(
-            "status", "DEFERRED",
-            "message", "Customer service unavailable, profile will be created on first access"
-        );
+        throw new IllegalStateException("Customer profile provisioning is unavailable", t);
     }
 }

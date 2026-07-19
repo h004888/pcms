@@ -25,16 +25,16 @@ public interface BranchClient {
 
     @GetMapping("/branches")
     @CircuitBreaker(name = "branchService", fallbackMethod = "fallbackList")
-    List<Map<String, Object>> list(@RequestParam(name = "page", defaultValue = "0") int page,
-                                   @RequestParam(name = "size", defaultValue = "50") int size);
+    Map<String, Object> list(@RequestParam(name = "page", defaultValue = "0") int page,
+                             @RequestParam(name = "size", defaultValue = "50") int size);
 
     @GetMapping("/branches/{id}")
     @CircuitBreaker(name = "branchService", fallbackMethod = "fallbackGetById")
     Map<String, Object> getById(@PathVariable("id") String id);
 
-    default List<Map<String, Object>> fallbackList(int page, int size, Throwable throwable) {
+    default Map<String, Object> fallbackList(int page, int size, Throwable throwable) {
         log.warn("branch-service unavailable while listing: {}", throwable.getMessage());
-        return List.of();
+        return Map.of("data", List.of(), "total", 0);
     }
 
     default Map<String, Object> fallbackGetById(String id, Throwable throwable) {

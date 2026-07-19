@@ -147,6 +147,9 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse create(CreateOrderRequest request) {
+        log.info("[CHECKPOINT-1] create() called: customerId={}, branchId={}, itemCount={}",
+                request.customerId(), request.branchId(), request.items().size());
+
         if (request.items() == null || request.items().isEmpty()) {
             throw new InvalidOperationException(
                     "Order must contain at least one item",
@@ -154,24 +157,36 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // B-20: Validate customer exists via customer-service
+        log.info("[CHECKPOINT-2] Validating customer: {}", request.customerId());
         try {
             var customer = customerClient.getCustomerById(request.customerId());
+            log.info("[CHECKPOINT-2] Customer found: status={}", customer != null ? customer.get("status") : "null");
             if (customer == null || customer.get("status") == null
                     || "UNREACHABLE".equals(customer.get("status"))) {
                 throw new ResourceNotFoundException("Customer", request.customerId());
             }
         } catch (feign.FeignException.NotFound e) {
+            log.error("[CHECKPOINT-2] Customer not found: {}", e.getMessage());
             throw new ResourceNotFoundException("Customer", request.customerId());
+        } catch (Exception e) {
+            log.error("[CHECKPOINT-2] Customer lookup FAILED: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+            throw e;
         }
         // B-21: Validate branch exists via branch-service
+        log.info("[CHECKPOINT-3] Validating branch: {}", request.branchId());
         try {
             var branch = branchClient.getBranchById(request.branchId());
+            log.info("[CHECKPOINT-3] Branch found: status={}", branch != null ? branch.get("status") : "null");
             if (branch == null || branch.get("status") == null
                     || "UNREACHABLE".equals(branch.get("status"))) {
                 throw new ResourceNotFoundException("Branch", request.branchId());
             }
         } catch (feign.FeignException.NotFound e) {
+            log.error("[CHECKPOINT-3] Branch not found: {}", e.getMessage());
             throw new ResourceNotFoundException("Branch", request.branchId());
+        } catch (Exception e) {
+            log.error("[CHECKPOINT-3] Branch lookup FAILED: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+            throw e;
         }
 
         Order order = new Order();
@@ -188,6 +203,7 @@ public class OrderServiceImpl implements OrderService {
 
         for (OrderItemRequest itemReq : request.items()) {
             // Call catalog-service to get medicine info
+            log.info("[CHECKPOINT-4] Looking up medicine: {}", itemReq.medicineId());
             Map<String, Object> medicine = catalogClient.getMedicineById(itemReq.medicineId());
             String name = (String) medicine.getOrDefault("name", "Unknown");
             // If catalog fallback returned a placeholder (id matches but name="Unknown"),
@@ -235,12 +251,18 @@ public class OrderServiceImpl implements OrderService {
         order.setTotal(baseTotal.subtract(couponDiscount));
         order.setOrderNumber(generateOrderNumber());
 
+        log.info("[CHECKPOINT-5] About to save order: orderNumber={}, total={}, itemCount={}",
+                order.getOrderNumber(), order.getTotal(), order.getItems().size());
+
         if (appliedCoupon != null) {
             order.setCouponCode(appliedCoupon.getCode());
             couponService.incrementUsage(appliedCoupon);
         }
 
-        return OrderResponse.from(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        log.info("[CHECKPOINT-6] Order saved successfully: id={}, orderNumber={}",
+                saved.getId(), saved.getOrderNumber());
+        return OrderResponse.from(saved);
     }
 
     private boolean isPrescriptionRequired(Map<String, Object> medicine) {

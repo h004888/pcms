@@ -141,23 +141,40 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartResponse clearCart(UUID customerId) {
-        Cart cart = getOrCreateCart(customerId);
-        cartItemRepository.deleteByCartId(cart.getId());
-        cart.getItems().clear();
-        cart.setSubtotal(BigDecimal.ZERO);
-        cart.setDiscount(BigDecimal.ZERO);
-        cart.setTotal(BigDecimal.ZERO);
-        cart.setVoucherCode(null);
-        cartRepository.save(cart);
-
-        log.info("[Cart] cleared cart for customer={}", customerId);
-        return toResponse(cart);
+        return cartRepository.findByCustomerIdAndStatus(customerId, CartStatus.ACTIVE)
+                .map(cart -> {
+                    cartItemRepository.deleteByCartId(cart.getId());
+                    cart.getItems().clear();
+                    cart.setSubtotal(BigDecimal.ZERO);
+                    cart.setDiscount(BigDecimal.ZERO);
+                    cart.setTotal(BigDecimal.ZERO);
+                    cart.setVoucherCode(null);
+                    cartRepository.save(cart);
+                    log.info("[Cart] cleared cart for customer={}", customerId);
+                    return toResponse(cart);
+                })
+                .orElseGet(() -> {
+                    log.info("[Cart] no active cart to clear for customer={}", customerId);
+                    return new CartResponse(null, customerId, List.of(),
+                            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                            null, CartStatus.ACTIVE.name(), null);
+                });
     }
 
     // ===== Private helpers =====
 
     private Cart getOrCreateCart(UUID customerId) {
         return cartRepository.findByCustomerIdAndStatus(customerId, CartStatus.ACTIVE)
+                .or(() -> cartRepository.findByCustomerId(customerId).map(cart -> {
+                    cart.setStatus(CartStatus.ACTIVE);
+                    cartItemRepository.deleteByCartId(cart.getId());
+                    cart.getItems().clear();
+                    cart.setSubtotal(BigDecimal.ZERO);
+                    cart.setDiscount(BigDecimal.ZERO);
+                    cart.setTotal(BigDecimal.ZERO);
+                    cart.setVoucherCode(null);
+                    return cartRepository.save(cart);
+                }))
                 .orElseGet(() -> {
                     Cart newCart = new Cart();
                     newCart.setCustomerId(customerId);

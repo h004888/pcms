@@ -32,8 +32,9 @@ import java.util.UUID;
 public class CheckoutServiceImpl implements CheckoutService {
 
     private static final Logger log = LoggerFactory.getLogger(CheckoutServiceImpl.class);
-    private static final BigDecimal DEFAULT_SHIPPING_FEE = new BigDecimal("30000");
-    private static final BigDecimal FREE_SHIPPING_THRESHOLD = new BigDecimal("200000");
+    // [TEMP-2026-07-19] Disabled: pickup-only phase, no delivery shipping fee
+    // private static final BigDecimal DEFAULT_SHIPPING_FEE = new BigDecimal("30000");
+    // private static final BigDecimal FREE_SHIPPING_THRESHOLD = new BigDecimal("200000");
     private static final BigDecimal BULK_DISCOUNT_RATE = new BigDecimal("0.05");
 
     private final CartRepository cartRepository;
@@ -93,12 +94,8 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         BigDecimal totalDiscount = lineDiscountTotal.add(voucherDiscount);
 
-        // Shipping fee
-        BigDecimal shippingFee = DEFAULT_SHIPPING_FEE;
-        if (subtotal.compareTo(FREE_SHIPPING_THRESHOLD) >= 0) {
-            shippingFee = BigDecimal.ZERO;
-            warnings.add("Free shipping for orders over " + FREE_SHIPPING_THRESHOLD + " VND");
-        }
+        // [TEMP-2026-07-19] All orders are pickup → shipping always free
+        BigDecimal shippingFee = BigDecimal.ZERO;
 
         // Total = subtotal - discount + shipping
         BigDecimal total = subtotal.subtract(totalDiscount).add(shippingFee);
@@ -125,27 +122,36 @@ public class CheckoutServiceImpl implements CheckoutService {
         List<Map<String, Object>> orderItems = items.stream()
                 .map(item -> Map.<String, Object>of(
                         "medicineId", item.getMedicineId().toString(),
-                        "qty", item.getQty(),
-                        "unitPrice", item.getUnitPrice()))
+                        "quantity", item.getQty()))
                 .toList();
 
         Map<String, Object> orderRequest = Map.of(
                 "customerId", customerId.toString(),
-                "addressId", request.addressId().toString(),
-                "paymentMethod", request.paymentMethod(),
-                "shippingMethod", request.shippingMethod(),
+                "branchId", request.branchId().toString(),
                 "items", orderItems
         );
+
+        log.info("[Checkout] Sending orderRequest to order-service: customerId={}, branchId={}, items={}",
+                customerId, request.branchId(), orderItems.size());
 
         Map<String, Object> orderResponse;
         try {
             orderResponse = orderClient.createOrder(orderRequest);
+            log.info("[Checkout] order-service responded: {}", orderResponse);
         } catch (Exception e) {
-            log.error("[Checkout] Failed to create order for customer={}: {}", customerId, e.getMessage());
+            log.error("[Checkout] FAILED to create order for customer={}: {} (type={})",
+                    customerId, e.getMessage(), e.getClass().getSimpleName());
+            if (e.getCause() != null) {
+                log.error("[Checkout] Caused by: {} - {}", e.getCause().getClass().getSimpleName(), e.getCause().getMessage());
+            }
             throw new InvalidOperationException("Order creation failed", "Không thể tạo đơn hàng");
         }
 
-        UUID orderId = UUID.fromString((String) orderResponse.getOrDefault("id", ""));
+        String orderIdStr = (String) orderResponse.getOrDefault("id", null);
+        if (orderIdStr == null || orderIdStr.isBlank()) {
+            throw new InvalidOperationException("Order creation failed", "Không thể tạo đơn hàng");
+        }
+        UUID orderId = UUID.fromString(orderIdStr);
         String orderNumber = (String) orderResponse.getOrDefault("orderNumber", "");
         String orderStatus = (String) orderResponse.getOrDefault("status", "PENDING");
         BigDecimal total = cart.getTotal();

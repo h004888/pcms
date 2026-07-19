@@ -17,6 +17,7 @@ import com.pcms.userservice.dto.request.RegisterRequest;
 import com.pcms.userservice.dto.request.CustomerRegisterRequest;
 import com.pcms.userservice.dto.request.ResendVerificationRequest;
 import com.pcms.userservice.dto.request.ResetPasswordRequest;
+import com.pcms.userservice.dto.request.SyncProfileRequest;
 import com.pcms.userservice.dto.request.UpdateUserRequest;
 import com.pcms.userservice.dto.request.VerifyEmailRequest;
 import com.pcms.userservice.dto.response.AuditLogResponse;
@@ -233,11 +234,9 @@ public class UserServiceImpl implements UserService {
         user.setFailedLoginCount(0);
         User saved = repository.save(user);
 
-        // 2.5 Sync-create customer record via Feign (Sprint 4)
-        // If customer-service is down, the @CircuitBreaker fallback
-        // returns DEFERRED status — registration still succeeds and the
-        // customer record will be lazy-created on first profile access.
+        // 2.5 Provision matching customer identity before issuing tokens.
         customerClient.register(new CustomerRegisterRequest(
+                saved.getId(),
                 saved.getFullName(),
                 saved.getPhone(),
                 saved.getEmail(),
@@ -569,6 +568,17 @@ public class UserServiceImpl implements UserService {
     @Override
     public void resendVerification(ResendVerificationRequest request, String ipAddress) {
         emailVerificationService.resendVerification(request.email(), ipAddress);
+    }
+
+    @Override
+    public UserResponse syncProfile(UUID id, SyncProfileRequest request) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        user.setFullName(request.fullName());
+        if (request.phone() != null) {
+            user.setPhone(request.phone());
+        }
+        return toResponse(repository.save(user));
     }
 
     private static UUID parseUuidOrNull(String value) {

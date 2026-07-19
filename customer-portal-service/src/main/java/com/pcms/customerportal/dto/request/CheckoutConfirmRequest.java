@@ -9,6 +9,9 @@ public record CheckoutConfirmRequest(
         @NotNull(message = "addressId is required")
         UUID addressId,
 
+        @NotNull(message = "branchId is required")
+        UUID branchId,
+
         @NotBlank(message = "shippingMethod is required")
         String shippingMethod,
 

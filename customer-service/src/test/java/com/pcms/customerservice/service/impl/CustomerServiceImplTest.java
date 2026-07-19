@@ -5,6 +5,7 @@ import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.customerservice.client.OrderClient;
 import com.pcms.customerservice.dto.request.CreateCustomerRequest;
+import com.pcms.customerservice.dto.request.CustomerProvisionRequest;
 import com.pcms.customerservice.dto.response.CustomerHistoryResponse;
 import com.pcms.customerservice.entity.Customer;
 import com.pcms.customerservice.entity.LoyaltyTransaction;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class CustomerServiceImplTest {
@@ -105,11 +107,7 @@ class CustomerServiceImplTest {
                 org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(java.util.List.of());
         when(customerRepository.save(any(Customer.class)))
-                .thenAnswer(inv -> {
-                    Customer c = inv.getArgument(0);
-                    c.setId(UUID.randomUUID());
-                    return c;
-                });
+                .thenAnswer(inv -> inv.getArgument(0));
 
         var response = customerService.create(request);
 
@@ -117,6 +115,52 @@ class CustomerServiceImplTest {
         assertThat(response.points()).isEqualTo(0);
         assertThat(response.tier()).isEqualTo(LoyaltyTier.BRONZE);
         assertThat(response.status()).isEqualTo(CustomerStatus.ACTIVE);
+        assertThat(response.id()).isNotNull();
+    }
+
+    @Test
+    void provisionFromUser_withNewUserId_createsCustomerWithUserId() {
+        UUID userId = UUID.randomUUID();
+        var request = new CustomerProvisionRequest(
+                userId, "Nguyen Van A", "0901234567", null, null, null, null);
+        when(customerRepository.findById(userId)).thenReturn(Optional.empty());
+        when(customerRepository.existsByPhone(request.phone())).thenReturn(false);
+        when(customerRepository.findByYearPrefix(anyString(), any())).thenReturn(List.of());
+        when(customerRepository.save(any(Customer.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = customerService.provisionFromUser(request);
+
+        assertThat(response.id()).isEqualTo(userId);
+        verify(customerRepository).save(argThat(customer -> customer.getId().equals(userId)));
+    }
+
+    @Test
+    void provisionFromUser_withExistingUserId_returnsExistingCustomerWithoutSaving() {
+        UUID userId = UUID.randomUUID();
+        Customer existing = new Customer("CUST-20260001", "Existing", "0901234567");
+        existing.setId(userId);
+        var request = new CustomerProvisionRequest(
+                userId, "Changed", "0909999888", null, null, null, null);
+        when(customerRepository.findById(userId)).thenReturn(Optional.of(existing));
+
+        var response = customerService.provisionFromUser(request);
+
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.name()).isEqualTo("Existing");
+        verify(customerRepository, never()).save(any());
+    }
+
+    @Test
+    void provisionFromUser_withDuplicatePhone_throwsDuplicateResourceException() {
+        UUID userId = UUID.randomUUID();
+        var request = new CustomerProvisionRequest(
+                userId, "Nguyen Van A", "0901234567", null, null, null, null);
+        when(customerRepository.findById(userId)).thenReturn(Optional.empty());
+        when(customerRepository.existsByPhone(request.phone())).thenReturn(true);
+
+        assertThatThrownBy(() -> customerService.provisionFromUser(request))
+                .isInstanceOf(DuplicateResourceException.class);
+        verify(customerRepository, never()).save(any());
     }
 
     @Test

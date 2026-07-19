@@ -47,7 +47,7 @@ public class StoreController {
         // TODO(sprint4-followup): branch-service does not yet expose province/district filter.
         // We fetch all then filter client-side for MVP. Move to Feign parameters once
         // branch-service adds them.
-        List<Map<String, Object>> raw = branchClient.list(page, size);
+        List<Map<String, Object>> raw = extractData(branchClient.list(page, size));
 
         List<BranchSummary> filtered = raw.stream()
                 .map(StoreController::toSummary)
@@ -66,6 +66,15 @@ public class StoreController {
             throw new ResourceNotFoundException("MSG31", "Branch not found: " + branchId);
         }
         return ResponseEntity.ok(toSummary(raw));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> extractData(Map<String, Object> pageResponse) {
+        Object data = pageResponse.get("data");
+        if (data instanceof List<?> list) {
+            return (List<Map<String, Object>>) list;
+        }
+        return List.of();
     }
 
     private static boolean matchesProvince(BranchSummary b, String province) {

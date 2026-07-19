@@ -3,6 +3,7 @@ package com.pcms.customerservice.service;
 import com.pcms.common.dto.PageResponse;
 import com.pcms.customerservice.dto.request.CreateCustomerRequest;
 import com.pcms.customerservice.dto.request.CustomerPortalRegisterRequest;
+import com.pcms.customerservice.dto.request.CustomerProvisionRequest;
 import com.pcms.customerservice.dto.request.UpdateCustomerRequest;
 import com.pcms.customerservice.dto.response.CustomerHistoryResponse;
 import com.pcms.customerservice.dto.response.CustomerOrderSummaryResponse;
@@ -42,6 +43,8 @@ public interface CustomerService {
     CustomerResponse update(UUID id, UpdateCustomerRequest request);
 
     CustomerResponse register(CustomerPortalRegisterRequest request);
+
+    CustomerResponse provisionFromUser(CustomerProvisionRequest request);
 
     CustomerResponse updatePortalProfile(UUID id, CustomerPortalRegisterRequest request);
 

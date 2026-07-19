@@ -21,6 +21,12 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
+    - name: Test customer-service context
+      run: mvn -pl customer-service -B test
+
+    - name: Test customer-portal-service context
+      run: mvn -pl customer-portal-service -B test
+
     - name: Build with Maven
       run: mvn -B clean package
 

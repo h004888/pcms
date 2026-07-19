@@ -74,6 +74,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Map.entry("/api/v1/auth/readyz", Set.of()),
             Map.entry("/auth/register", Set.of()),
             Map.entry("/api/v1/auth/register", Set.of()),
+            Map.entry("/auth/refresh", Set.of()),
+            Map.entry("/api/v1/auth/refresh", Set.of()),
             Map.entry("/webhooks/payment-gateway", Set.of()),
             Map.entry("/api/v1/webhooks/payment-gateway", Set.of()),
             Map.entry("/actuator", Set.of()),

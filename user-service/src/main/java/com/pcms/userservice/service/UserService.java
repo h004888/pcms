@@ -8,6 +8,7 @@ import com.pcms.userservice.dto.request.LoginRequest;
 import com.pcms.userservice.dto.request.RegisterRequest;
 import com.pcms.userservice.dto.request.ResendVerificationRequest;
 import com.pcms.userservice.dto.request.ResetPasswordRequest;
+import com.pcms.userservice.dto.request.SyncProfileRequest;
 import com.pcms.userservice.dto.request.UpdateUserRequest;
 import com.pcms.userservice.dto.request.VerifyEmailRequest;
 import com.pcms.userservice.dto.response.AuditLogResponse;
@@ -75,4 +76,6 @@ public interface UserService {
 
     /** Sprint 4: Customer self-registration from portal. Creates user account + returns tokens. */
     LoginResponse register(RegisterRequest request, String ipAddress);
+
+    UserResponse syncProfile(UUID id, SyncProfileRequest request);
 }

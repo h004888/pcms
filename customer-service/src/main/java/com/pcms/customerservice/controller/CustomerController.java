@@ -114,12 +114,6 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.update(id, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        customerService.softDelete(id);
-        return ResponseEntity.noContent().build();
-    }
-
     /**
      * PUT /api/v1/customers/{id}/points/add - Called by payment-service (BR07)
      * Award 1 point per 1000 VND of order total.

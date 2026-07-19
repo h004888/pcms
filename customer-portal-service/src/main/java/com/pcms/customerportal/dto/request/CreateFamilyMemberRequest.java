@@ -2,6 +2,7 @@ package com.pcms.customerportal.dto.request;
 
 import com.pcms.customerportal.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -19,6 +20,8 @@ public record CreateFamilyMemberRequest(
 
         @NotBlank(message = "relationship is required")
         @Size(max = 50)
+        @Pattern(regexp = "^(SPOUSE|CHILD|PARENT|SIBLING|OTHER)$",
+                 message = "relationship must be one of: SPOUSE, CHILD, PARENT, SIBLING, OTHER")
         String relationship,
 
         LocalDate dob,

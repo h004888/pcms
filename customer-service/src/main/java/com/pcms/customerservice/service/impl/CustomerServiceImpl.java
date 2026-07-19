@@ -5,8 +5,10 @@ import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.customerservice.client.OrderClient;
+import com.pcms.customerservice.client.UserClient;
 import com.pcms.customerservice.dto.request.CreateCustomerRequest;
 import com.pcms.customerservice.dto.request.CustomerPortalRegisterRequest;
+import com.pcms.customerservice.dto.request.CustomerProvisionRequest;
 import com.pcms.customerservice.dto.request.UpdateCustomerRequest;
 import com.pcms.customerservice.dto.response.CustomerHistoryResponse;
 import com.pcms.customerservice.dto.response.CustomerOrderSummaryResponse;
@@ -18,6 +20,8 @@ import com.pcms.customerservice.enums.LoyaltyTier;
 import com.pcms.customerservice.repository.CustomerRepository;
 import com.pcms.customerservice.repository.LoyaltyTransactionRepository;
 import com.pcms.customerservice.service.CustomerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +30,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -37,16 +43,21 @@ import java.util.UUID;
 @Transactional
 public class CustomerServiceImpl implements CustomerService {
 
+    private static final Logger log = LoggerFactory.getLogger(CustomerServiceImpl.class);
+
     private final CustomerRepository customerRepository;
     private final LoyaltyTransactionRepository loyaltyRepository;
     private final OrderClient orderClient;
+    private final UserClient userClient;
 
     public CustomerServiceImpl(CustomerRepository customerRepository,
             LoyaltyTransactionRepository loyaltyRepository,
-            OrderClient orderClient) {
+            OrderClient orderClient,
+            UserClient userClient) {
         this.customerRepository = customerRepository;
         this.loyaltyRepository = loyaltyRepository;
         this.orderClient = orderClient;
+        this.userClient = userClient;
     }
 
     @Override
@@ -128,6 +139,7 @@ public class CustomerServiceImpl implements CustomerService {
             throw new DuplicateResourceException("Phone", request.phone());
         }
         Customer c = new Customer();
+        c.setId(UUID.randomUUID());
         c.setName(request.name());
         c.setPhone(request.phone());
         c.setEmail(request.email());
@@ -151,11 +163,11 @@ public class CustomerServiceImpl implements CustomerService {
         }
         c.setName(request.name());
         c.setPhone(request.phone());
-        c.setEmail(request.email());
+        // email is intentionally NOT updated — mirrors users.email which is locked
         c.setAddress(request.address());
         c.setDob(request.dob());
         c.setGender(request.gender());
-        // code and points preserved
+        // code, email, points preserved
         return CustomerResponse.from(customerRepository.save(c));
     }
 
@@ -171,14 +183,34 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Transactional
+    public CustomerResponse provisionFromUser(CustomerProvisionRequest request) {
+        return customerRepository.findById(request.userId())
+                .map(CustomerResponse::from)
+                .orElseGet(() -> createProvisionedCustomer(request));
+    }
+
+    @Override
     public CustomerResponse updatePortalProfile(UUID id, CustomerPortalRegisterRequest request) {
-        return update(id, new UpdateCustomerRequest(
+        CustomerResponse response = update(id, new UpdateCustomerRequest(
                 request.name(),
                 request.phone(),
-                request.email(),
                 request.address(),
                 request.dob(),
                 request.gender()));
+
+        try {
+            Map<String, Object> syncPayload = new HashMap<>();
+            syncPayload.put("fullName", request.name());
+            if (request.phone() != null) {
+                syncPayload.put("phone", request.phone());
+            }
+            userClient.syncProfile(id, syncPayload);
+        } catch (Exception e) {
+            log.warn("Failed to sync profile to user-service for customer {}: {}", id, e.getMessage());
+        }
+
+        return response;
     }
 
     @Override
@@ -245,6 +277,24 @@ public class CustomerServiceImpl implements CustomerService {
         if (!customerRepository.existsById(id)) {
             throw new ResourceNotFoundException("Customer", id);
         }
+    }
+
+    private CustomerResponse createProvisionedCustomer(CustomerProvisionRequest request) {
+        if (customerRepository.existsByPhone(request.phone())) {
+            throw new DuplicateResourceException("Phone", request.phone());
+        }
+        Customer customer = new Customer();
+        customer.setId(request.userId());
+        customer.setName(request.name());
+        customer.setPhone(request.phone());
+        customer.setEmail(request.email());
+        customer.setAddress(request.address());
+        customer.setDob(request.dob());
+        customer.setGender(request.gender());
+        customer.setPoints(0);
+        customer.setTier(LoyaltyTier.BRONZE);
+        customer.setCode(generateCode());
+        return CustomerResponse.from(customerRepository.save(customer));
     }
 
     /**
