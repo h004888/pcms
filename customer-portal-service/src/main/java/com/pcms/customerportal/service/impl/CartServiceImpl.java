@@ -12,6 +12,7 @@ import com.pcms.customerportal.entity.CartItem;
 import com.pcms.customerportal.enums.CartStatus;
 import com.pcms.customerportal.repository.CartItemRepository;
 import com.pcms.customerportal.repository.CartRepository;
+import com.pcms.customerportal.service.CartFactory;
 import com.pcms.customerportal.service.CartService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,26 +38,29 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final CatalogClient catalogClient;
+    private final CartFactory cartFactory;
 
     public CartServiceImpl(CartRepository cartRepository,
                            CartItemRepository cartItemRepository,
-                           CatalogClient catalogClient) {
+                           CatalogClient catalogClient,
+                           CartFactory cartFactory) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.catalogClient = catalogClient;
+        this.cartFactory = cartFactory;
     }
 
     @Override
     @Transactional(readOnly = true)
     public CartResponse getCart(UUID customerId) {
-        Cart cart = getOrCreateCart(customerId);
+        Cart cart = cartFactory.getOrCreateCart(customerId);
         return toResponse(cart);
     }
 
     @Override
     @Transactional
     public CartResponse addItem(UUID customerId, AddCartItemRequest request) {
-        Cart cart = getOrCreateCart(customerId);
+        Cart cart = cartFactory.getOrCreateCart(customerId);
 
         // Fetch medicine info from catalog-service
         Map<String, Object> medicine = catalogClient.getById(request.medicineId().toString());
@@ -99,7 +103,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartResponse updateItem(UUID customerId, UUID itemId, UpdateCartItemRequest request) {
-        Cart cart = getOrCreateCart(customerId);
+        Cart cart = cartFactory.getOrCreateCart(customerId);
         CartItem item = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("CartItem", itemId));
 
@@ -120,7 +124,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartResponse removeItem(UUID customerId, UUID itemId) {
-        Cart cart = getOrCreateCart(customerId);
+        Cart cart = cartFactory.getOrCreateCart(customerId);
         CartItem item = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("CartItem", itemId));
 
@@ -162,27 +166,6 @@ public class CartServiceImpl implements CartService {
     }
 
     // ===== Private helpers =====
-
-    private Cart getOrCreateCart(UUID customerId) {
-        return cartRepository.findByCustomerIdAndStatus(customerId, CartStatus.ACTIVE)
-                .or(() -> cartRepository.findByCustomerId(customerId).map(cart -> {
-                    cart.setStatus(CartStatus.ACTIVE);
-                    cartItemRepository.deleteByCartId(cart.getId());
-                    cart.getItems().clear();
-                    cart.setSubtotal(BigDecimal.ZERO);
-                    cart.setDiscount(BigDecimal.ZERO);
-                    cart.setTotal(BigDecimal.ZERO);
-                    cart.setVoucherCode(null);
-                    return cartRepository.save(cart);
-                }))
-                .orElseGet(() -> {
-                    Cart newCart = new Cart();
-                    newCart.setCustomerId(customerId);
-                    newCart.setStatus(CartStatus.ACTIVE);
-                    newCart.setShippingFee(DEFAULT_SHIPPING_FEE);
-                    return cartRepository.save(newCart);
-                });
-    }
 
     private void recalculateTotals(Cart cart) {
         List<CartItem> items = cartItemRepository.findByCartId(cart.getId());

@@ -71,7 +71,7 @@ public record InvoiceResponse(
                 null, null, // customer
                 null, null, // branch
                 p.getStaffId(),
-                null, // staffName
+                p.getStaffId() != null ? null : "Khách lẻ",
                 List.of(), // items
                 p.getCreatedAt(),
                 p.getCreatedAt());

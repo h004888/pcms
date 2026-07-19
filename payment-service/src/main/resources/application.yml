@@ -23,6 +23,10 @@ payment:
   loyalty-points-per-1000-vnd: 1  # BR07
   invoice-prefix: "INV"           # NSF-11: INV-yyyymmdd-####
 
+app:
+  sepay:
+    webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:06e1fb53-3ced-42b0-a5c1-46c310d10cac}
+
 resilience4j:
   circuitbreaker:
     instances:

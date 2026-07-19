@@ -3,6 +3,7 @@ package com.pcms.customerportal.service.impl;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.customerportal.client.OrderClient;
+import com.pcms.customerportal.client.PaymentServiceClient;
 import com.pcms.customerportal.dto.request.CheckoutConfirmRequest;
 import com.pcms.customerportal.dto.request.CheckoutPreviewRequest;
 import com.pcms.customerportal.dto.response.CheckoutConfirmResponse;
@@ -12,6 +13,7 @@ import com.pcms.customerportal.entity.CartItem;
 import com.pcms.customerportal.enums.CartStatus;
 import com.pcms.customerportal.repository.CartItemRepository;
 import com.pcms.customerportal.repository.CartRepository;
+import com.pcms.customerportal.service.CartFactory;
 import com.pcms.customerportal.service.CheckoutService;
 import com.pcms.customerportal.service.VoucherService;
 import com.pcms.customerportal.dto.request.ApplyVoucherRequest;
@@ -41,22 +43,27 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final CartItemRepository cartItemRepository;
     private final VoucherService voucherService;
     private final OrderClient orderClient;
+    private final PaymentServiceClient paymentServiceClient;
+    private final CartFactory cartFactory;
 
     public CheckoutServiceImpl(CartRepository cartRepository,
                                CartItemRepository cartItemRepository,
                                VoucherService voucherService,
-                               OrderClient orderClient) {
+                               OrderClient orderClient,
+                               PaymentServiceClient paymentServiceClient,
+                               CartFactory cartFactory) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.voucherService = voucherService;
         this.orderClient = orderClient;
+        this.paymentServiceClient = paymentServiceClient;
+        this.cartFactory = cartFactory;
     }
 
     @Override
     @Transactional(readOnly = true)
     public CheckoutPreviewResponse preview(UUID customerId, CheckoutPreviewRequest request) {
-        Cart cart = cartRepository.findByCustomerIdAndStatus(customerId, CartStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart", "customer=" + customerId));
+        Cart cart = cartFactory.getOrCreateCart(customerId);
 
         List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
         if (items.isEmpty()) {
@@ -109,9 +116,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     @Override
     @Transactional
     public CheckoutConfirmResponse confirm(UUID customerId, CheckoutConfirmRequest request) {
-        // Get cart first
-        Cart cart = cartRepository.findByCustomerIdAndStatus(customerId, CartStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart", "customer=" + customerId));
+        Cart cart = cartFactory.getOrCreateCart(customerId);
 
         List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
         if (items.isEmpty()) {
@@ -156,9 +161,27 @@ public class CheckoutServiceImpl implements CheckoutService {
         String orderStatus = (String) orderResponse.getOrDefault("status", "PENDING");
         BigDecimal total = cart.getTotal();
 
-        // Mark cart as checked out
-        cart.setStatus(CartStatus.CHECKED_OUT);
-        cartRepository.save(cart);
+        // Create pending payment for VietQR
+        if ("VIETQR".equalsIgnoreCase(request.paymentMethod())) {
+            try {
+                Map<String, Object> paymentRequest = Map.of(
+                        "orderId", orderId.toString(),
+                        "paymentMethod", "QR",
+                        "amount", total,
+                        "transactionRef", orderNumber
+                );
+                paymentServiceClient.createPayment(paymentRequest);
+                log.info("[Checkout] created pending payment for order={} (VietQR)", orderNumber);
+            } catch (Exception e) {
+                log.warn("[Checkout] failed to create pending payment for order={}: {}",
+                        orderNumber, e.getMessage());
+            }
+            // Don't mark cart as CHECKED_OUT yet — keep ACTIVE until payment confirmed
+        } else {
+            // COD: mark cart as checked out immediately
+            cart.setStatus(CartStatus.CHECKED_OUT);
+            cartRepository.save(cart);
+        }
 
         log.info("[Checkout] confirmed order={} for customer={}", orderNumber, customerId);
 

@@ -7,6 +7,7 @@ import com.pcms.paymentservice.dto.RefundHistoryResponse;
 import com.pcms.paymentservice.dto.RefundPaymentRequest;
 import org.springframework.data.domain.Page;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -42,4 +43,10 @@ public interface PaymentService {
      * to minimal response on remote failure.
      */
     InvoiceResponse getInvoice(UUID paymentId);
+
+    /**
+     * Query payment status by order number (for VietQR polling).
+     * Returns {status: "PENDING"|"PAID"|"NOT_FOUND"}.
+     */
+    Map<String, Object> getStatusByOrderNumber(String orderNumber);
 }

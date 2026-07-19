@@ -61,7 +61,7 @@ public class Payment {
     @Column(nullable = false, length = 20)
     private PaymentStatus status = PaymentStatus.PENDING;
 
-    @Column(name = "staff_id", nullable = false)
+    @Column(name = "staff_id")
     private UUID staffId;
 
     @CreatedDate

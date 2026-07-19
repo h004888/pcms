@@ -95,6 +95,7 @@ public class PaymentOutboxPublisher {
         UUID orderId = event.getAggregateId();
         Map<String, Object> payload = parsePayload(event);
         UUID actorId = payload.get("actorId") != null
+                && !"null".equals(payload.get("actorId").toString())
                 ? UUID.fromString(payload.get("actorId").toString())
                 : null;
         orderClient.markOrderPaid(orderId, actorId);

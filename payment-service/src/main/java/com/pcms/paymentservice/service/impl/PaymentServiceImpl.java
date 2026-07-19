@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -121,9 +122,9 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setTenderedAmount(request.tenderedAmount());
         payment.setStaffId(request.staffId());
         payment.setInvoiceNumber(generateInvoiceNumber());
-        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setStatus(request.staffId() != null ? PaymentStatus.SUCCESS : PaymentStatus.PENDING);
         if (request.transactionRef() != null) {
-            payment.setTransactionRef(request.transactionRef());
+            payment.setTransactionRef(request.transactionRef().replace("-", ""));
         }
         // Calculate change for CASH
         if (request.paymentMethod() == PaymentMethod.CASH && request.tenderedAmount() != null) {
@@ -132,18 +133,17 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment saved = paymentRepository.save(payment);
 
-        // B-17: Emit OutboxEvent instead of synchronous orderClient call.
-        // PaymentOutboxPublisher will retry until SENT, triggering the saga
-        // in order-service. Atomic with the Payment record.
-        // NOTE: aggregateId MUST be the Order ID (not Payment ID) because
-        // the publisher's dispatch() passes it to OrderClient.markOrderPaid(orderId, ...)
-        outboxEventRepository.save(new OutboxEvent(
-                "Order", request.orderId(), "PAYMENT_COMPLETED",
-                "order-service",
-                "/orders/" + request.orderId() + "/pay",
-                String.format("{\"actorId\":\"%s\"}", request.staffId())));
-        log.info("[payment-outbox] Emitted PAYMENT_COMPLETED for order {} (payment {})",
-                request.orderId(), saved.getId());
+        // B-17: Emit OutboxEvent only for in-store payments (staff present).
+        // B2C payments wait for webhook; webhook will emit outbox after payment confirmed.
+        if (request.staffId() != null) {
+            outboxEventRepository.save(new OutboxEvent(
+                    "Order", request.orderId(), "PAYMENT_COMPLETED",
+                    "order-service",
+                    "/orders/" + request.orderId() + "/pay",
+                    String.format("{\"actorId\":\"%s\"}", request.staffId())));
+            log.info("[payment-outbox] Emitted PAYMENT_COMPLETED for order {} (payment {})",
+                    request.orderId(), saved.getId());
+        }
 
         return PaymentResponse.from(saved);
     }
@@ -232,6 +232,18 @@ public class PaymentServiceImpl implements PaymentService {
             log.warn("Failed to enrich invoice for payment {}: {}", paymentId, e.getMessage());
             return InvoiceResponse.minimal(payment);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getStatusByOrderNumber(String orderNumber) {
+        Optional<Payment> paymentOpt = paymentRepository.findByTransactionRef(orderNumber.replace("-", ""));
+        if (paymentOpt.isEmpty()) {
+            return java.util.Map.of("status", "NOT_FOUND");
+        }
+        Payment payment = paymentOpt.get();
+        String status = payment.getStatus() == PaymentStatus.SUCCESS ? "PAID" : "PENDING";
+        return java.util.Map.of("status", status);
     }
 
     /**

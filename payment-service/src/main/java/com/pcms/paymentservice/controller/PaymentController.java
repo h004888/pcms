@@ -55,6 +55,11 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getByOrderId(orderId));
     }
 
+    @GetMapping("/status/{orderNumber}")
+    public ResponseEntity<java.util.Map<String, Object>> getStatusByOrderNumber(@PathVariable String orderNumber) {
+        return ResponseEntity.ok(paymentService.getStatusByOrderNumber(orderNumber));
+    }
+
     /**
      * POST /api/v1/payments - Process a payment
      */

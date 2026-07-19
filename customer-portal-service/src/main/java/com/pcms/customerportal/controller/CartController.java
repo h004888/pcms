@@ -1,5 +1,6 @@
 package com.pcms.customerportal.controller;
 
+import com.pcms.customerportal.client.PaymentServiceClient;
 import com.pcms.customerportal.dto.request.AddCartItemRequest;
 import com.pcms.customerportal.dto.request.CheckoutConfirmRequest;
 import com.pcms.customerportal.dto.request.CheckoutPreviewRequest;
@@ -16,6 +17,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -29,10 +31,13 @@ public class CartController {
 
     private final CartService cartService;
     private final CheckoutService checkoutService;
+    private final PaymentServiceClient paymentServiceClient;
 
-    public CartController(CartService cartService, CheckoutService checkoutService) {
+    public CartController(CartService cartService, CheckoutService checkoutService,
+                          PaymentServiceClient paymentServiceClient) {
         this.cartService = cartService;
         this.checkoutService = checkoutService;
+        this.paymentServiceClient = paymentServiceClient;
     }
 
     @GetMapping
@@ -91,5 +96,11 @@ public class CartController {
             @Valid @RequestBody CheckoutConfirmRequest request) {
         return ResponseEntity.ok(
                 checkoutService.confirm(CurrentUser.requireCustomerId(userId), request));
+    }
+
+    @GetMapping("/payment-status/{orderNumber}")
+    @Operation(summary = "Query payment status by order number (for VietQR polling)")
+    public ResponseEntity<Map<String, Object>> getPaymentStatus(@PathVariable String orderNumber) {
+        return ResponseEntity.ok(paymentServiceClient.getPaymentStatusByOrderNumber(orderNumber));
     }
 }
