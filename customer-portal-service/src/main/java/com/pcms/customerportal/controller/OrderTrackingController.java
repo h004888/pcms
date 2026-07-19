@@ -2,6 +2,7 @@ package com.pcms.customerportal.controller;
 
 import com.pcms.common.dto.PageResponse;
 import com.pcms.customerportal.dto.response.OrderHistoryItemResponse;
+import com.pcms.customerportal.dto.response.OrderDetailResponse;
 import com.pcms.customerportal.dto.response.OrderTrackingResponse;
 import com.pcms.customerportal.security.CurrentUser;
 import com.pcms.customerportal.service.OrderTrackingService;
@@ -36,13 +37,24 @@ public class OrderTrackingController {
                 service.track(orderId, CurrentUser.requireCustomerId(userId)));
     }
 
+    @GetMapping("/{id}/detail")
+    @Operation(summary = "Get own order detail")
+    public ResponseEntity<OrderDetailResponse> detail(
+            @RequestHeader(CurrentUser.USER_ID_HEADER) String userId,
+            @PathVariable("id") UUID orderId) {
+        return ResponseEntity.ok(service.detail(orderId, CurrentUser.requireCustomerId(userId)));
+    }
+
     @GetMapping("/history")
     @Operation(summary = "B2C order history (paginated, own orders only)")
     public ResponseEntity<PageResponse<OrderHistoryItemResponse>> history(
             @RequestHeader(CurrentUser.USER_ID_HEADER) String userId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(
-                service.history(CurrentUser.requireCustomerId(userId), page, size));
+                service.history(CurrentUser.requireCustomerId(userId), status, dateFrom, dateTo, page, size));
     }
 }

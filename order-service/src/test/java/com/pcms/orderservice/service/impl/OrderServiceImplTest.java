@@ -9,16 +9,24 @@ import com.pcms.orderservice.client.InventoryClient;
 import com.pcms.orderservice.dto.CreateOrderRequest;
 import com.pcms.orderservice.dto.OrderItemRequest;
 import com.pcms.orderservice.entity.Order;
+import com.pcms.orderservice.entity.OrderStatusHistory;
 import com.pcms.orderservice.enums.OrderStatus;
 import com.pcms.orderservice.repository.OrderRepository;
 import com.pcms.orderservice.repository.OrderSequenceRepository;
 import com.pcms.orderservice.repository.OutboxEventRepository;
+import com.pcms.orderservice.repository.OrderStatusHistoryRepository;
+import com.pcms.orderservice.repository.SagaInstanceRepository;
+import com.pcms.orderservice.saga.SagaCompensationHandler;
+import com.pcms.orderservice.saga.SagaOrchestrator;
+import com.pcms.orderservice.service.CouponService;
+import com.pcms.orderservice.client.PrescriptionClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 /**
  * Unit test scaffold for OrderServiceImpl (B-18).
@@ -47,6 +56,12 @@ class OrderServiceImplTest {
     @Mock private BranchClient branchClient;
     @Mock private OrderSequenceRepository sequenceRepository;
     @Mock private OutboxEventRepository outboxRepository;
+    @Mock private PrescriptionClient prescriptionClient;
+    @Mock private CouponService couponService;
+    @Mock private SagaOrchestrator sagaOrchestrator;
+    @Mock private SagaCompensationHandler sagaCompensationHandler;
+    @Mock private SagaInstanceRepository sagaRepository;
+    @Mock private OrderStatusHistoryRepository orderStatusHistoryRepository;
 
     @InjectMocks private OrderServiceImpl orderService;
 
@@ -72,6 +87,8 @@ class OrderServiceImplTest {
                         "price", BigDecimal.valueOf(45000),
                         "prescriptionRequired", false));
         lenient().when(sequenceRepository.findByIdForUpdate(any())).thenReturn(java.util.Optional.empty());
+        ReflectionTestUtils.setField(orderService, "bulkDiscountThreshold", 10);
+        ReflectionTestUtils.setField(orderService, "bulkDiscountRate", BigDecimal.valueOf(0.05));
     }
 
     @Test
@@ -82,12 +99,21 @@ class OrderServiceImplTest {
                 List.of(new OrderItemRequest(medicineId, 2)),
                 null);
 
+        Order saved = new Order();
+        UUID orderId = UUID.randomUUID();
+        saved.setId(orderId);
+        saved.setCustomerId(customerId);
+        saved.setBranchId(branchId);
+        saved.setStatus(OrderStatus.PENDING_PAYMENT);
+        when(couponService.findApplicableCoupon(null)).thenReturn(null);
+        when(couponService.calculateDiscount(any(), any(BigDecimal.class))).thenReturn(BigDecimal.ZERO);
+        when(orderRepository.save(any(Order.class))).thenReturn(saved);
+
         // Act
-        // Note: this would need a stub for orderRepository.save returning a persisted Order
-        // Skipped here to keep scaffold simple
+        orderService.create(request);
 
         // Assert placeholder
-        assertThat(request).isNotNull();
+        verify(orderStatusHistoryRepository).save(any(OrderStatusHistory.class));
     }
 
     @Test
@@ -116,5 +142,64 @@ class OrderServiceImplTest {
         assertThatThrownBy(() -> orderService.create(request))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Customer");
+    }
+
+    @Test
+    void approve_recordsStatusHistory() {
+        Order order = orderWithStatus(OrderStatus.PENDING_PAYMENT);
+        when(orderRepository.findById(order.getId())).thenReturn(java.util.Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        orderService.approve(order.getId(), customerId);
+
+        verify(orderStatusHistoryRepository).save(any(OrderStatusHistory.class));
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.APPROVED);
+    }
+
+    @Test
+    void markAsPaid_recordsStatusHistory() {
+        Order order = orderWithStatus(OrderStatus.PENDING_PAYMENT);
+        when(orderRepository.findById(order.getId())).thenReturn(java.util.Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        orderService.markAsPaid(order.getId(), customerId);
+
+        verify(orderStatusHistoryRepository).save(any(OrderStatusHistory.class));
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    void reject_recordsStatusHistory() {
+        Order order = orderWithStatus(OrderStatus.APPROVED);
+        when(orderRepository.findById(order.getId())).thenReturn(java.util.Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        orderService.reject(order.getId(), customerId);
+
+        verify(orderStatusHistoryRepository).save(any(OrderStatusHistory.class));
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED);
+    }
+
+    @Test
+    void cancel_recordsManualStatusHistory() {
+        Order order = orderWithStatus(OrderStatus.PENDING_PAYMENT);
+        when(orderRepository.findById(order.getId())).thenReturn(java.util.Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+        when(sagaRepository.findByAggregateTypeAndAggregateId("Order", order.getId()))
+                .thenReturn(java.util.Optional.empty());
+
+        orderService.cancel(order.getId(), customerId);
+
+        verify(orderStatusHistoryRepository).save(any(OrderStatusHistory.class));
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    private Order orderWithStatus(OrderStatus status) {
+        Order order = new Order();
+        order.setId(UUID.randomUUID());
+        order.setCustomerId(customerId);
+        order.setBranchId(branchId);
+        order.setStatus(status);
+        return order;
     }
 }

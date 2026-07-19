@@ -91,8 +91,7 @@ public interface OrderClient {
     Map<String, Object> getById(@PathVariable("id") String orderId);
 
     default Map<String, Object> fallbackGetById(String orderId, Throwable t) {
-        log.warn("order-service unavailable while fetching order {}: {}", orderId, t.getMessage());
-        return Map.of();
+        throw new IllegalStateException("order-service unavailable while fetching order " + orderId, t);
     }
 
     /**
@@ -116,13 +115,23 @@ public interface OrderClient {
     @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackListForHistory")
     Map<String, Object> listForHistory(
             @RequestParam(name = "customerId") String customerId,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "dateFrom", required = false) String dateFrom,
+            @RequestParam(name = "dateTo", required = false) String dateTo,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size);
 
-    default Map<String, Object> fallbackListForHistory(String customerId, int page, int size, Throwable t) {
-        log.warn("order-service unavailable while listing orders for {}: {}", customerId, t.getMessage());
-        return Map.of("data", java.util.List.of(),
-                      "page", page, "size", size, "total", 0, "totalPages", 0);
+    default Map<String, Object> fallbackListForHistory(String customerId, String status, String dateFrom,
+                                                        String dateTo, int page, int size, Throwable t) {
+        throw new IllegalStateException("order-service unavailable while listing orders for " + customerId, t);
+    }
+
+    @GetMapping("/orders/{id}/status-history")
+    @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackGetStatusHistory")
+    List<Map<String, Object>> getStatusHistory(@PathVariable("id") String orderId);
+
+    default List<Map<String, Object>> fallbackGetStatusHistory(String orderId, Throwable t) {
+        throw new IllegalStateException("order-service unavailable while fetching status history for " + orderId, t);
     }
 
     /**

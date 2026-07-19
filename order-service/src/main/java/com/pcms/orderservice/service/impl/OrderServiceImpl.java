@@ -11,14 +11,17 @@ import com.pcms.orderservice.dto.CreateOrderRequest;
 import com.pcms.orderservice.dto.OrderItemRequest;
 import com.pcms.orderservice.dto.OrderRecomputeResponse;
 import com.pcms.orderservice.dto.OrderResponse;
+import com.pcms.orderservice.dto.OrderStatusHistoryResponse;
 import com.pcms.orderservice.dto.UpdateOrderRequest;
 import com.pcms.orderservice.entity.Order;
 import com.pcms.orderservice.entity.OrderItem;
+import com.pcms.orderservice.entity.OrderStatusHistory;
 import com.pcms.orderservice.entity.OrderSequence;
 import com.pcms.orderservice.enums.OrderStatus;
 import com.pcms.orderservice.repository.OrderRepository;
 import com.pcms.orderservice.repository.OrderSequenceRepository;
 import com.pcms.orderservice.repository.SagaInstanceRepository;
+import com.pcms.orderservice.repository.OrderStatusHistoryRepository;
 import com.pcms.orderservice.saga.SagaCompensationHandler;
 import com.pcms.orderservice.saga.SagaOrchestrator;
 import com.pcms.orderservice.service.OrderService;
@@ -36,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +77,7 @@ public class OrderServiceImpl implements OrderService {
     private final SagaOrchestrator sagaOrchestrator;
     private final SagaCompensationHandler sagaCompensationHandler;
     private final SagaInstanceRepository sagaRepo;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
 
     @Value("${order.bulk-discount-threshold:10}")
     private int bulkDiscountThreshold;
@@ -91,7 +96,8 @@ public class OrderServiceImpl implements OrderService {
             CouponService couponService,
             SagaOrchestrator sagaOrchestrator,
             SagaCompensationHandler sagaCompensationHandler,
-            SagaInstanceRepository sagaRepo) {
+            SagaInstanceRepository sagaRepo,
+            OrderStatusHistoryRepository orderStatusHistoryRepository) {
         this.orderRepository = orderRepository;
         this.catalogClient = catalogClient;
         this.inventoryClient = inventoryClient;
@@ -104,6 +110,7 @@ public class OrderServiceImpl implements OrderService {
         this.sagaOrchestrator = sagaOrchestrator;
         this.sagaCompensationHandler = sagaCompensationHandler;
         this.sagaRepo = sagaRepo;
+        this.orderStatusHistoryRepository = orderStatusHistoryRepository;
     }
 
     @Override
@@ -142,6 +149,17 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByOrderNumber(orderNumber)
                 .map(OrderResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderNumber));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderStatusHistoryResponse> getStatusHistory(UUID orderId) {
+        if (!orderRepository.existsById(orderId)) {
+            throw new ResourceNotFoundException("Order", orderId);
+        }
+        return orderStatusHistoryRepository.findByOrderIdOrderByOccurredAtAsc(orderId).stream()
+                .map(OrderStatusHistoryResponse::from)
+                .toList();
     }
 
     @Override
@@ -260,6 +278,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Order saved = orderRepository.save(order);
+        orderStatusHistoryRepository.save(new OrderStatusHistory(
+                saved.getId(), OrderStatus.PENDING_PAYMENT, Instant.now(), request.staffId(), "Don hang da duoc tao"));
         log.info("[CHECKPOINT-6] Order saved successfully: id={}, orderNumber={}",
                 saved.getId(), saved.getOrderNumber());
         return OrderResponse.from(saved);
@@ -363,8 +383,7 @@ public class OrderServiceImpl implements OrderService {
                     "Order can only be marked paid while PENDING_PAYMENT or APPROVED",
                     "Đơn hàng chỉ có thể chuyển PAID khi đang chờ thanh toán hoặc đã duyệt");
         }
-        order.setStatus(OrderStatus.PAID);
-        orderRepository.save(order);
+        saveStatusChange(order, OrderStatus.PAID, actorId, "Don hang da duoc thanh toan");
 
         // B-17: Orchestration saga — replaces 3 separate outbox events with a single
         // saga that has automatic compensation on failure and stuck-saga detection.
@@ -383,8 +402,7 @@ public class OrderServiceImpl implements OrderService {
                     "Only pending-payment orders can be approved",
                     "Chỉ có thể duyệt đơn hàng đang chờ thanh toán");
         }
-        order.setStatus(OrderStatus.APPROVED);
-        return OrderResponse.from(orderRepository.save(order));
+        return OrderResponse.from(saveStatusChange(order, OrderStatus.APPROVED, actorId, "Don hang da duoc duyet"));
     }
 
     @Override
@@ -397,8 +415,7 @@ public class OrderServiceImpl implements OrderService {
                     "Only pending or approved orders can be rejected",
                     "Chỉ có thể từ chối đơn hàng đang chờ hoặc đã duyệt");
         }
-        order.setStatus(OrderStatus.REJECTED);
-        return OrderResponse.from(orderRepository.save(order));
+        return OrderResponse.from(saveStatusChange(order, OrderStatus.REJECTED, actorId, "Don hang da bi tu choi"));
     }
 
     @Override
@@ -412,8 +429,7 @@ public class OrderServiceImpl implements OrderService {
                     "Không thể hủy đơn hàng đã hoàn tất");
         }
         OrderStatus previousStatus = order.getStatus();
-        order.setStatus(OrderStatus.CANCELLED);
-        Order saved = orderRepository.save(order);
+        Order saved = saveStatusChange(order, OrderStatus.CANCELLED, actorId, "Huy don thu cong");
 
         // B-17: Trigger saga compensation if a saga exists for this order.
         var sagaOpt = sagaRepo.findByAggregateTypeAndAggregateId("Order", orderId);
@@ -433,6 +449,14 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         return OrderResponse.from(saved);
+    }
+
+    private Order saveStatusChange(Order order, OrderStatus newStatus, UUID actorId, String note) {
+        order.setStatus(newStatus);
+        Order saved = orderRepository.save(order);
+        orderStatusHistoryRepository.save(new OrderStatusHistory(
+                saved.getId(), newStatus, Instant.now(), actorId, note));
+        return saved;
     }
 
     /**

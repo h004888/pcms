@@ -3,12 +3,14 @@ package com.pcms.orderservice.service;
 import com.pcms.orderservice.dto.CreateOrderRequest;
 import com.pcms.orderservice.dto.OrderRecomputeResponse;
 import com.pcms.orderservice.dto.OrderResponse;
+import com.pcms.orderservice.dto.OrderStatusHistoryResponse;
 import com.pcms.orderservice.dto.UpdateOrderRequest;
 import com.pcms.orderservice.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.List;
 
 /**
  * Service interface for Order operations (UC06).
@@ -33,6 +35,8 @@ public interface OrderService {
     OrderResponse getById(UUID id);
 
     OrderResponse getByNumber(String orderNumber);
+
+    List<OrderStatusHistoryResponse> getStatusHistory(UUID orderId);
 
     /** Step 5-12 of UC06 main flow. */
     OrderResponse create(CreateOrderRequest request);

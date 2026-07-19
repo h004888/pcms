@@ -6,6 +6,7 @@ import com.pcms.orderservice.dto.OrderRecomputeResponse;
 import com.pcms.orderservice.dto.OrderResponse;
 import com.pcms.orderservice.dto.PageResponse;
 import com.pcms.orderservice.dto.UpdateOrderRequest;
+import com.pcms.orderservice.dto.OrderStatusHistoryResponse;
 import com.pcms.orderservice.enums.OrderStatus;
 import com.pcms.orderservice.service.OrderService;
 import jakarta.validation.Valid;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.List;
 
 /**
  * UC06 - Manage Orders
@@ -52,6 +54,11 @@ public class OrderController {
     @GetMapping("/number/{orderNumber}")
     public ResponseEntity<OrderResponse> getByNumber(@PathVariable String orderNumber) {
         return ResponseEntity.ok(orderService.getByNumber(orderNumber));
+    }
+
+    @GetMapping("/{id}/status-history")
+    public ResponseEntity<List<OrderStatusHistoryResponse>> getStatusHistory(@PathVariable UUID id) {
+        return ResponseEntity.ok(orderService.getStatusHistory(id));
     }
 
     /**

@@ -82,6 +82,13 @@ spring:
                 - Path=/api/v1/customers/**
               filters:
                 - StripPrefix=2
+            # B2C Order endpoints (UC14) - must precede order-service catch-all
+            - id: customer-portal-orders
+              uri: lb://customer-portal-service
+              predicates:
+                - Path=/api/v1/orders/history,/api/v1/orders/*/track,/api/v1/orders/*/detail
+              filters:
+                - StripPrefix=2
             # Order (UC06) + Coupons
             - id: order-service
               uri: lb://order-service

@@ -3,6 +3,7 @@ package com.pcms.customerportal.dto.response;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
 
 public record OrderHistoryItemResponse(
         UUID id,
@@ -10,5 +11,8 @@ public record OrderHistoryItemResponse(
         String status,
         BigDecimal total,
         int itemCount,
-        Instant createdAt
-) {}
+        Instant createdAt,
+        List<ItemPreview> items
+) {
+    public record ItemPreview(UUID medicineId, String medicineName, int quantity) {}
+}
