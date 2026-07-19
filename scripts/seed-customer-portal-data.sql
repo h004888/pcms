@@ -111,12 +111,37 @@ INSERT INTO home_banners (id, title, image_url, link_url, position, sort_order, 
 (UUID_TO_BIN('caaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2'), 'DINH DƯỠNG ĐÚNG CÁCH', '/promos/dinh-duong-2.png', '/dinh-duong', 'SUB_PROMO', 2, 'ACTIVE', NOW(), NOW() + INTERVAL 6 MONTH, NOW(), NOW());
 
 -- ============= REVIEWS (SPRINT 3 - T11) =============
--- Note: medicineId tham chiếu catalog-service (UUID). Khi test cần có sẵn
--- medicines UUID thật. Dùng placeholder UUID; thay sau nếu cần.
 INSERT INTO review (id, customer_id, medicine_id, rating, comment, created_at, updated_at) VALUES
-(UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000010'), 5, 'Thuốc tốt, hiệu quả rõ rệt.', NOW(), NOW()),
-(UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000002'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000011'), 4, 'Hơi đắng nhưng chịu được.', NOW(), NOW()),
-(UUID_TO_BIN('11111111-aaaa-bbbb-cccc-000000000003'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('00000000-0000-0000-0000-000000000010'), 3, 'Tạm ổn, sẽ dùng tiếp.', NOW(), NOW());
+-- Top 1: Clorpheniramin 4mg (0aaaaaaa-0038)
+(UUID_TO_BIN('a0000001-aaaa-bbbb-cccc-000000000001'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('0aaaaaaa-0038-0038-0038-000000000038'), 5, 'Giảm dị ứng nhanh, không gây buồn ngủ nhiều.', NOW(), NOW()),
+(UUID_TO_BIN('a0000002-aaaa-bbbb-cccc-000000000002'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('0aaaaaaa-0038-0038-0038-000000000038'), 4, 'Dùng tốt, hết ngứa sau 30 phút.', NOW(), NOW()),
+(UUID_TO_BIN('a0000003-aaaa-bbbb-cccc-000000000003'), UUID_TO_BIN('00000000-0000-0000-0000-000000000003'), UUID_TO_BIN('0aaaaaaa-0038-0038-0038-000000000038'), 5, 'Thuốc tốt, giá rẻ, nên mua.', NOW(), NOW()),
+-- Top 2: Kem chống nắng SPF50 (0aaaaaaa-0076)
+(UUID_TO_BIN('a0000004-aaaa-bbbb-cccc-000000000004'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('0aaaaaaa-0076-0076-0076-000000000076'), 5, 'Kem mịn, không bết dính, nâng tông nhẹ.', NOW(), NOW()),
+(UUID_TO_BIN('a0000005-aaaa-bbbb-cccc-000000000005'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('0aaaaaaa-0076-0076-0076-000000000076'), 4, 'Chống nắng tốt, dùng hè này rất ưng.', NOW(), NOW()),
+-- Top 3: Cetirizin 10mg (0aaaaaaa-0039)
+(UUID_TO_BIN('a0000006-aaaa-bbbb-cccc-000000000006'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('0aaaaaaa-0039-0039-0039-000000000039'), 5, 'Viêm mũi dị ứng đỡ hẳn sau 1 liều.', NOW(), NOW()),
+(UUID_TO_BIN('a0000007-aaaa-bbbb-cccc-000000000007'), UUID_TO_BIN('00000000-0000-0000-0000-000000000003'), UUID_TO_BIN('0aaaaaaa-0039-0039-0039-000000000039'), 4, 'Ít buồn ngủ hơn thuốc cũ, dùng ổn.', NOW(), NOW()),
+(UUID_TO_BIN('a0000008-aaaa-bbbb-cccc-000000000008'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('0aaaaaaa-0039-0039-0039-000000000039'), 3, 'Tạm được, cần thời gian mới thấy hiệu quả.', NOW(), NOW()),
+-- Top 4: Canxi Cơm (0aaaaaaa-0094)
+(UUID_TO_BIN('a0000009-aaaa-bbbb-cccc-000000000009'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('0aaaaaaa-0094-0094-0094-000000000094'), 5, 'Canxi dễ uống, không táo bón như loại khác.', NOW(), NOW()),
+(UUID_TO_BIN('a0000010-aaaa-bbbb-cccc-000000000010'), UUID_TO_BIN('00000000-0000-0000-0000-000000000003'), UUID_TO_BIN('0aaaaaaa-0094-0094-0094-000000000094'), 5, 'Bà bầu dùng rất tốt, canxi từ cơm dễ hấp thu.', NOW(), NOW()),
+-- Top 5: Coldacmin Flu (0aaaaaaa-0035)
+(UUID_TO_BIN('a0000011-aaaa-bbbb-cccc-000000000011'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('0aaaaaaa-0035-0035-0035-000000000035'), 4, 'Uống vào ngủ một giấc dậy khỏe ngay.', NOW(), NOW()),
+(UUID_TO_BIN('a0000012-aaaa-bbbb-cccc-000000000012'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('0aaaaaaa-0035-0035-0035-000000000035'), 4, 'Cảm cúm uống 2 viên là đỡ hẳn.', NOW(), NOW()),
+-- Top 6: Enalapril 5mg (0aaaaaaa-0059)
+(UUID_TO_BIN('a0000013-aaaa-bbbb-cccc-000000000013'), UUID_TO_BIN('00000000-0000-0000-0000-000000000003'), UUID_TO_BIN('0aaaaaaa-0059-0059-0059-000000000059'), 5, 'Huyết áp ổn định sau 1 tuần sử dụng.', NOW(), NOW()),
+-- Top 7: Siro ho trẻ em (0aaaaaaa-0045)
+(UUID_TO_BIN('a0000014-aaaa-bbbb-cccc-000000000014'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('0aaaaaaa-0045-0045-0045-000000000045'), 5, 'Bé nhà mình uống 3 ngày hết ho, vị ngọt dễ uống.', NOW(), NOW()),
+(UUID_TO_BIN('a0000015-aaaa-bbbb-cccc-000000000015'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('0aaaaaaa-0045-0045-0045-000000000045'), 4, 'Trẻ em dùng an toàn, không tác dụng phụ.', NOW(), NOW()),
+-- Top 8: Telmisartan 40mg (0aaaaaaa-0064)
+(UUID_TO_BIN('a0000016-aaaa-bbbb-cccc-000000000016'), UUID_TO_BIN('00000000-0000-0000-0000-000000000003'), UUID_TO_BIN('0aaaaaaa-0064-0064-0064-000000000064'), 5, 'Huyết áp ổn, ít tác dụng phụ hơn Losartan.', NOW(), NOW()),
+-- Top 9: Bổ Phế Nam Hà (0aaaaaaa-0043)
+(UUID_TO_BIN('a0000017-aaaa-bbbb-cccc-000000000017'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('0aaaaaaa-0043-0043-0043-000000000043'), 5, 'Thuốc đông y mà hiệu quả bất ngờ, đỡ ho rõ rệt.', NOW(), NOW()),
+(UUID_TO_BIN('a0000018-aaaa-bbbb-cccc-000000000018'), UUID_TO_BIN('00000000-0000-0000-0000-000000000002'), UUID_TO_BIN('0aaaaaaa-0043-0043-0043-000000000043'), 3, 'Vị hơi khó uống nhưng công nhận hiệu quả.', NOW(), NOW()),
+-- Top 10: Vitamin D3 K2 (0aaaaaaa-0093)
+(UUID_TO_BIN('a0000019-aaaa-bbbb-cccc-000000000019'), UUID_TO_BIN('00000000-0000-0000-0000-000000000003'), UUID_TO_BIN('0aaaaaaa-0093-0093-0093-000000000093'), 5, 'Bổ sung D3 K2 cho bé, hàng chính hãng.', NOW(), NOW()),
+(UUID_TO_BIN('a0000020-aaaa-bbbb-cccc-000000000020'), UUID_TO_BIN('00000000-0000-0000-0000-000000000001'), UUID_TO_BIN('0aaaaaaa-0093-0093-0093-000000000093'), 4, 'Uống đều đặn thấy xương chắc khỏe hơn.', NOW(), NOW());
 
 -- ============= QUICK LINKS (Phase 5 - SHOP-HOME hot categories strip) =============
 INSERT INTO quick_links (id, label, icon, href, sort_order, status, created_at, updated_at) VALUES

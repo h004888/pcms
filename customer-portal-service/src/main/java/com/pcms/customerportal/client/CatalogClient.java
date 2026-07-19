@@ -25,6 +25,9 @@ public interface CatalogClient {
     @GetMapping("/medicines/{id}")
     Map<String, Object> getById(@PathVariable("id") String id);
 
+    @GetMapping("/medicines/slug/{slug}")
+    Map<String, Object> getBySlug(@PathVariable("slug") String slug);
+
     @GetMapping("/search/medicines")
     List<Map<String, Object>> searchMedicines(
             @RequestParam(name = "q", required = false, defaultValue = "") String q,

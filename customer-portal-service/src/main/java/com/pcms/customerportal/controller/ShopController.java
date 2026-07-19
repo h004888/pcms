@@ -75,9 +75,11 @@ public class ShopController {
     @Operation(summary = "SHOP-SEARCH - search products")
     public ResponseEntity<PageResponse<Map<String, Object>>> search(
             @RequestParam(name = "q", required = false, defaultValue = "") String q,
+            @RequestParam(name = "category", required = false) String category,
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
-        return ResponseEntity.ok(searchService.search(q, page, size));
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "sort", required = false) String sort) {
+        return ResponseEntity.ok(searchService.search(q, category, page, size, sort));
     }
 
     @GetMapping("/lookup/drug")

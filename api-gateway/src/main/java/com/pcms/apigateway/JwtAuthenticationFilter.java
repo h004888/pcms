@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -51,36 +52,51 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     /** Path prefixes that bypass JWT validation.
-     *  Each prefix has 2 variants: with `/api/v1` (incoming) and without (post-rewrite). */
-    private static final Set<String> PUBLIC_PREFIXES = Set.of(
-            "/auth/login",          "/api/v1/auth/login",
-            "/auth/forgot-password", "/api/v1/auth/forgot-password",
-            "/auth/reset-password", "/api/v1/auth/reset-password",
-            "/auth/verify-email",   "/api/v1/auth/verify-email",
-            "/auth/resend-verification", "/api/v1/auth/resend-verification",
-            "/auth/healthz",        "/api/v1/auth/healthz",
-            "/auth/readyz",         "/api/v1/auth/readyz",
-            "/auth/register",       "/api/v1/auth/register",
-            "/webhooks/payment-gateway", "/api/v1/webhooks/payment-gateway",
-            "/actuator",
-            "/healthz",
-            "/readyz",
+     *  Each prefix has 2 variants: with `/api/v1` (incoming) and without (post-rewrite).
+     *  Map value = set of HTTP methods allowed for public access; empty set = all methods.
+     *  This is needed because some endpoints (e.g. /api/v1/reviews) are public for GET
+     *  but must still require auth for write methods (POST /reviews) and protected
+     *  sub-paths (/reviews/me). */
+    private static final Map<String, Set<HttpMethod>> PUBLIC_PREFIXES = Map.ofEntries(
+            Map.entry("/auth/login", Set.of()),
+            Map.entry("/api/v1/auth/login", Set.of()),
+            Map.entry("/auth/forgot-password", Set.of()),
+            Map.entry("/api/v1/auth/forgot-password", Set.of()),
+            Map.entry("/auth/reset-password", Set.of()),
+            Map.entry("/api/v1/auth/reset-password", Set.of()),
+            Map.entry("/auth/verify-email", Set.of()),
+            Map.entry("/api/v1/auth/verify-email", Set.of()),
+            Map.entry("/auth/resend-verification", Set.of()),
+            Map.entry("/api/v1/auth/resend-verification", Set.of()),
+            Map.entry("/auth/healthz", Set.of()),
+            Map.entry("/api/v1/auth/healthz", Set.of()),
+            Map.entry("/auth/readyz", Set.of()),
+            Map.entry("/api/v1/auth/readyz", Set.of()),
+            Map.entry("/auth/register", Set.of()),
+            Map.entry("/api/v1/auth/register", Set.of()),
+            Map.entry("/webhooks/payment-gateway", Set.of()),
+            Map.entry("/api/v1/webhooks/payment-gateway", Set.of()),
+            Map.entry("/actuator", Set.of()),
+            Map.entry("/healthz", Set.of()),
+            Map.entry("/readyz", Set.of()),
             // Customer-facing public routes (Sprint 4 home integration)
-            "/api/v1/shop/home",
-            "/api/v1/shop/pdp",
-            "/api/v1/shop/search",
-            "/api/v1/shop/lookup",
-            "/api/v1/ecom-ops/flash-sales",
-            "/api/v1/categories",
-            "/api/v1/health-articles",
-            "/api/v1/diseases",
-            "/api/v1/videos",
+            Map.entry("/api/v1/shop/home", Set.of()),
+            Map.entry("/api/v1/shop/pdp", Set.of()),
+            Map.entry("/api/v1/shop/search", Set.of()),
+            Map.entry("/api/v1/shop/lookup", Set.of()),
+            Map.entry("/api/v1/ecom-ops/flash-sales", Set.of()),
+            Map.entry("/api/v1/categories", Set.of()),
+            Map.entry("/api/v1/health-articles", Set.of()),
+            Map.entry("/api/v1/diseases", Set.of()),
+            Map.entry("/api/v1/videos", Set.of()),
             // Catalog & search — public read access
-            "/api/v1/medicines",
-            "/api/v1/search",
+            Map.entry("/api/v1/medicines", Set.of()),
+            Map.entry("/api/v1/search", Set.of()),
             // Store locator — public
-            "/api/v1/store",
-            "/api/v1/branches"
+            Map.entry("/api/v1/store", Set.of()),
+            Map.entry("/api/v1/branches", Set.of()),
+            // Reviews — public read access (GET only; POST and /me still require auth)
+            Map.entry("/api/v1/reviews", Set.of(HttpMethod.GET))
     );
 
     private final String secret;
@@ -106,7 +122,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (isPublic(path)) {
+        if (isPublic(path, method)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -115,7 +131,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = JwtClaims.extractToken(authHeader);
 
         if (token == null) {
-            unauthorized(response, path, "Missing or malformed Authorization header",
+            unauthorized(request, response, path, "Missing or malformed Authorization header",
                     "Thiếu hoặc sai định dạng header Authorization");
             return;
         }
@@ -125,7 +141,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             claims = JwtUtils.parseAndValidate(token, secret);
         } catch (Exception e) {
             log.warn("[gateway] JWT validation failed for {} -> {}", path, e.getMessage());
-            unauthorized(response, path, "Invalid or expired token",
+            unauthorized(request, response, path, "Invalid or expired token",
                     "Token không hợp lệ hoặc đã hết hạn");
             return;
         }
@@ -145,20 +161,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(wrappedRequest, response);
     }
 
-    private boolean isPublic(String path) {
+    private boolean isPublic(String path, String method) {
         if (path == null) return false;
-        for (String prefix : PUBLIC_PREFIXES) {
-            if (path.startsWith(prefix)) {
-                return true;
+        for (var entry : PUBLIC_PREFIXES.entrySet()) {
+            if (path.startsWith(entry.getKey())) {
+                Set<HttpMethod> allowed = entry.getValue();
+                // Empty set = all methods allowed (back-compat with old Set<String> entries).
+                // Non-empty set = request method must be in the allowed list.
+                if (allowed.isEmpty()) {
+                    return true;
+                }
+                HttpMethod reqMethod;
+                try {
+                    reqMethod = HttpMethod.valueOf(method);
+                } catch (IllegalArgumentException ex) {
+                    return false;
+                }
+                return allowed.contains(reqMethod);
             }
         }
         return false;
     }
 
-    private void unauthorized(HttpServletResponse response, String path,
+    private void unauthorized(HttpServletRequest request, HttpServletResponse response, String path,
                               String message, String messageVi) throws IOException {
-        // Add CORS headers so browser doesn't block error responses
-        response.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+        // Echo the request Origin if it's whitelisted; otherwise fall back to Vite default.
+        // Avoid using "*" because Allow-Credentials=true forbids it.
+        // Vary: Origin prevents caches from serving the wrong Access-Control-Allow-Origin
+        // to a different origin.
+        String origin = request.getHeader("Origin");
+        if (origin != null && ApiGatewayApplication.ALLOWED_ORIGINS.contains(origin)) {
+            response.setHeader("Access-Control-Allow-Origin", origin);
+        } else {
+            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+        }
+        response.setHeader("Vary", "Origin");
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
         response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, X-Correlation-Id, Idempotency-Key, X-Requested-With");
         response.setHeader("Access-Control-Allow-Credentials", "true");

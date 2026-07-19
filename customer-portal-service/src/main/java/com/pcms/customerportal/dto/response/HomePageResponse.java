@@ -26,7 +26,8 @@ public record HomePageResponse(
     public record BannerResponse(String id, String title, String imageUrl, String linkUrl) {}
 
     public record BestSellerResponse(String id, String slug, String name, BigDecimal price,
-                                     String imageUrl, Long soldCount) {}
+                                     String imageUrl, Long soldCount,
+                                     String description, Double rating, Long reviewCount) {}
 
     public record CategoryTeaserResponse(String id, String slug, String name, String imageUrl, Long productCount) {}
 

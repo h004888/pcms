@@ -10,8 +10,8 @@ import java.util.Map;
  */
 public interface ShopSearchService {
 
-    /** SHOP-SEARCH: full-text + (later) AI semantic search */
-    PageResponse<Map<String, Object>> search(String q, int page, int size);
+    /** SHOP-SEARCH: full-text + optional category filter + optional sort */
+    PageResponse<Map<String, Object>> search(String q, String category, int page, int size, String sort);
 
     /** SHOP-LOOKUP-DRUG: medicine name search with optional A-Z first-letter filter */
     PageResponse<Map<String, Object>> lookupDrug(String q, String aToZ, int page, int size);

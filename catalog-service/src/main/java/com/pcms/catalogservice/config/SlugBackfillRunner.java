@@ -31,7 +31,7 @@ public class SlugBackfillRunner implements CommandLineRunner {
                 log.info("Slug backfill: cập nhật {} medicine", updated);
             }
         } catch (Exception ex) {
-            log.warn("Slug backfill thất bại (không ảnh hưởng startup): {}", ex.getMessage());
+            log.error("Slug backfill thất bại (không ảnh hưởng startup): {}", ex.getMessage(), ex);
         }
     }
 }

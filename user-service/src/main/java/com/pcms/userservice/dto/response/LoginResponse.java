@@ -31,7 +31,8 @@ public record LoginResponse(
         String fullName,
         Role role,
         UUID branchId,
-        UserStatus status
+        UserStatus status,
+        String phone
     ) {
         public static UserInfo from(User u) {
             return new UserInfo(
@@ -40,7 +41,8 @@ public record LoginResponse(
                 u.getFullName(),
                 u.getRole(),
                 u.getBranchId(),
-                u.getStatus()
+                u.getStatus(),
+                u.getPhone()
             );
         }
     }

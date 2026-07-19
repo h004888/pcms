@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -40,9 +41,31 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     }
 
     @Override
-    public PageResponse<Map<String, Object>> search(String q, int page, int size) {
+    public PageResponse<Map<String, Object>> search(String q, String category, int page, int size, String sort) {
         try {
             List<Map<String, Object>> raw = catalogClient.searchMedicines(q, page, size);
+            // Filter by category name if specified
+            if (category != null && !category.isBlank()) {
+                raw = raw.stream()
+                    .filter(m -> {
+                        Object catId = m.get("categoryId");
+                        return catId != null && catId.toString().equals(category);
+                    })
+                    .toList();
+            }
+            // Client-side sort
+            if (sort != null && !sort.isBlank()) {
+                Comparator<Map<String, Object>> cmp = switch (sort) {
+                    case "price_asc"  -> Comparator.comparing(m -> toDouble(m.get("price")));
+                    case "price_desc" -> Comparator.<Map<String, Object>, Double>comparing(m -> toDouble(m.get("price"))).reversed();
+                    case "name_asc"   -> Comparator.comparing(m -> String.valueOf(m.getOrDefault("name", "")));
+                    case "name_desc"  -> Comparator.<Map<String, Object>, String>comparing(m -> String.valueOf(m.getOrDefault("name", ""))).reversed();
+                    default           -> null;
+                };
+                if (cmp != null) {
+                    raw = raw.stream().sorted(cmp).toList();
+                }
+            }
             return toPageResponse(raw, page, size);
         } catch (FeignException e) {
             log.error("Catalog service unavailable while searching '{}': status={}", q, e.status(), e);
@@ -56,7 +79,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     @Override
     public PageResponse<Map<String, Object>> lookupDrug(String q, String aToZ, int page, int size) {
         // Reuse catalog search but apply client-side A-Z filter on first letter of name.
-        PageResponse<Map<String, Object>> all = search(q, page, size);
+        PageResponse<Map<String, Object>> all = search(q, null, page, size, null);
         if (aToZ == null || aToZ.isBlank() || aToZ.length() != 1) {
             return all;
         }
@@ -111,6 +134,19 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     private PageResponse<Map<String, Object>> toPageResponse(List<Map<String, Object>> data, int page, int size) {
         long total = data.size();
         int totalPages = (int) Math.ceil((double) total / Math.max(size, 1));
-        return new PageResponse<>(data, page, size, total, totalPages);
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, data.size());
+        List<Map<String, Object>> sliced = (fromIndex < data.size())
+            ? data.subList(fromIndex, toIndex)
+            : List.of();
+        return new PageResponse<>(sliced, page, size, total, totalPages);
+    }
+
+    private static double toDouble(Object value) {
+        if (value instanceof Number n) return n.doubleValue();
+        if (value instanceof String s) {
+            try { return Double.parseDouble(s); } catch (NumberFormatException ignored) {}
+        }
+        return 0.0;
     }
 }

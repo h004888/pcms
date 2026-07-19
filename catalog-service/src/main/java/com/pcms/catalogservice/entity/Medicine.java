@@ -1,6 +1,7 @@
 package com.pcms.catalogservice.entity;
 
 import com.pcms.catalogservice.enums.MedicineStatus;
+import com.pcms.catalogservice.util.SlugUtil;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -42,7 +43,7 @@ public class Medicine {
     @Column(nullable = false, length = 20)
     private String sku;
 
-    @Column(length = 220)
+    @Column(nullable = false, length = 220)
     private String slug;
 
     @Column(nullable = false, length = 200)
@@ -69,7 +70,7 @@ public class Medicine {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "usage", columnDefinition = "TEXT")
+    @Column(name = "`usage`", columnDefinition = "TEXT")
     private String usage;
 
     @Column(name = "ingredients", columnDefinition = "TEXT")
@@ -92,6 +93,7 @@ public class Medicine {
 
     public Medicine(String sku, String name, UUID categoryId, BigDecimal price, String unit) {
         this.sku = sku;
+        this.slug = SlugUtil.slugify(name);
         this.name = name;
         this.categoryId = categoryId;
         this.price = price;

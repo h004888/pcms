@@ -172,6 +172,7 @@ public class CategoryServiceImpl implements CategoryService {
                 entity.getName(),
                 entity.getSlug(),
                 entity.getDescription(),
+                entity.getImageUrl(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());

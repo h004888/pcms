@@ -10,6 +10,7 @@ public record CategoryResponse(
                 String name,
                 String slug,
                 String description,
+                String imageUrl,
                 CategoryStatus status,
                 LocalDateTime createdAt,
                 LocalDateTime updatedAt) {

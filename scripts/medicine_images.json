@@ -1,0 +1,778 @@
+{
+  "Paracetamol 500mg": {
+    "slug": "paracetamol-500mg",
+    "url_local": "/images/med/paracetamol-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00032865_paracetamol_stada_500mg_10x10_4111_61af_large_6bbfac12ff.jpg",
+    "source": "longchau",
+    "sku": "00032865",
+    "brand": "Stada"
+  },
+  "Paracetamol 650mg": {
+    "slug": "paracetamol-650mg",
+    "url_local": "/images/med/paracetamol-650mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/paracetamol_650mg_10x10_usp_00031435_f11ff3a97c.png",
+    "source": "longchau",
+    "sku": "00031435",
+    "brand": "US Pharma"
+  },
+  "Efferalgan 500mg": {
+    "slug": "efferalgan-500mg",
+    "url_local": "/images/med/efferalgan-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/eferalgan_1_f94f787f4f.jpg",
+    "source": "longchau",
+    "sku": "00008350",
+    "brand": "Upsa Sas"
+  },
+  "Panadol Extra": {
+    "slug": "panadol-extra",
+    "url_local": "/images/med/panadol-extra.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_099842_74c1fc532a.png",
+    "source": "longchau",
+    "sku": "00005713",
+    "brand": "Gsk"
+  },
+  "Ibuprofen 400mg": {
+    "slug": "ibuprofen-400mg",
+    "url_local": "/images/med/ibuprofen-400mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/ibuprofen_5e2f07eded.png",
+    "source": "longchau",
+    "sku": "00030490",
+    "brand": "Vacopharm"
+  },
+  "Diclofenac 50mg": {
+    "slug": "diclofenac-50mg",
+    "url_local": "/images/med/diclofenac-50mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00002421_diclofenac_50mg_7942_5b6e_large_04d33150e7.JPG",
+    "source": "longchau",
+    "sku": "00002421",
+    "brand": "Uphace"
+  },
+  "Celecoxib 200mg": {
+    "slug": "celecoxib-200mg",
+    "url_local": "/images/med/celecoxib-200mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00503076_celecoxib_200mg_mipharmco_3x10_7796_63b6_large_f5609a18eb.jpg",
+    "source": "longchau",
+    "sku": "00503076",
+    "brand": "Minh Hải"
+  },
+  "Meloxicam 7.5mg": {
+    "slug": "meloxicam-75mg",
+    "url_local": "/images/med/meloxicam-75mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00033638_meloxicam_75mg_khapharco_200v_7366_6239_large_5f4ba0c5f6.jpg",
+    "source": "longchau",
+    "sku": "00033638",
+    "brand": "Khapharco"
+  },
+  "Etoricoxib 60mg": {
+    "slug": "etoricoxib-60mg",
+    "url_local": "/images/med/etoricoxib-60mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_02930_44287513aa.jpg",
+    "source": "longchau",
+    "sku": "00050065",
+    "brand": "Khapharco"
+  },
+  "Paracetamol 120mg": {
+    "slug": "paracetamol-120mg",
+    "url_local": "/images/med/paracetamol-120mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00032865_paracetamol_stada_500mg_10x10_4111_61af_large_6bbfac12ff.jpg",
+    "source": "longchau",
+    "sku": "00032865",
+    "brand": "Stada"
+  },
+  "Amoxicillin 500mg": {
+    "slug": "amoxicillin-500mg",
+    "url_local": "/images/med/amoxicillin-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/amoxicillin_500mg_10x10_domesco_00000740_4f06bb4231.png",
+    "source": "longchau",
+    "sku": "00000740",
+    "brand": "Domesco"
+  },
+  "Amoxicillin 250mg": {
+    "slug": "amoxicillin-250mg",
+    "url_local": "/images/med/amoxicillin-250mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/9_528e8474cf.png",
+    "source": "longchau",
+    "sku": "00041417",
+    "brand": "Imexpharm"
+  },
+  "Augmentin 625mg": {
+    "slug": "augmentin-625mg",
+    "url_local": "/images/med/augmentin-625mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/augmentin_625mg_2x7_gsk_00000967_06efa6305d.png",
+    "source": "longchau",
+    "sku": "00000967",
+    "brand": "Gsk"
+  },
+  "Cephalexin 500mg": {
+    "slug": "cephalexin-500mg",
+    "url_local": "/images/med/cephalexin-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00001786_cephalexin_500mg_6597_607d_large_0a54b57cef.jpg",
+    "source": "longchau",
+    "sku": "00001786",
+    "brand": "Vidipha"
+  },
+  "Ciprofloxacin 500mg": {
+    "slug": "ciprofloxacin-500mg",
+    "url_local": "/images/med/ciprofloxacin-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00001887_ciprofloxacin_500mg_3502_5afb_large_0e6d35ad01.JPG",
+    "source": "longchau",
+    "sku": "00001887",
+    "brand": "Imexpharm"
+  },
+  "Azithromycin 250mg": {
+    "slug": "azithromycin-250mg",
+    "url_local": "/images/med/azithromycin-250mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00022063_azithromycin_250mg_h1vi_x6v_armephaco_1x6_6773_60ae_large_e2638ab769.jpg",
+    "source": "longchau",
+    "sku": "00022063",
+    "brand": "Armephaco"
+  },
+  "Doxycycline 100mg": {
+    "slug": "doxycycline-100mg",
+    "url_local": "/images/med/doxycycline-100mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00020067_doxycycline_100mg_brawn_10x10_2097_60af_large_24066ff1dd.jpg",
+    "source": "longchau",
+    "sku": "00020067",
+    "brand": "Brawn"
+  },
+  "Metronidazole 250mg": {
+    "slug": "metronidazole-250mg",
+    "url_local": "/images/med/metronidazole-250mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00004908_metronidazole_250mg_mekophar_4141_62ce_large_047f459bf1.jpg",
+    "source": "longchau",
+    "sku": "00004908",
+    "brand": "Mekophar"
+  },
+  "Clindamycin 300mg": {
+    "slug": "clindamycin-300mg",
+    "url_local": "/images/med/clindamycin-300mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00021259_clindamycin_eg_300mg_pymepharco_10x10_2398_6254_large_5844ebcd8a.jpg",
+    "source": "longchau",
+    "sku": "00021259",
+    "brand": "Pymepharco"
+  },
+  "Cefuroxime 500mg": {
+    "slug": "cefuroxime-500mg",
+    "url_local": "/images/med/cefuroxime-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/cefuroxim_500mg_10x10_vidipha_00022349_707e241905.png",
+    "source": "longchau",
+    "sku": "00022349",
+    "brand": "Vidipha"
+  },
+  "Levofloxacin 500mg": {
+    "slug": "levofloxacin-500mg",
+    "url_local": "/images/med/levofloxacin-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00028076_levofloxacin_500mg_imexpharm_1x10_4281_6128_large_b09ef797ea.jpg",
+    "source": "longchau",
+    "sku": "00028076",
+    "brand": "Imexpharm"
+  },
+  "Erythromycin 250mg": {
+    "slug": "erythromycin-250mg",
+    "url_local": "/images/med/erythromycin-250mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00013860_erythromycin_250mg_6922_5bc6_large_cab366b697.JPG",
+    "source": "longchau",
+    "sku": "00013860",
+    "brand": "Mekophar"
+  },
+  "Vitamin C 500mg": {
+    "slug": "vitamin-c-500mg",
+    "url_local": "/images/med/vitamin-c-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/vitamin_c_500mg_10x10_khapharco_00031664_821cee29cf.png",
+    "source": "longchau",
+    "sku": "00031664",
+    "brand": "Khapharco"
+  },
+  "Vitamin C 1000mg": {
+    "slug": "vitamin-c-1000mg",
+    "url_local": "/images/med/vitamin-c-1000mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_09324_db795e136a.jpg",
+    "source": "longchau",
+    "sku": "00039925",
+    "brand": "KUDOS"
+  },
+  "Vitamin B12 1000mcg": {
+    "slug": "vitamin-b12-1000mcg",
+    "url_local": "/images/med/vitamin-b12-1000mcg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00031084_vitamin_b12_kabi_1000mcg_100_ong_x_1ml_4749_6126_large_65e72be677.jpg",
+    "source": "longchau",
+    "sku": "00031084",
+    "brand": "Fresenius Kabi"
+  },
+  "Vitamin B Complex": {
+    "slug": "vitamin-b-complex",
+    "url_local": "/images/med/vitamin-b-complex.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00001074_b_complex_c_6839_5b6e_large_3e1a4b60c5.JPG",
+    "source": "longchau",
+    "sku": "00001074",
+    "brand": "Vidipha"
+  },
+  "Vitamin E 400IU": {
+    "slug": "vitamin-e-400iu",
+    "url_local": "/images/med/vitamin-e-400iu.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00345398_vitamin_e_400_iu_5953_600f_large_f1fec5d4f6.JPG",
+    "source": "longchau",
+    "sku": "00345398",
+    "brand": "Nature's Bounty"
+  },
+  "Calcium + Vitamin D3": {
+    "slug": "calcium-vitamin-d3",
+    "url_local": "/images/med/calcium-vitamin-d3.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_02698_05d0cf66af.png",
+    "source": "longchau",
+    "sku": "00049744",
+    "brand": "OSTELIN"
+  },
+  "Sắt + Acid Folic": {
+    "slug": "sắt-acid-folic",
+    "url_local": "/images/med/sắt-acid-folic.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_tardyferon_b9_3_vi_x_10_vien_pierre_fabre_00007180_aec7b4c600.jpg",
+    "source": "longchau",
+    "sku": "00007180",
+    "brand": "Pierre Fabre"
+  },
+  "Magnesi B6": {
+    "slug": "magnesi-b6",
+    "url_local": "/images/med/magnesi-b6.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/magensi_8ba3c2f2e0.jpg",
+    "source": "longchau",
+    "sku": "00046912",
+    "brand": "Stella Pharm"
+  },
+  "Vitamin 3B": {
+    "slug": "vitamin-3b",
+    "url_local": "/images/med/vitamin-3b.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/ammg_3b_5x10_truong_tho_00030906_6d672405fc.png",
+    "source": "longchau",
+    "sku": "00030906",
+    "brand": "Trường Thọ Pharma"
+  },
+  "Neurobion": {
+    "slug": "neurobion",
+    "url_local": "/images/med/neurobion.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/5_fb186a3aa1.png",
+    "source": "longchau",
+    "sku": "00029426",
+    "brand": "S.P.M"
+  },
+  "Piracetam 800mg": {
+    "slug": "piracetam-800mg",
+    "url_local": "/images/med/piracetam-800mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00027568_piracetam_800mg_tv_6x10_8582_61c1_large_6a207a3f73.jpg",
+    "source": "longchau",
+    "sku": "00027568",
+    "brand": "Tv.Pharm"
+  },
+  "Ginkgo Biloba 40mg": {
+    "slug": "ginkgo-biloba-40mg",
+    "url_local": "/images/med/ginkgo-biloba-40mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00003337_ginkgo_biloba_60mg_60v_natures_bounty_8579_63db_large_dc0d941fcd.jpg",
+    "source": "longchau",
+    "sku": "00003337",
+    "brand": "Nature's Bounty"
+  },
+  "Coldacmin Flu": {
+    "slug": "coldacmin-flu",
+    "url_local": "/images/med/coldacmin-flu.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00002013_coldacmin_flu_3384_5b50_large_7d3987c67a.JPG",
+    "source": "longchau",
+    "sku": "00002013",
+    "brand": "Dhg"
+  },
+  "Tiffy": {
+    "slug": "tiffy",
+    "url_local": "/images/med/tiffy.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00007362_tiffy_6310_63b3_large_c61d5e5a2e.jpg",
+    "source": "longchau",
+    "sku": "00007362",
+    "brand": "Thai Nakorn Patana"
+  },
+  "Decolgen Forte": {
+    "slug": "decolgen-forte",
+    "url_local": "/images/med/decolgen-forte.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_decolgen_forte_united_30x4_00049130_fddf25d0e0.png",
+    "source": "longchau",
+    "sku": "00049130",
+    "brand": "United"
+  },
+  "Clorpheniramin 4mg": {
+    "slug": "clorpheniramin-4mg",
+    "url_local": "/images/med/clorpheniramin-4mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_clorpheniramin_4mg_khanh_hoa_10x20_00033509_378b1ab22a.png",
+    "source": "longchau",
+    "sku": "00033509",
+    "brand": "Khapharco"
+  },
+  "Cetirizin 10mg": {
+    "slug": "cetirizin-10mg",
+    "url_local": "/images/med/cetirizin-10mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_cetirizin_10mg_truong_tho_10x10_00033571_22e7bf38cb.png",
+    "source": "longchau",
+    "sku": "00033571",
+    "brand": "Trường Thọ Pharma"
+  },
+  "Loratadin 10mg": {
+    "slug": "loratadin-10mg",
+    "url_local": "/images/med/loratadin-10mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/a_t_loratadin_10mg_an_thien_10x10_00051747_1_ef287ccd67.png",
+    "source": "longchau",
+    "sku": "00051747",
+    "brand": "An Thiên"
+  },
+  "Fexofenadin 180mg": {
+    "slug": "fexofenadin-180mg",
+    "url_local": "/images/med/fexofenadin-180mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/allerphast_180mg_1x10_mebiphar_00000614_4_81de4d41d1.png",
+    "source": "longchau",
+    "sku": "00000614",
+    "brand": "Mebiphar"
+  },
+  "Prospan": {
+    "slug": "prospan",
+    "url_local": "/images/med/prospan.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00006137_prospan_100ml_9655_5c68_large_ad5603e714.jpg",
+    "source": "longchau",
+    "sku": "00006137",
+    "brand": "Engelhard"
+  },
+  "Bổ Phế Nam Hà": {
+    "slug": "bổ-phế-nam-hà",
+    "url_local": "/images/med/bổ-phế-nam-hà.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00007322_thuoc_ho_bo_phe_nam_ha_ngam_8820_6423_large_9cdec7696b.jpg",
+    "source": "longchau",
+    "sku": "00007322",
+    "brand": "Nam Hà"
+  },
+  "Atussin": {
+    "slug": "atussin",
+    "url_local": "/images/med/atussin.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/IMG_3266_86311eddce.jpg",
+    "source": "longchau",
+    "sku": "00000953",
+    "brand": "United"
+  },
+  "Siro ho trẻ em": {
+    "slug": "siro-ho-trẻ-em",
+    "url_local": "/images/med/siro-ho-trẻ-em.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/siro_ho_fortuss_180g_otosan_00031572_5_f8e0e4bf16.png",
+    "source": "longchau",
+    "sku": "00031572",
+    "brand": "Otosan"
+  },
+  "Omeprazole 20mg": {
+    "slug": "omeprazole-20mg",
+    "url_local": "/images/med/omeprazole-20mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/IMG_1874_d7a893c364.jpg",
+    "source": "longchau",
+    "sku": "00017488",
+    "brand": "Brawn"
+  },
+  "Esomeprazole 40mg": {
+    "slug": "esomeprazole-40mg",
+    "url_local": "/images/med/esomeprazole-40mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00027874_esomeprazole_eg_pymepharco_2x10_8411_6125_large_1033a347c1.jpg",
+    "source": "longchau",
+    "sku": "00027874",
+    "brand": "Pymepharco"
+  },
+  "Mebeverine 135mg": {
+    "slug": "mebeverine-135mg",
+    "url_local": "/images/med/mebeverine-135mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_auclatyl_500mg_125mg_tipharco_2x10_00033637_dd1006e16f.png",
+    "source": "longchau",
+    "sku": "00033637",
+    "brand": "Tipharco"
+  },
+  "Loperamid 2mg": {
+    "slug": "loperamid-2mg",
+    "url_local": "/images/med/loperamid-2mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00004537_loperamid_2mg_nadyphar_3799_5b42_large_4998686a50.JPG",
+    "source": "longchau",
+    "sku": "00004537",
+    "brand": "Nadyphar"
+  },
+  "Smecta": {
+    "slug": "smecta",
+    "url_local": "/images/med/smecta.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/smecta_orange_vanilla_ipsen_10_goi_00040386_f5b8a5ead3.png",
+    "source": "longchau",
+    "sku": "00040386",
+    "brand": "Ipsen"
+  },
+  "Domperidon 10mg": {
+    "slug": "domperidon-10mg",
+    "url_local": "/images/med/domperidon-10mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00002537_domperidon_10mg_10x10_stada_3441_59d4_large_5caaeff176.jpg",
+    "source": "longchau",
+    "sku": "00002537",
+    "brand": "Stada"
+  },
+  "Rennie": {
+    "slug": "rennie",
+    "url_local": "/images/med/rennie.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/becalim_100mg_3x10_enlie_00030717_1668399805.png",
+    "source": "longchau",
+    "sku": "00030717",
+    "brand": "ENLIE PHARMA"
+  },
+  "Bisacodyl 5mg": {
+    "slug": "bisacodyl-5mg",
+    "url_local": "/images/med/bisacodyl-5mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/amlodipin_5mg_3x10_truong_tho_00030901_abb72a16d0.png",
+    "source": "longchau",
+    "sku": "00030901",
+    "brand": "Trường Thọ Pharma"
+  },
+  "Simethicon 80mg": {
+    "slug": "simethicon-80mg",
+    "url_local": "/images/med/simethicon-80mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/simethicon_80mg_khapharco_10x20_00051068_1_3aa2e2dc64.png",
+    "source": "longchau",
+    "sku": "00051068",
+    "brand": "Khapharco"
+  },
+  "Amlodipine 5mg": {
+    "slug": "amlodipine-5mg",
+    "url_local": "/images/med/amlodipine-5mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/1_9b66e7ca1f.png",
+    "source": "longchau",
+    "sku": "00038181",
+    "brand": "Stella Pharm"
+  },
+  "Losartan 50mg": {
+    "slug": "losartan-50mg",
+    "url_local": "/images/med/losartan-50mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00030379_c7673a041a.jpg",
+    "source": "longchau",
+    "sku": "00030379",
+    "brand": "Khapharco"
+  },
+  "Atorvastatin 20mg": {
+    "slug": "atorvastatin-20mg",
+    "url_local": "/images/med/atorvastatin-20mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/atorvastatin_20mg_3x10_tvp_00017984_2954904df6.png",
+    "source": "longchau",
+    "sku": "00017984",
+    "brand": "Tv.Pharm"
+  },
+  "Atorvastatin 10mg": {
+    "slug": "atorvastatin-10mg",
+    "url_local": "/images/med/atorvastatin-10mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/Atorvastatin_10mg_tv_2fe05d80f7.jpg",
+    "source": "longchau",
+    "sku": "00000939",
+    "brand": "Tv.Pharm"
+  },
+  "Enalapril 5mg": {
+    "slug": "enalapril-5mg",
+    "url_local": "/images/med/enalapril-5mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00047738_7ea810b16b.jpg",
+    "source": "longchau",
+    "sku": "00047738",
+    "brand": "Stella Pharm"
+  },
+  "Carvedilol 6.25mg": {
+    "slug": "carvedilol-625mg",
+    "url_local": "/images/med/carvedilol-625mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00032331_carvedilol_625_mg_savi_3x10_7744_6315_large_bb546a1ee0.jpg",
+    "source": "longchau",
+    "sku": "00032331",
+    "brand": "Savi"
+  },
+  "Furosemide 40mg": {
+    "slug": "furosemide-40mg",
+    "url_local": "/images/med/furosemide-40mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00046676_43b8fe164f.jpg",
+    "source": "longchau",
+    "sku": "00046676",
+    "brand": "Stella Pharm"
+  },
+  "Nifedipine 10mg": {
+    "slug": "nifedipine-10mg",
+    "url_local": "/images/med/nifedipine-10mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/vien_nen_nifedipin_hasan_20_retard_10_vi_x_10_vien_hasan_00005298_ad53b45413.jpg",
+    "source": "longchau",
+    "sku": "00005298",
+    "brand": "Hasan"
+  },
+  "Ramipril 5mg": {
+    "slug": "ramipril-5mg",
+    "url_local": "/images/med/ramipril-5mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/ramipril_dd1940c981.jpg",
+    "source": "longchau",
+    "sku": "00048132",
+    "brand": "Wealphar"
+  },
+  "Telmisartan 40mg": {
+    "slug": "telmisartan-40mg",
+    "url_local": "/images/med/telmisartan-40mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/telmisartan_40_3x10_stella_00017793_267c924ed7.png",
+    "source": "longchau",
+    "sku": "00017793",
+    "brand": "Stella Pharm"
+  },
+  "Rosuvastatin 10mg": {
+    "slug": "rosuvastatin-10mg",
+    "url_local": "/images/med/rosuvastatin-10mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_00171_3b3131ceb0.png",
+    "source": "longchau",
+    "sku": "00038831",
+    "brand": "Traphaco"
+  },
+  "Clopidogrel 75mg": {
+    "slug": "clopidogrel-75mg",
+    "url_local": "/images/med/clopidogrel-75mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_clopidogrel_vk_75mg_an_thien_3x10_00047187_2a19c44c21.png",
+    "source": "longchau",
+    "sku": "00047187",
+    "brand": "An Thiên"
+  },
+  "Aspirin 81mg": {
+    "slug": "aspirin-81mg",
+    "url_local": "/images/med/aspirin-81mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00030578_aspirin_81mg_stella_2x28_6853_6161_large_bbc8a541db.jpg",
+    "source": "longchau",
+    "sku": "00030578",
+    "brand": "Stella Pharm"
+  },
+  "Metformin 500mg": {
+    "slug": "metformin-500mg",
+    "url_local": "/images/med/metformin-500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/metformin_500mg_4x15_tipharco_00031431_b666dbaeb0.png",
+    "source": "longchau",
+    "sku": "00031431",
+    "brand": "Tipharco"
+  },
+  "Metformin 850mg": {
+    "slug": "metformin-850mg",
+    "url_local": "/images/med/metformin-850mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/metformin_850mg_4x15_tipharco_00015970_58fd9e7bca.png",
+    "source": "longchau",
+    "sku": "00015970",
+    "brand": "Tipharco"
+  },
+  "Gliclazide 30mg MR": {
+    "slug": "gliclazide-30mg-mr",
+    "url_local": "/images/med/gliclazide-30mg-mr.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_cetirizin_10mg_truong_tho_10x10_00033571_22e7bf38cb.png",
+    "source": "longchau",
+    "sku": "00033571",
+    "brand": "Trường Thọ Pharma"
+  },
+  "Gliclazide 80mg": {
+    "slug": "gliclazide-80mg",
+    "url_local": "/images/med/gliclazide-80mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_cetirizin_10mg_truong_tho_10x10_00033571_22e7bf38cb.png",
+    "source": "longchau",
+    "sku": "00033571",
+    "brand": "Trường Thọ Pharma"
+  },
+  "Insulin Mixtard 30": {
+    "slug": "insulin-mixtard-30",
+    "url_local": "/images/med/insulin-mixtard-30.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00004976_mixtard_100iuml_8681_5f28_large_7489d03dc1.JPG",
+    "source": "longchau",
+    "sku": "00004976",
+    "brand": "Novo Nordisk"
+  },
+  "Fucidin H kem": {
+    "slug": "fucidin-h-kem",
+    "url_local": "/images/med/fucidin-h-kem.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/IMG_4316_97cf8c92b8.jpg",
+    "source": "longchau",
+    "sku": "00003190",
+    "brand": "LEO"
+  },
+  "Gentrison kem": {
+    "slug": "gentrison-kem",
+    "url_local": "/images/med/gentrison-kem.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/kem_gentrisone_10g_shinpoong_deawoo_00003298_fce2922fcc.jpg",
+    "source": "longchau",
+    "sku": "00003298",
+    "brand": "Shinpoong Daewoo"
+  },
+  "Nizoral kem": {
+    "slug": "nizoral-kem",
+    "url_local": "/images/med/nizoral-kem.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_09303_c64524033d.jpg",
+    "source": "longchau",
+    "sku": "00041035",
+    "brand": "Janssen"
+  },
+  "Kem chống nắng SPF50": {
+    "slug": "kem-chống-nắng-spf50",
+    "url_local": "/images/med/kem-chống-nắng-spf50.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_09535_10bb3d35c9.jpg",
+    "source": "longchau",
+    "sku": "00048912",
+    "brand": "SẮC NGỌC KHANG"
+  },
+  "Bôi da B.S": {
+    "slug": "bôi-da-bs",
+    "url_local": "/images/med/bôi-da-bs.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/IMG_4407_3c1526a388.jpg",
+    "source": "longchau",
+    "sku": "00502568",
+    "brand": "Medipharco"
+  },
+  "Nhiệt kế điện tử": {
+    "slug": "nhiệt-kế-điện-tử",
+    "url_local": "/images/med/nhiệt-kế-điện-tử.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_09698_b252d0e8a7.jpg",
+    "source": "longchau",
+    "sku": "00047347",
+    "brand": "FUJI"
+  },
+  "Máy đo huyết áp Omron": {
+    "slug": "máy-đo-huyết-áp-omron",
+    "url_local": "/images/med/máy-đo-huyết-áp-omron.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/60836162e571302f69604_b4a0d8f19f.jpg",
+    "source": "longchau",
+    "sku": "00016013",
+    "brand": "OMRON"
+  },
+  "Máy đo đường huyết": {
+    "slug": "máy-đo-đường-huyết",
+    "url_local": "/images/med/máy-đo-đường-huyết.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_07705_0bbb7e7647.jpg",
+    "source": "longchau",
+    "sku": "00028635",
+    "brand": "MediUSA"
+  },
+  "Bông y tế": {
+    "slug": "bông-y-tế",
+    "url_local": "/images/med/bông-y-tế.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/IMG_4832_4d663318ff.jpg",
+    "source": "longchau",
+    "sku": "00033585",
+    "brand": "Bạch Tuyết"
+  },
+  "Gạc y tế": {
+    "slug": "gạc-y-tế",
+    "url_local": "/images/med/gạc-y-tế.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/gac_tiet_trung_dong_pha_lon_8x9x8cm_10_mieng_00003227_1_97a712ca31.jpg",
+    "source": "longchau",
+    "sku": "00003227",
+    "brand": "Đông Pha"
+  },
+  "Băng dính vết thương": {
+    "slug": "băng-dính-vết-thương",
+    "url_local": "/images/med/băng-dính-vết-thương.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/bang_dan_vet_thuong_duoderm_cgf_10x10cm_5_mieng_00021640_5_211fcb807c.jpg",
+    "source": "longchau",
+    "sku": "00021640",
+    "brand": "Convatec"
+  },
+  "Dầu cá Omega-3": {
+    "slug": "dầu-cá-omega-3",
+    "url_local": "/images/med/dầu-cá-omega-3.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_05020_ce6da165fb.jpg",
+    "source": "longchau",
+    "sku": "00045384",
+    "brand": "KENKO"
+  },
+  "Men vi sinh Probio": {
+    "slug": "men-vi-sinh-probio",
+    "url_local": "/images/med/men-vi-sinh-probio.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_04035_ed94a1ebbb.png",
+    "source": "longchau",
+    "sku": "00048510",
+    "brand": "Chong Kun Dang"
+  },
+  "Glucosamine 1500mg": {
+    "slug": "glucosamine-1500mg",
+    "url_local": "/images/med/glucosamine-1500mg.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/thuoc_glucosamine_stada_1500mg_sachet_30_goi_00033098_b66b8e113b.png",
+    "source": "longchau",
+    "sku": "00033098",
+    "brand": "Stada"
+  },
+  "Collagen Type II": {
+    "slug": "collagen-type-ii",
+    "url_local": "/images/med/collagen-type-ii.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_00502_7ca086c550.png",
+    "source": "longchau",
+    "sku": "00050679",
+    "brand": "DAO Nordic Health"
+  },
+  "Viên khớp JEX": {
+    "slug": "viên-khớp-jex",
+    "url_local": "/images/med/viên-khớp-jex.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00032397_jex_the_he_moi_eco_60v_8040_62b0_large_0e07e3b7bb.jpg",
+    "source": "longchau",
+    "sku": "00032397",
+    "brand": "Ecogreen"
+  },
+  "Berocca Performance": {
+    "slug": "berocca-performance",
+    "url_local": "/images/med/berocca-performance.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/IMG_1758_33831b7cab.jpg",
+    "source": "longchau",
+    "sku": "00009723",
+    "brand": "Bayer"
+  },
+  "Sữa Ensure": {
+    "slug": "sữa-ensure",
+    "url_local": "/images/med/sữa-ensure.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_02727_0f957dbeee.jpg",
+    "source": "longchau",
+    "sku": "00044150",
+    "brand": "Abbott"
+  },
+  "Trà xanh Olong": {
+    "slug": "trà-xanh-olong",
+    "url_local": "/images/med/trà-xanh-olong.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/gel_rua_tay_kho_natural_hand_sanitizer_sat_khuan_lam_sach_tay_250ml_00031658_1_2c1c64b096.png",
+    "source": "longchau",
+    "sku": "00031658",
+    "brand": "La Beauty"
+  },
+  "Glucosamine Chondroitin": {
+    "slug": "glucosamine-chondroitin",
+    "url_local": "/images/med/glucosamine-chondroitin.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00032918_glucosamine_and_chondroitin_jpanwell_120v_9745_61a5_large_41ffa86dc1.JPG",
+    "source": "longchau",
+    "sku": "00032918",
+    "brand": "Jpanwell"
+  },
+  "Vitamin D3 K2": {
+    "slug": "vitamin-d3-k2",
+    "url_local": "/images/med/vitamin-d3-k2.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_04874_6c29236c37.jpg",
+    "source": "longchau",
+    "sku": "00045449",
+    "brand": "Kingphar"
+  },
+  "Canxi Cơm": {
+    "slug": "canxi-cơm",
+    "url_local": "/images/med/canxi-cơm.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_04874_6c29236c37.jpg",
+    "source": "longchau",
+    "sku": "00045449",
+    "brand": "Kingphar"
+  },
+  "Trà gừng mật ong": {
+    "slug": "trà-gừng-mật-ong",
+    "url_local": "/images/med/trà-gừng-mật-ong.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/11_652eaab182.png",
+    "source": "longchau",
+    "sku": "00048193",
+    "brand": "MIELE"
+  },
+  "Kẽm + Vitamin C": {
+    "slug": "kẽm-vitamin-c",
+    "url_local": "/images/med/kẽm-vitamin-c.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/DSC_09902_e39f241fbd.png",
+    "source": "longchau",
+    "sku": "00049483",
+    "brand": "United"
+  },
+  "Liver Detox": {
+    "slug": "liver-detox",
+    "url_local": "/images/med/liver-detox.jpg",
+    "url_online": "https://cdn.nhathuoclongchau.com.vn/v1/static/00028559_vitatree_super_liver_detox_3800_kingphar_100v_5395_623d_large_6a93ab8290.jpg",
+    "source": "longchau",
+    "sku": "00028559",
+    "brand": "Vitatree"
+  }
+}

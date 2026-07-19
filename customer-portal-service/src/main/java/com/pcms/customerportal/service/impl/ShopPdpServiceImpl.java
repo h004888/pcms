@@ -9,7 +9,6 @@ import com.pcms.customerportal.dto.response.ProductDetailResponse.RelatedProduct
 import com.pcms.customerportal.dto.response.ProductDetailResponse.StockByBranch;
 import com.pcms.customerportal.repository.ProductReviewRepository;
 import com.pcms.customerportal.service.ShopPdpService;
-import com.pcms.customerportal.service.ShopSearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,16 +33,13 @@ public class ShopPdpServiceImpl implements ShopPdpService {
     private final CatalogClient catalogClient;
     private final InventoryClient inventoryClient;
     private final ProductReviewRepository reviewRepo;
-    private final ShopSearchService searchService;
 
     public ShopPdpServiceImpl(CatalogClient catalogClient,
                               InventoryClient inventoryClient,
-                              ProductReviewRepository reviewRepo,
-                              ShopSearchService searchService) {
+                              ProductReviewRepository reviewRepo) {
         this.catalogClient = catalogClient;
         this.inventoryClient = inventoryClient;
         this.reviewRepo = reviewRepo;
-        this.searchService = searchService;
     }
 
     @Override
@@ -62,14 +58,7 @@ public class ShopPdpServiceImpl implements ShopPdpService {
     public ProductDetailResponse getProductDetailBySlug(String slug) {
         log.debug("Building SHOP-PDP by slug {}", slug);
 
-        // Use public lookupDrug (searches catalog by name/slug, no auth needed)
-        var page = searchService.lookupDrug(slug, null, 0, 5);
-        List<Map<String, Object>> data = page.data() != null ? page.data() : List.of();
-        Map<String, Object> medicine = data.stream()
-                .filter(m -> slug.equals(m.get("slug")))
-                .findFirst()
-                .orElse(null);
-
+        Map<String, Object> medicine = catalogClient.getBySlug(slug);
         if (medicine == null || medicine.isEmpty()) {
             throw new ResourceNotFoundException("MSG31", "Medicine not found by slug: " + slug);
         }
@@ -83,7 +72,8 @@ public class ShopPdpServiceImpl implements ShopPdpService {
         Double avgRating = reviewRepo.averageRating(medicineId);
         Long reviewCount = reviewRepo.countByMedicineIdAndStatus(medicineId, "APPROVED");
         List<StockByBranch> stock = loadStock(medicineId);
-        List<RelatedProduct> related = List.of(); // future: query same category
+        String categoryName = str(medicine.get("categoryName"));
+        List<RelatedProduct> related = loadRelated(medicineId, categoryName);
 
         return new ProductDetailResponse(
                 str(medicine.get("id")),
@@ -123,6 +113,26 @@ public class ShopPdpServiceImpl implements ShopPdpService {
                     .toList();
         } catch (Exception e) {
             log.warn("Failed to load stock for medicine {}: {}", medicineId, e.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<RelatedProduct> loadRelated(UUID medicineId, String categoryName) {
+        try {
+            List<Map<String, Object>> results = catalogClient.searchMedicines(categoryName, 0, 10);
+            if (results == null) return List.of();
+            return results.stream()
+                    .filter(m -> !medicineId.toString().equals(str(m.get("id"))))
+                    .limit(5)
+                    .map(m -> new RelatedProduct(
+                            str(m.get("id")),
+                            str(m.get("slug")),
+                            str(m.get("name")),
+                            toBigDecimal(m.get("price")),
+                            str(m.get("imageUrl"))))
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Failed to load related products for medicine {}: {}", medicineId, e.getMessage());
             return List.of();
         }
     }

@@ -20,12 +20,15 @@ import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Default implementation of ShopHomeService.
@@ -82,15 +85,19 @@ public class ShopHomeServiceImpl implements ShopHomeService {
         try {
             List<Map<String, Object>> raw = orderClient.getTopMedicines(30, 10);
             if (raw != null && !raw.isEmpty()) {
-                return raw.stream()
+                List<BestSellerResponse> list = raw.stream()
                         .map(this::toBestSeller)
-                        .toList();
+                        .collect(Collectors.toList());
+                enrichBestSellers(list);
+                return list;
             }
         } catch (Exception e) {
             log.warn("Failed to load best sellers from order-service (Feign): {}", e.getMessage());
         }
         // Fallback: query order_items directly
-        return loadBestSellersFallback();
+        List<BestSellerResponse> fallback = loadBestSellersFallback();
+        enrichBestSellers(fallback);
+        return fallback;
     }
 
     private List<BestSellerResponse> loadBestSellersFallback() {
@@ -98,22 +105,29 @@ public class ShopHomeServiceImpl implements ShopHomeService {
             log.info("Using fallback best-sellers query from pcms_order");
             var rows = jdbcTemplate.queryForList(
                 "SELECT oi.medicine_id, oi.medicine_name, SUM(oi.qty) as sold_count, " +
-                "MAX(m.price) as price, MAX(m.image_url) as image_url " +
+                "MAX(m.price) as price, MAX(m.image_url) as image_url, " +
+                "MAX(m.description) as description, " +
+                "COALESCE(AVG(r.rating), 0) as avg_rating, " +
+                "COUNT(r.id) as review_count " +
                 "FROM pcms_order.order_items oi " +
                 "JOIN pcms_catalog.medicines m ON oi.medicine_id = m.id " +
+                "LEFT JOIN pcms_customer_portal.review r ON oi.medicine_id = r.medicine_id " +
                 "GROUP BY oi.medicine_id, oi.medicine_name " +
                 "ORDER BY sold_count DESC LIMIT 10"
             );
             return rows.stream()
                     .map(r -> new BestSellerResponse(
-                        r.get("medicine_id").toString(),
+                        uuidBytesToString(r.get("medicine_id")),
                         "",
                         r.get("medicine_name").toString(),
                         r.get("price") != null ? new BigDecimal(r.get("price").toString()) : BigDecimal.ZERO,
                         r.get("image_url") != null ? r.get("image_url").toString() : "",
-                        ((Number) r.get("sold_count")).longValue()
+                        ((Number) r.get("sold_count")).longValue(),
+                        r.get("description") != null ? r.get("description").toString() : "",
+                        r.get("avg_rating") != null ? ((Number) r.get("avg_rating")).doubleValue() : null,
+                        ((Number) r.get("review_count")).longValue()
                     ))
-                    .toList();
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.warn("Fallback best-sellers query also failed: {}", e.getMessage());
             return List.of();
@@ -131,8 +145,70 @@ public class ShopHomeServiceImpl implements ShopHomeService {
                 name.toString(),
                 price instanceof Number ? java.math.BigDecimal.valueOf(((Number) price).doubleValue()) : java.math.BigDecimal.ZERO,
                 "",  // imageUrl: enriched later from catalog-service
-                soldCount instanceof Number ? ((Number) soldCount).longValue() : 0L
+                soldCount instanceof Number ? ((Number) soldCount).longValue() : 0L,
+                "",  // description: enriched later via enrichBestSellers
+                null,  // rating: enriched later via enrichBestSellers
+                0L  // reviewCount: enriched later via enrichBestSellers
         );
+    }
+
+    private void enrichBestSellers(List<BestSellerResponse> list) {
+        if (list == null || list.isEmpty()) return;
+        List<String> ids = list.stream()
+                .map(BestSellerResponse::id)
+                .filter(Objects::nonNull)
+                .toList();
+        if (ids.isEmpty()) return;
+
+        String inClause = ids.stream()
+                .map(id -> "UUID_TO_BIN('" + id.replace("'", "''") + "')")
+                .collect(Collectors.joining(","));
+
+        // Batch 1: descriptions + slugs from pcms_catalog.medicines
+        Map<String, String> descMap = new HashMap<>();
+        Map<String, String> slugMap = new HashMap<>();
+        try {
+            var descRows = jdbcTemplate.queryForList(
+                "SELECT BIN_TO_UUID(id) as id_str, description, slug FROM pcms_catalog.medicines WHERE id IN (" + inClause + ")");
+            for (var row : descRows) {
+                descMap.put(row.get("id_str").toString(),
+                    row.get("description") != null ? row.get("description").toString() : "");
+                slugMap.put(row.get("id_str").toString(),
+                    row.get("slug") != null ? row.get("slug").toString() : "");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to enrich descriptions: {}", e.getMessage());
+        }
+
+        // Batch 2: rating + review_count from pcms_customer_portal.review
+        Map<String, Double> ratingMap = new HashMap<>();
+        Map<String, Long> reviewCountMap = new HashMap<>();
+        try {
+            var ratingRows = jdbcTemplate.queryForList(
+                "SELECT BIN_TO_UUID(medicine_id) as med_id, AVG(rating) as avg_rating, COUNT(*) as review_count " +
+                "FROM pcms_customer_portal.review WHERE medicine_id IN (" + inClause + ") " +
+                "GROUP BY medicine_id");
+            for (var row : ratingRows) {
+                String medId = row.get("med_id").toString();
+                ratingMap.put(medId, row.get("avg_rating") != null
+                    ? ((Number) row.get("avg_rating")).doubleValue() : null);
+                reviewCountMap.put(medId, ((Number) row.get("review_count")).longValue());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to enrich ratings: {}", e.getMessage());
+        }
+
+        // Replace each item with enriched version
+        for (int i = 0; i < list.size(); i++) {
+            var item = list.get(i);
+            String itemId = item.id();
+            list.set(i, new BestSellerResponse(
+                item.id(), slugMap.getOrDefault(itemId, item.slug()), item.name(), item.price(), item.imageUrl(), item.soldCount(),
+                descMap.getOrDefault(itemId, ""),
+                ratingMap.get(itemId),
+                reviewCountMap.getOrDefault(itemId, 0L)
+            ));
+        }
     }
 
     private List<CategoryTeaserResponse> loadFeaturedCategories() {
@@ -241,4 +317,15 @@ public class ShopHomeServiceImpl implements ShopHomeService {
     /** Best-seller price helper for future use when wiring OrderClient */
     @SuppressWarnings("unused")
     private static BigDecimal zeroPrice() { return BigDecimal.ZERO; }
+
+    /** Convert MySQL binary UUID (byte[16]) to UUID string. */
+    private static String uuidBytesToString(Object raw) {
+        if (raw instanceof byte[] bytes && bytes.length == 16) {
+            ByteBuffer bb = ByteBuffer.wrap(bytes);
+            long high = bb.getLong();
+            long low = bb.getLong();
+            return new UUID(high, low).toString();
+        }
+        return raw != null ? raw.toString() : null;
+    }
 }
