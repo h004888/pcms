@@ -9,9 +9,13 @@ spring:
     username: ${MYSQL_USER:root}
     password: ${MYSQL_PASSWORD:123}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: never
   jpa:
     hibernate:
       ddl-auto: update
+    defer-datasource-initialization: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect

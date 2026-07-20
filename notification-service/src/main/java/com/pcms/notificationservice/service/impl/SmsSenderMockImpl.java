@@ -12,8 +12,8 @@ public class SmsSenderMockImpl implements SmsSender {
     private static final Logger log = LoggerFactory.getLogger(SmsSenderMockImpl.class);
 
     @Override
-    public void send(String toPhoneNumber, String message) {
-        log.info("[SMS-MOCK] To: {} | Message: {}", toPhoneNumber, message);
+    public void send(String recipient, String title, String body) {
+        log.info("[SMS-MOCK] To: {} | Title: {} | Body: {}", recipient, title, body);
         // In production: integrate with VNPT SMS, Viettel, or Twilio
     }
 }

@@ -1,18 +1,22 @@
 package com.pcms.notificationservice.service.impl;
 
 import com.pcms.common.exception.InvalidOperationException;
-import com.pcms.notificationservice.dto.CreateNotificationRequest;
-import com.pcms.notificationservice.dto.NotificationResponse;
+import com.pcms.notificationservice.dto.request.CreateNotificationRequest;
+import com.pcms.notificationservice.dto.response.NotificationResponse;
 import com.pcms.notificationservice.entity.Notification;
 import com.pcms.notificationservice.enums.NotificationChannel;
 import com.pcms.notificationservice.enums.NotificationStatus;
 import com.pcms.notificationservice.repository.NotificationRepository;
+import com.pcms.notificationservice.service.SmsSender;
+import com.pcms.notificationservice.service.TemplateResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.mail.javamail.JavaMailSender;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +39,12 @@ class NotificationSenderServiceImplTest {
 
     @Mock
     private NotificationRepository notificationRepository;
+    @Mock
+    private TemplateResolver templateResolver;
+    @Mock
+    private SmsSender smsSender;
+    @Mock
+    private ObjectProvider<JavaMailSender> mailSenderProvider;
 
     // mailSender = null — mail not configured; service logs a warning and continues
     private NotificationSenderServiceImpl senderService;
@@ -42,7 +52,8 @@ class NotificationSenderServiceImplTest {
     @BeforeEach
     void setUp() {
         // maxAttempts=3, backoffMs=0 to avoid Thread.sleep in tests
-        senderService = new NotificationSenderServiceImpl(notificationRepository, null, 3, 0L);
+        senderService = new NotificationSenderServiceImpl(
+                notificationRepository, templateResolver, smsSender, mailSenderProvider, 3, 0L);
     }
 
     // -------------------------------------------------------------------------
