@@ -24,8 +24,8 @@ CREATE DATABASE IF NOT EXISTS `pcms_mobile_bff` DEFAULT CHARACTER SET utf8mb4 CO
 CREATE DATABASE IF NOT EXISTS `pcms_health_tools` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS `pcms_ecom_ops` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Grant all privileges to pcms_user
-GRANT ALL PRIVILEGES ON `pcms\_%`.* TO 'pcms_user'@'%';
+-- Grant all privileges to root
+GRANT ALL PRIVILEGES ON `pcms\_%`.* TO 'root'@'%';
 FLUSH PRIVILEGES;
 
 -- Tables will be created automatically by Spring Data JPA (ddl-auto: update)

@@ -7,8 +7,8 @@ spring:
     import: "optional:configserver:http://localhost:8888"
   datasource:
     url: jdbc:mysql://localhost:3306/pcms_health_tools?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: pcms_user
-    password: pcms_pass
+    username: root
+    password: 123
   jpa:
     hibernate:
       ddl-auto: update

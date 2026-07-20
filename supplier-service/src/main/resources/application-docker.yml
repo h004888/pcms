@@ -3,8 +3,8 @@ spring:
     import: "optional:configserver:http://config-server:8888"
   datasource:
     url: jdbc:mysql://mysql:3306/pcms_supplier?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: pcms_user
-    password: pcms_pass
+    username: root
+    password: 123
     driver-class-name: com.mysql.cj.jdbc.Driver
   sql:
     init:

@@ -6,6 +6,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -91,4 +92,20 @@ public class ReportSchedule {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    // --- Compatibility shims for ScheduleResponse / CreateScheduleRequest ---
+    // Older DTOs (ScheduleResponse, CreateScheduleRequest) reference richer
+    // getters (reportType/frequency/scheduleTime/recipients) that pre-date the
+    // current entity. Map them to the canonical fields above so both DTO
+    // families keep compiling without changing the persisted schema.
+    public String getReportType() { return type; }
+    public void setReportType(String reportType) { this.type = reportType; }
+    public String getFrequency() {
+        return cronExpression;
+    }
+    public LocalTime getScheduleTime() {
+        return cronExpression == null ? null : LocalTime.MIN;
+    }
+    public String getRecipients() { return recipientEmail; }
+    public void setRecipients(String recipients) { this.recipientEmail = recipients; }
 }

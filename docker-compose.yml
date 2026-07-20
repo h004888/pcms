@@ -23,10 +23,10 @@ services:
     image: mysql:8.0
     container_name: pcms-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_ROOT_PASSWORD: 123
       MYSQL_DATABASE: pcms
-      MYSQL_USER: pcms_user
-      MYSQL_PASSWORD: pcms_pass
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 123
       TZ: Asia/Ho_Chi_Minh
     ports:
       - "3307:3306"
@@ -36,7 +36,7 @@ services:
     networks:
       - pcms-net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppcms_pass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123"]
       interval: 10s
       timeout: 5s
       retries: 10
