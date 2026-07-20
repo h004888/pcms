@@ -3,7 +3,6 @@ package com.pcms.reportservice.service.impl;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.reportservice.client.InventoryClient;
 import com.pcms.reportservice.client.OrderClient;
-import com.pcms.reportservice.repository.ReportScheduleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,8 +19,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 /**
@@ -43,14 +40,11 @@ class ReportServiceImplTest {
     @Mock
     private PdfExportService pdfExportService;
 
-    @Mock
-    private ReportScheduleRepository scheduleRepository;
-
     private ReportServiceImpl reportService;
 
     @BeforeEach
     void setUp() {
-        reportService = new ReportServiceImpl(orderClient, inventoryClient, excelExportService, pdfExportService, scheduleRepository);
+        reportService = new ReportServiceImpl(orderClient, inventoryClient, excelExportService, pdfExportService);
     }
 
     // -------------------------------------------------------------------------
@@ -98,7 +92,7 @@ class ReportServiceImplTest {
     void revenue_withValidRange_returnsRows() {
         LocalDate today = LocalDate.now();
         Map<String, Object> order = buildOrder(today, 100_000.0);
-        when(orderClient.getOrders(isNull(), anyInt(), anyInt()))
+        when(orderClient.getOrders(null, "PAID", null, today, today, 0, 1000))
                 .thenReturn(ordersResponse(List.of(order)));
 
         var response = reportService.revenue(today, today, null, "day");
@@ -131,7 +125,7 @@ class ReportServiceImplTest {
         Map<String, Object> todayOrder = buildOrder(today, 50_000.0);
         Map<String, Object> oldOrder = buildOrder(tenDaysAgo, 200_000.0);
 
-        when(orderClient.getOrders(isNull(), anyInt(), anyInt()))
+        when(orderClient.getOrders(null, "PAID", null, yesterday, today, 0, 1000))
                 .thenReturn(ordersResponse(List.of(todayOrder, oldOrder)));
 
         var response = reportService.revenue(yesterday, today, null, "day");
@@ -142,7 +136,7 @@ class ReportServiceImplTest {
     }
 
     // -------------------------------------------------------------------------
-    // realtimeStats() tests
+    // realtimeStats(UUID) tests
     // -------------------------------------------------------------------------
 
     @Test
@@ -151,32 +145,40 @@ class ReportServiceImplTest {
         Map<String, Object> todayOrder = buildOrder(today, 75_000.0);
         Map<String, Object> oldOrder = buildOrder(today.minusDays(5), 99_000.0);
 
-        when(orderClient.getOrders(isNull(), anyInt(), anyInt()))
+        when(orderClient.getOrders(null, "PAID", null, today, today, 0, 1000))
                 .thenReturn(ordersResponse(List.of(todayOrder, oldOrder)));
+        when(orderClient.getOrders(null, null, null, null, null, 0, 5))
+                .thenReturn(ordersResponse(List.of(todayOrder, oldOrder)));
+        when(inventoryClient.getInventory(null)).thenReturn(List.of(Map.of("batchId", "B-001")));
         when(inventoryClient.getLowStock()).thenReturn(List.of());
 
-        Map<String, Object> stats = reportService.realtimeStats();
+        Map<String, Object> stats = reportService.realtimeStats(null);
 
         assertThat(stats).isNotNull();
-        assertThat(stats.get("date")).isEqualTo(today.toString());
-        assertThat(((Number) stats.get("todayOrders")).longValue()).isEqualTo(1L);
+        assertThat(stats).containsKeys(
+                "todayRevenue", "todayOrders", "lowStockCount", "totalBatches", "recentOrders");
+        assertThat(((Number) stats.get("todayOrders")).intValue()).isEqualTo(1);
         assertThat(((Number) stats.get("todayRevenue")).doubleValue()).isEqualTo(75_000.0);
-        assertThat(((Number) stats.get("totalOrders")).longValue()).isEqualTo(2L);
         assertThat(((Number) stats.get("lowStockCount")).intValue()).isEqualTo(0);
+        assertThat(((Number) stats.get("totalBatches")).intValue()).isEqualTo(1);
+        assertThat(stats.get("recentOrders")).isEqualTo(List.of(todayOrder, oldOrder));
     }
 
     @Test
     void realtimeStats_withLowStockItems_reflectsCount() {
         LocalDate today = LocalDate.now();
-        when(orderClient.getOrders(isNull(), anyInt(), anyInt()))
+        when(orderClient.getOrders(null, "PAID", null, today, today, 0, 1000))
+                .thenReturn(ordersResponse(List.of()));
+        when(orderClient.getOrders(null, null, null, null, null, 0, 5))
                 .thenReturn(ordersResponse(List.of()));
 
         Map<String, Object> lowStockItem = Map.of("medicine", "Aspirin", "stock", 2);
+        when(inventoryClient.getInventory(null)).thenReturn(List.of());
         when(inventoryClient.getLowStock()).thenReturn(List.of(lowStockItem, lowStockItem));
 
-        Map<String, Object> stats = reportService.realtimeStats();
+        Map<String, Object> stats = reportService.realtimeStats(null);
 
         assertThat(((Number) stats.get("lowStockCount")).intValue()).isEqualTo(2);
-        assertThat(((Number) stats.get("todayOrders")).longValue()).isEqualTo(0L);
+        assertThat(((Number) stats.get("todayOrders")).intValue()).isEqualTo(0);
     }
 }
