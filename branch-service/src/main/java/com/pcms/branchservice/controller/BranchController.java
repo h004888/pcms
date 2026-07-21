@@ -11,8 +11,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 import java.util.List;
@@ -64,10 +66,29 @@ public class BranchController {
         return ResponseEntity.status(HttpStatus.CREATED).body(branchService.create(request));
     }
 
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BranchResponse> createMultipart(
+            @RequestPart("payload") @Valid CreateBranchRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(branchService.create(request, image));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<BranchResponse> update(@PathVariable UUID id,
             @Valid @RequestBody UpdateBranchRequest request) {
         return ResponseEntity.ok(branchService.update(id, request));
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BranchResponse> updateMultipart(@PathVariable UUID id,
+            @RequestPart("payload") @Valid UpdateBranchRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return ResponseEntity.ok(branchService.update(id, request, image));
+    }
+
+    @GetMapping("/{id}/image")
+    public ResponseEntity<byte[]> getImage(@PathVariable UUID id) {
+        return branchService.getImage(id);
     }
 
     /** AT2: Reassign manager */

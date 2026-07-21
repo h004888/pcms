@@ -2,6 +2,7 @@ package com.pcms.userservice.service.impl;
 
 import com.pcms.common.exception.AccountLockedException;
 import com.pcms.common.exception.DuplicateResourceException;
+import com.pcms.common.exception.DependencyUnavailableException;
 import com.pcms.common.exception.InactiveAccountException;
 import com.pcms.common.exception.InvalidCredentialsException;
 import com.pcms.common.exception.InvalidOperationException;
@@ -13,6 +14,7 @@ import com.pcms.userservice.dto.request.CreateUserRequest;
 import com.pcms.userservice.dto.request.ForgotPasswordRequest;
 import com.pcms.userservice.dto.request.LoginRequest;
 import com.pcms.userservice.client.CustomerClient;
+import com.pcms.userservice.client.BranchClient;
 import com.pcms.userservice.dto.request.RegisterRequest;
 import com.pcms.userservice.dto.request.CustomerRegisterRequest;
 import com.pcms.userservice.dto.request.ResendVerificationRequest;
@@ -43,6 +45,7 @@ import com.pcms.userservice.service.EmailVerificationService;
 import com.pcms.userservice.service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import feign.FeignException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -80,6 +83,7 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final EmailVerificationService emailVerificationService;
     private final CustomerClient customerClient;
+    private final BranchClient branchClient;
 
     public UserServiceImpl(UserRepository repository,
             RefreshTokenRepository refreshTokenRepository,
@@ -89,7 +93,8 @@ public class UserServiceImpl implements UserService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             EmailVerificationService emailVerificationService,
-            CustomerClient customerClient) {
+            CustomerClient customerClient,
+            BranchClient branchClient) {
         this.repository = repository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.tokenBlacklistRepository = tokenBlacklistRepository;
@@ -99,6 +104,7 @@ public class UserServiceImpl implements UserService {
         this.jwtService = jwtService;
         this.emailVerificationService = emailVerificationService;
         this.customerClient = customerClient;
+        this.branchClient = branchClient;
     }
 
     @Override
@@ -551,6 +557,7 @@ public class UserServiceImpl implements UserService {
         }
         User user = repository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        requireActiveBranch(request.branchId());
         UUID previous = user.getBranchId();
         user.setBranchId(request.branchId());
         User saved = repository.save(user);
@@ -558,6 +565,26 @@ public class UserServiceImpl implements UserService {
         audit("USER_BRANCH_ASSIGNED", actor, userId, null,
                 "Assigned branch " + request.branchId() + " (was " + previous + ")");
         return toResponse(saved);
+    }
+
+    private void requireActiveBranch(UUID branchId) {
+        try {
+            var branch = branchClient.getBranchById(branchId);
+            if (branch == null || branch.get("status") == null) {
+                throw new ResourceNotFoundException("Branch", branchId);
+            }
+            if (!"ACTIVE".equalsIgnoreCase(String.valueOf(branch.get("status")))) {
+                throw new InvalidOperationException(
+                        "Cannot assign a user to an inactive branch",
+                        "Không thể gán người dùng vào chi nhánh đã ngừng hoạt động.");
+            }
+        } catch (FeignException.NotFound exception) {
+            throw new ResourceNotFoundException("Branch", branchId);
+        } catch (FeignException exception) {
+            throw new DependencyUnavailableException(
+                    "Branch service",
+                    "Không thể xác thực trạng thái chi nhánh. Vui lòng thử lại sau.");
+        }
     }
 
     @Override

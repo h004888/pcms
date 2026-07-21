@@ -74,23 +74,13 @@ public class InventoryServiceImpl implements InventoryService {
         // B-06: Validate medicine exists via catalog-service
         try {
             var medicine = catalogClient.getMedicineById(request.medicineId());
-            if (medicine == null || medicine.get("status") == null
-                    || "UNREACHABLE".equals(medicine.get("status"))) {
+            if (medicine == null || medicine.get("status") == null) {
                 throw new ResourceNotFoundException("Medicine", request.medicineId());
             }
         } catch (FeignException.NotFound e) {
             throw new ResourceNotFoundException("Medicine", request.medicineId());
         }
-        // B-06: Validate branch exists via branch-service
-        try {
-            var branch = branchClient.getBranchById(request.branchId());
-            if (branch == null || branch.get("status") == null
-                    || "UNREACHABLE".equals(branch.get("status"))) {
-                throw new ResourceNotFoundException("Branch", request.branchId());
-            }
-        } catch (FeignException.NotFound e) {
-            throw new ResourceNotFoundException("Branch", request.branchId());
-        }
+        requireActiveBranch(request.branchId());
         if (batchRepository.findByMedicineIdAndBranchIdAndBatchNo(
                 request.medicineId(), request.branchId(), request.batchNo()).isPresent()) {
             throw new DuplicateResourceException("Batch number", request.batchNo());
@@ -99,7 +89,7 @@ public class InventoryServiceImpl implements InventoryService {
         InventoryBatch batch = new InventoryBatch(
                 request.medicineId(), request.branchId(),
                 request.batchNo(), request.qty(), request.expiryDate());
-        batch.setBarcode(resolveBarcode(request.barcode(), request.branchId(), request.batchNo()));
+        batch.setBarcode(resolveBarcode(request.barcode(), request.medicineId(), request.branchId(), request.batchNo()));
         if (request.minStockLevel() != null) {
             batch.setMinStockLevel(request.minStockLevel());
         }
@@ -144,6 +134,7 @@ public class InventoryServiceImpl implements InventoryService {
                     "Quantity must be greater than 0",
                     "Số lượng phải lớn hơn 0");
         }
+        requireActiveBranch(request.branchId());
         List<InventoryBatch> batches = batchRepository.findByMedicineIdAndBranchId(
                 request.medicineId(), request.branchId());
         InventoryBatch targetBatch = batches.stream()
@@ -214,6 +205,7 @@ public class InventoryServiceImpl implements InventoryService {
                     "Quantity must be greater than 0",
                     "Số lượng phải lớn hơn 0");
         }
+        requireActiveBranch(branchId);
         List<InventoryBatch> batches = batchRepository.findAvailableBatchesFifo(
                 medicineId, branchId, LocalDate.now());
         int remaining = qtyNeeded;
@@ -249,12 +241,13 @@ public class InventoryServiceImpl implements InventoryService {
                     "Quantity must be greater than 0",
                     "Số lượng phải lớn hơn 0");
         }
+        requireActiveBranch(request.fromBranchId());
+        requireActiveBranch(request.toBranchId());
 
         // TRANSFER_OUT: pick FIFO from source branch
         List<InventoryBatch> sourceBatches = batchRepository.findAvailableBatchesFifo(
                 request.medicineId(), request.fromBranchId(), LocalDate.now());
         int remaining = request.qty();
-        InventoryBatch firstSourceBatch = null;
         for (InventoryBatch batch : sourceBatches) {
             if (remaining <= 0)
                 break;
@@ -266,34 +259,57 @@ public class InventoryServiceImpl implements InventoryService {
             txn.setReason(request.reason());
             txn.setRefId(request.toBranchId());
             transactionRepository.save(txn);
-            if (firstSourceBatch == null)
-                firstSourceBatch = batch;
+
+            // Preserve each source batch's number and expiry date at the destination.
+            // If that batch was already transferred earlier, merge it instead of creating
+            // another row (and another identical barcode).
+            InventoryBatch destinationBatch = batchRepository
+                    .findByMedicineIdAndBranchIdAndBatchNo(
+                            request.medicineId(), request.toBranchId(), batch.getBatchNo())
+                    .orElseGet(() -> {
+                        InventoryBatch created = new InventoryBatch(
+                                request.medicineId(), request.toBranchId(), batch.getBatchNo(), 0,
+                                batch.getExpiryDate());
+                        created.setMinStockLevel(batch.getMinStockLevel());
+                        created.setBarcode(resolveBarcode(
+                                null, request.medicineId(), request.toBranchId(), batch.getBatchNo()));
+                        return created;
+                    });
+            destinationBatch.setQtyOnHand(destinationBatch.getQtyOnHand() + take);
+            InventoryBatch savedDestination = batchRepository.save(destinationBatch);
+            InventoryTransaction txnIn = new InventoryTransaction(savedDestination.getId(),
+                    TransactionType.TRANSFER_IN, take, request.actorId());
+            txnIn.setReason(request.reason());
+            txnIn.setRefId(request.fromBranchId());
+            transactionRepository.save(txnIn);
             remaining -= take;
         }
         if (remaining > 0) {
             int available = request.qty() - remaining;
             throw new InsufficientStockException(request.medicineId().toString(), request.qty(), available);
         }
-
-        // TRANSFER_IN: credit destination branch with a new batch carrying the same
-        // batchNo/expiry
-        if (firstSourceBatch != null) {
-            InventoryBatch destBatch = new InventoryBatch(
-                    request.medicineId(),
-                    request.toBranchId(),
-                    firstSourceBatch.getBatchNo(),
-                    request.qty(),
-                    firstSourceBatch.getExpiryDate());
-            destBatch.setBarcode(resolveBarcode(null, request.toBranchId(), firstSourceBatch.getBatchNo()));
-            InventoryBatch savedDest = batchRepository.save(destBatch);
-            InventoryTransaction txnIn = new InventoryTransaction(savedDest.getId(),
-                    TransactionType.TRANSFER_IN, request.qty(), request.actorId());
-            txnIn.setReason(request.reason());
-            txnIn.setRefId(request.fromBranchId());
-            transactionRepository.save(txnIn);
-        }
-
         return StockOperationResult.of("Transfer completed", request.qty());
+    }
+
+    /**
+     * Inventory mutations must only target an operating branch. Read-only
+     * inventory screens remain available after a branch is deactivated.
+     */
+    private void requireActiveBranch(UUID branchId) {
+        try {
+            Map<String, Object> branch = branchClient.getBranchById(branchId);
+            if (branch == null || branch.get("status") == null
+                    || "UNREACHABLE".equals(String.valueOf(branch.get("status")))) {
+                throw new ResourceNotFoundException("Branch", branchId);
+            }
+            if (!"ACTIVE".equalsIgnoreCase(String.valueOf(branch.get("status")))) {
+                throw new InvalidOperationException(
+                        "Cannot perform inventory operations for an inactive branch",
+                        "Chi nhánh đã ngừng hoạt động, không thể thực hiện thao tác kho.");
+            }
+        } catch (FeignException.NotFound e) {
+            throw new ResourceNotFoundException("Branch", branchId);
+        }
     }
 
     @Override
@@ -593,9 +609,11 @@ public class InventoryServiceImpl implements InventoryService {
         return escaped;
     }
 
-    private String resolveBarcode(String barcode, UUID branchId, String batchNo) {
+    private String resolveBarcode(String barcode, UUID medicineId, UUID branchId, String batchNo) {
         String resolved = barcode == null || barcode.isBlank()
-                ? branchId + "-" + batchNo
+                ? "PCMS-" + branchId.toString().substring(0, 8)
+                        + "-" + medicineId.toString().substring(0, 8)
+                        + "-" + batchNo
                 : barcode.trim();
         batchRepository.findByBarcodeIgnoreCase(resolved).ifPresent(existing -> {
             throw new DuplicateResourceException("Barcode", resolved);
