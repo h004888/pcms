@@ -86,6 +86,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Map.entry("/api/v1/shop/pdp", Set.of()),
             Map.entry("/api/v1/shop/search", Set.of()),
             Map.entry("/api/v1/shop/lookup", Set.of()),
+            Map.entry("/api/v1/shop/flash-sales", Set.of()),
             Map.entry("/api/v1/ecom-ops/flash-sales", Set.of()),
             Map.entry("/api/v1/categories", Set.of()),
             Map.entry("/api/v1/health-articles", Set.of()),

@@ -12,6 +12,11 @@ public record UpdateBranchRequest(
         @Size(max = 100) String name,
         @Size(max = 255) String address,
         @Size(max = 20) String phone,
-        BranchStatus status
+        BranchStatus status,
+        @Size(max = 100) String province,
+        @Size(max = 100) String district,
+        Double lat,
+        Double lng,
+        @Size(max = 50) String openHours
 ) {
 }

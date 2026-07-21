@@ -35,11 +35,13 @@ public class BranchController {
     @GetMapping
     public ResponseEntity<PageResponse<BranchResponse>> list(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String province,
+            @RequestParam(required = false) String district,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by("code").ascending());
-        return ResponseEntity.ok(PageResponse.from(branchService.list(search, pageable)));
+        return ResponseEntity.ok(PageResponse.from(branchService.list(search, province, district, pageable)));
     }
 
     @GetMapping("/{id}")

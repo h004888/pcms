@@ -33,4 +33,7 @@ public interface CatalogClient {
             @RequestParam(name = "q", required = false, defaultValue = "") String q,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size);
+
+    @GetMapping("/medicines/media-summary")
+    List<Map<String, Object>> getMediaSummaries(@RequestParam("ids") List<String> ids);
 }

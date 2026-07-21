@@ -2,12 +2,14 @@ package com.pcms.catalogservice.service;
 
 import com.pcms.catalogservice.dto.request.CreateMedicineRequest;
 import com.pcms.catalogservice.dto.request.UpdateMedicineRequest;
+import com.pcms.catalogservice.dto.response.MedicineMediaSummaryResponse;
 import com.pcms.catalogservice.dto.response.MedicineResponse;
 import com.pcms.catalogservice.dto.response.PageResponse;
 import com.pcms.catalogservice.enums.MedicineStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public interface MedicineService {
@@ -20,6 +22,8 @@ public interface MedicineService {
                         int size);
 
         MedicineResponse getById(UUID id);
+
+        List<MedicineMediaSummaryResponse> getMediaSummaries(List<UUID> ids);
 
         MedicineResponse getBySku(String sku);
 

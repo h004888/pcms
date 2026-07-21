@@ -309,6 +309,9 @@ public class CustomerServiceImpl implements CustomerService {
         if (!latest.isEmpty()) {
             String latestCode = latest.get(0).getCode();
             String numPart = latestCode.substring(latestCode.lastIndexOf('-') + 1);
+            if (numPart.startsWith(year)) {
+                numPart = numPart.substring(year.length());
+            }
             try {
                 nextNum = Integer.parseInt(numPart) + 1;
             } catch (NumberFormatException ignored) {

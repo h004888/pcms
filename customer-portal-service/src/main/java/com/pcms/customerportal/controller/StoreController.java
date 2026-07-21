@@ -44,18 +44,27 @@ public class StoreController {
             @RequestParam(name = "district", required = false) String district,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
-        // TODO(sprint4-followup): branch-service does not yet expose province/district filter.
-        // We fetch all then filter client-side for MVP. Move to Feign parameters once
-        // branch-service adds them.
-        List<Map<String, Object>> raw = extractData(branchClient.list(page, size));
+        List<Map<String, Object>> raw = extractData(branchClient.list(page, size, province, district));
 
-        List<BranchSummary> filtered = raw.stream()
+        List<BranchSummary> branches = raw.stream()
                 .map(StoreController::toSummary)
-                .filter(b -> matchesProvince(b, province))
-                .filter(b -> matchesDistrict(b, district))
                 .toList();
 
-        return ResponseEntity.ok(new BranchListResponse(filtered, filtered.size()));
+        return ResponseEntity.ok(new BranchListResponse(branches, branches.size()));
+    }
+
+    @GetMapping("/provinces")
+    @Operation(summary = "STORE-PROVINCES - list distinct provinces with branches")
+    public ResponseEntity<List<String>> provinces() {
+        Map<String, Object> all = branchClient.list(0, 999, null, null);
+        List<Map<String, Object>> raw = extractData(all);
+        List<String> provinces = raw.stream()
+                .map(m -> str(m.get("province")))
+                .filter(p -> p != null && !p.isBlank())
+                .distinct()
+                .sorted()
+                .toList();
+        return ResponseEntity.ok(provinces);
     }
 
     @GetMapping("/locator/{branchId}")
@@ -77,20 +86,6 @@ public class StoreController {
         return List.of();
     }
 
-    private static boolean matchesProvince(BranchSummary b, String province) {
-        if (province == null || province.isBlank()) return true;
-        if (b.province() == null) return false;
-        return stripDiacritics(b.province().toLowerCase())
-                .contains(stripDiacritics(province.toLowerCase()));
-    }
-
-    private static boolean matchesDistrict(BranchSummary b, String district) {
-        if (district == null || district.isBlank()) return true;
-        if (b.district() == null) return false;
-        return stripDiacritics(b.district().toLowerCase())
-                .contains(stripDiacritics(district.toLowerCase()));
-    }
-
     private static BranchSummary toSummary(Map<String, Object> m) {
         return new BranchSummary(
                 str(m.get("id")),
@@ -103,7 +98,7 @@ public class StoreController {
                 toDouble(m.get("lat")),
                 toDouble(m.get("lng")),
                 str(m.getOrDefault("openHours", "06:00 - 23:00")),
-                List.of() // services: branch-service has no list yet
+                List.of()
         );
     }
 
@@ -115,15 +110,5 @@ public class StoreController {
         if (o == null) return null;
         if (o instanceof Number n) return n.doubleValue();
         try { return Double.parseDouble(o.toString()); } catch (Exception e) { return null; }
-    }
-
-    /**
-     * Strip Vietnamese diacritics for case-insensitive contains-match.
-     * Simple approach using NFD normalization; good enough for the MVP.
-     */
-    private static String stripDiacritics(String s) {
-        if (s == null) return "";
-        String n = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD);
-        return n.replaceAll("\\p{M}", "");
     }
 }

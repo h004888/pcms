@@ -43,6 +43,21 @@ public class Branch {
     @Column(nullable = false, length = 20)
     private BranchStatus status = BranchStatus.ACTIVE;
 
+    @Column(length = 100)
+    private String province;
+
+    @Column(length = 100)
+    private String district;
+
+    @Column
+    private Double lat;
+
+    @Column
+    private Double lng;
+
+    @Column(name = "open_hours", length = 50)
+    private String openHours;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -75,6 +90,16 @@ public class Branch {
     public void setManagerId(UUID managerId) { this.managerId = managerId; }
     public BranchStatus getStatus() { return status; }
     public void setStatus(BranchStatus status) { this.status = status; }
+    public String getProvince() { return province; }
+    public void setProvince(String province) { this.province = province; }
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
+    public Double getLat() { return lat; }
+    public void setLat(Double lat) { this.lat = lat; }
+    public Double getLng() { return lng; }
+    public void setLng(Double lng) { this.lng = lng; }
+    public String getOpenHours() { return openHours; }
+    public void setOpenHours(String openHours) { this.openHours = openHours; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

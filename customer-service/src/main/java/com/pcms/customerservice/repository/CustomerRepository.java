@@ -31,6 +31,6 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
     Page<Customer> search(String search, Pageable pageable);
 
     /** Used for code generation CUST-yyyy#### */
-    @Query("SELECT c FROM Customer c WHERE c.code LIKE CONCAT('CUST-', :yearPrefix, '%') ORDER BY c.code DESC")
+    @Query("SELECT c FROM Customer c WHERE c.code LIKE CONCAT('CUST-', :yearPrefix, '____') ORDER BY c.code DESC")
     List<Customer> findByYearPrefix(String yearPrefix, Pageable pageable);
 }
