@@ -16,6 +16,7 @@ public record BranchResponse(
         Double lat,
         Double lng,
         String openHours,
+        String imageUrl,
         UUID managerId,
         BranchStatus status,
         LocalDateTime createdAt,

@@ -14,9 +14,13 @@ import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.common.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -76,9 +80,22 @@ public class BranchServiceImpl implements BranchService {
     }
 
     @Override
+    public BranchResponse create(CreateBranchRequest request, MultipartFile image) {
+        BranchResponse created = create(request);
+        return image == null || image.isEmpty() ? created : storeImage(created.id(), image);
+    }
+
+    @Override
     public BranchResponse update(UUID id, UpdateBranchRequest request) {
         Branch branch = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch", id));
+        if (branch.getStatus() == BranchStatus.INACTIVE
+                && (request.status() != BranchStatus.ACTIVE
+                        || request.name() != null
+                        || request.address() != null
+                        || request.phone() != null)) {
+            throw inactiveBranchOperation();
+        }
         if (request.name() != null) branch.setName(request.name());
         if (request.address() != null) branch.setAddress(request.address());
         if (request.phone() != null) branch.setPhone(request.phone());
@@ -92,9 +109,30 @@ public class BranchServiceImpl implements BranchService {
     }
 
     @Override
+    public BranchResponse update(UUID id, UpdateBranchRequest request, MultipartFile image) {
+        BranchResponse updated = update(id, request);
+        return image == null || image.isEmpty() ? updated : storeImage(id, image);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<byte[]> getImage(UUID id) {
+        Branch branch = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Branch", id));
+        if (branch.getImageData() == null || branch.getImageData().length == 0) {
+            throw new ResourceNotFoundException("Branch image", id);
+        }
+        MediaType contentType = branch.getImageContentType() == null
+                ? MediaType.IMAGE_JPEG
+                : MediaType.parseMediaType(branch.getImageContentType());
+        return ResponseEntity.ok().contentType(contentType).body(branch.getImageData());
+    }
+
+    @Override
     public BranchResponse assignManager(UUID id, UUID managerId) {
         Branch branch = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch", id));
+        requireActive(branch);
         validateManager(managerId);
         ensureManagerNotAssignedToAnotherActiveBranch(id, managerId);
         branch.setManagerId(managerId);
@@ -175,10 +213,43 @@ public class BranchServiceImpl implements BranchService {
                 entity.getLat(),
                 entity.getLng(),
                 entity.getOpenHours(),
+                entity.getImageContentType() == null ? null : "/branches/" + entity.getId() + "/image",
                 entity.getManagerId(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());
+    }
+
+    private BranchResponse storeImage(UUID id, MultipartFile image) {
+        if (image.getSize() > 2L * 1024L * 1024L) {
+            throw new InvalidOperationException("Branch image must be <= 2MB", "Ảnh chi nhánh không được vượt quá 2MB");
+        }
+        String contentType = image.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new InvalidOperationException("Unsupported branch image type", "Vui lòng chọn tệp ảnh hợp lệ");
+        }
+        try {
+            Branch branch = repository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Branch", id));
+            requireActive(branch);
+            branch.setImageData(image.getBytes());
+            branch.setImageContentType(contentType);
+            return toResponse(repository.save(branch));
+        } catch (IOException ex) {
+            throw new InvalidOperationException("Cannot read branch image", "Không thể đọc ảnh chi nhánh");
+        }
+    }
+
+    private void requireActive(Branch branch) {
+        if (branch.getStatus() != BranchStatus.ACTIVE) {
+            throw inactiveBranchOperation();
+        }
+    }
+
+    private InvalidOperationException inactiveBranchOperation() {
+        return new InvalidOperationException(
+                "Cannot perform operations for an inactive branch",
+                "Chi nhánh đã ngừng hoạt động. Vui lòng kích hoạt lại trước khi thực hiện thao tác này.");
     }
 
     private BranchStaffResponse mapStaff(Map<?, ?> user) {

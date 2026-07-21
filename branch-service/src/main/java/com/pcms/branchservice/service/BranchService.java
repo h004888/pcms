@@ -6,6 +6,8 @@ import com.pcms.branchservice.dto.response.BranchResponse;
 import com.pcms.branchservice.dto.response.BranchStaffResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,8 +20,12 @@ public interface BranchService {
     BranchResponse getByCode(String code);
 
     BranchResponse create(CreateBranchRequest request);
+    BranchResponse create(CreateBranchRequest request, MultipartFile image);
 
     BranchResponse update(UUID id, UpdateBranchRequest request);
+    BranchResponse update(UUID id, UpdateBranchRequest request, MultipartFile image);
+
+    ResponseEntity<byte[]> getImage(UUID id);
 
     BranchResponse assignManager(UUID id, UUID managerId);
 
