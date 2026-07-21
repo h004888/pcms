@@ -7,6 +7,8 @@ import com.pcms.paymentservice.dto.RefundHistoryResponse;
 import com.pcms.paymentservice.dto.RefundPaymentRequest;
 import org.springframework.data.domain.Page;
 
+import java.math.BigDecimal;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -26,6 +28,12 @@ public interface PaymentService {
      * order-service.
      */
     PaymentResponse create(CreatePaymentRequest request);
+
+    /**
+     * Confirm a pending payment: update status to SUCCESS and notify order-service.
+     */
+    PaymentResponse confirmPayment(UUID paymentId, UUID staffId, String paymentMethod,
+            BigDecimal amount, BigDecimal tenderedAmount, String transactionRef);
 
     /** Soft-cancel: mark payment REFUNDED. */
     PaymentResponse softCancel(UUID id);
