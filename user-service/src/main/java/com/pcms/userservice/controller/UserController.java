@@ -94,8 +94,7 @@ public class UserController {
      */
     @PostMapping
     public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest request) {
-        String tempPassword = generateTempPassword();
-        UserResponse created = userService.create(request, tempPassword);
+        UserResponse created = userService.create(request, request.password());
         return ResponseEntity.ok(created);
     }
 
