@@ -6,6 +6,7 @@ import com.pcms.orderservice.client.CatalogClient;
 import com.pcms.orderservice.client.CustomerClient;
 import com.pcms.orderservice.client.InventoryClient;
 import com.pcms.orderservice.client.PrescriptionClient;
+import com.pcms.orderservice.client.StaffClient;
 import com.pcms.orderservice.entity.Coupon;
 import com.pcms.orderservice.dto.CreateOrderRequest;
 import com.pcms.orderservice.dto.OrderItemRequest;
@@ -71,6 +72,7 @@ public class OrderServiceImpl implements OrderService {
     private final CustomerClient customerClient;
     private final PrescriptionClient prescriptionClient;
     private final com.pcms.orderservice.client.BranchClient branchClient;
+    private final StaffClient staffClient;
     private final com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository;
     private final com.pcms.orderservice.repository.OutboxEventRepository outboxRepo;
     private final CouponService couponService;
@@ -91,6 +93,7 @@ public class OrderServiceImpl implements OrderService {
             CustomerClient customerClient,
             PrescriptionClient prescriptionClient,
             com.pcms.orderservice.client.BranchClient branchClient,
+            StaffClient staffClient,
             com.pcms.orderservice.repository.OrderSequenceRepository sequenceRepository,
             com.pcms.orderservice.repository.OutboxEventRepository outboxRepo,
             CouponService couponService,
@@ -104,6 +107,7 @@ public class OrderServiceImpl implements OrderService {
         this.customerClient = customerClient;
         this.prescriptionClient = prescriptionClient;
         this.branchClient = branchClient;
+        this.staffClient = staffClient;
         this.sequenceRepository = sequenceRepository;
         this.outboxRepo = outboxRepo;
         this.couponService = couponService;
@@ -111,6 +115,39 @@ public class OrderServiceImpl implements OrderService {
         this.sagaCompensationHandler = sagaCompensationHandler;
         this.sagaRepo = sagaRepo;
         this.orderStatusHistoryRepository = orderStatusHistoryRepository;
+    }
+
+    private OrderResponse toResponse(Order order) {
+        String customerName = null;
+        String branchName = null;
+        String staffName = null;
+        try {
+            if (order.getCustomerId() != null) {
+                var c = customerClient.getCustomerById(order.getCustomerId());
+                if (c != null) customerName = (String) c.get("fullName");
+                if (customerName == null) customerName = (String) c.get("name");
+            }
+        } catch (Exception e) {
+            log.warn("Resolve customer name failed for {}: {}", order.getCustomerId(), e.getMessage());
+        }
+        try {
+            if (order.getBranchId() != null) {
+                var b = branchClient.getBranchById(order.getBranchId());
+                if (b != null) branchName = (String) b.get("name");
+            }
+        } catch (Exception e) {
+            log.warn("Resolve branch name failed for {}: {}", order.getBranchId(), e.getMessage());
+        }
+        try {
+            if (order.getStaffId() != null) {
+                var s = staffClient.getStaffById(order.getStaffId());
+                if (s != null) staffName = (String) s.get("fullName");
+                if (staffName == null) staffName = (String) s.get("name");
+            }
+        } catch (Exception e) {
+            log.warn("Resolve staff name failed for {}: {}", order.getStaffId(), e.getMessage());
+        }
+        return OrderResponse.from(order, customerName, branchName, staffName);
     }
 
     @Override
@@ -132,14 +169,14 @@ public class OrderServiceImpl implements OrderService {
         var fromDateTime = dateFrom == null ? null : dateFrom.atStartOfDay();
         var toDateTime = dateTo == null ? null : dateTo.plusDays(1).atStartOfDay().minusNanos(1);
         Page<Order> orders = orderRepository.search(customerId, status, branchId, fromDateTime, toDateTime, pageable);
-        return orders.map(OrderResponse::from);
+        return orders.map(this::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getById(UUID id) {
         return orderRepository.findById(id)
-                .map(OrderResponse::from)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", id));
     }
 
@@ -147,7 +184,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public OrderResponse getByNumber(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
-                .map(OrderResponse::from)
+                .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderNumber));
     }
 
@@ -282,7 +319,7 @@ public class OrderServiceImpl implements OrderService {
                 saved.getId(), OrderStatus.PENDING_PAYMENT, Instant.now(), request.staffId(), "Don hang da duoc tao"));
         log.info("[CHECKPOINT-6] Order saved successfully: id={}, orderNumber={}",
                 saved.getId(), saved.getOrderNumber());
-        return OrderResponse.from(saved);
+        return toResponse(saved);
     }
 
     private boolean isPrescriptionRequired(Map<String, Object> medicine) {
@@ -370,7 +407,7 @@ public class OrderServiceImpl implements OrderService {
         order.setSubtotal(subtotal);
         order.setDiscount(totalDiscount);
         order.setTotal(subtotal.subtract(totalDiscount));
-        return OrderResponse.from(orderRepository.save(order));
+        return toResponse(orderRepository.save(order));
     }
 
     @Override
@@ -389,7 +426,7 @@ public class OrderServiceImpl implements OrderService {
         // saga that has automatic compensation on failure and stuck-saga detection.
         sagaOrchestrator.startOrderFulfillment(order, actorId);
 
-        return OrderResponse.from(order);
+        return toResponse(order);
     }
 
     @Override
@@ -402,7 +439,7 @@ public class OrderServiceImpl implements OrderService {
                     "Only pending-payment orders can be approved",
                     "Chỉ có thể duyệt đơn hàng đang chờ thanh toán");
         }
-        return OrderResponse.from(saveStatusChange(order, OrderStatus.APPROVED, actorId, "Don hang da duoc duyet"));
+        return toResponse(saveStatusChange(order, OrderStatus.APPROVED, actorId, "Don hang da duoc duyet"));
     }
 
     @Override
@@ -415,7 +452,7 @@ public class OrderServiceImpl implements OrderService {
                     "Only pending or approved orders can be rejected",
                     "Chỉ có thể từ chối đơn hàng đang chờ hoặc đã duyệt");
         }
-        return OrderResponse.from(saveStatusChange(order, OrderStatus.REJECTED, actorId, "Don hang da bi tu choi"));
+        return toResponse(saveStatusChange(order, OrderStatus.REJECTED, actorId, "Don hang da bi tu choi"));
     }
 
     @Override
@@ -448,7 +485,7 @@ public class OrderServiceImpl implements OrderService {
                         "inventory-service", "/inventory/orders/" + order.getId() + "/cancelled", payload));
             }
         }
-        return OrderResponse.from(saved);
+        return toResponse(saved);
     }
 
     private Order saveStatusChange(Order order, OrderStatus newStatus, UUID actorId, String note) {
