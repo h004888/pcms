@@ -54,12 +54,16 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public RevenueReportResponse revenue(LocalDate from, LocalDate to, UUID branchId, String groupBy) {
         validateRange(from, to);
-        Map<String, Object> ordersResp = orderClient.getOrders(null, "PAID", branchId, from, to, 0, 1000);
+        Map<String, Object> ordersResp = orderClient.getOrders(null, null, branchId, from, to, 0, 1000);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> orders = (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
 
         Map<String, Map<String, Object>> grouped = new LinkedHashMap<>();
         for (Map<String, Object> order : orders) {
+            String status = String.valueOf(order.get("status"));
+            if (!"PAID".equals(status) && !"COMPLETED".equals(status)) {
+                continue;
+            }
             String createdAtStr = (String) order.get("createdAt");
             if (createdAtStr == null)
                 continue;
@@ -141,13 +145,17 @@ public class ReportServiceImpl implements ReportService {
     public StaffReportResponse staff(StaffReportRequest request) {
         validateRange(request.fromDate(), request.toDate());
         // Aggregation by staff is derived from order-service (staffId field).
-        Map<String, Object> ordersResp = orderClient.getOrders(null, "PAID", request.branchId(),
+        Map<String, Object> ordersResp = orderClient.getOrders(null, null, request.branchId(),
                 request.fromDate(), request.toDate(), 0, 1000);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> orders = (List<Map<String, Object>>) ordersResp.getOrDefault("data", List.of());
 
         Map<String, Map<String, Object>> byStaff = new LinkedHashMap<>();
         for (Map<String, Object> order : orders) {
+            String status = String.valueOf(order.get("status"));
+            if (!"PAID".equals(status) && !"COMPLETED".equals(status)) {
+                continue;
+            }
             String createdAtStr = (String) order.get("createdAt");
             if (createdAtStr != null) {
                 LocalDate date = LocalDateTime.parse(createdAtStr).toLocalDate();
