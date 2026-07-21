@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface BranchService {
-    Page<BranchResponse> list(String search, Pageable pageable);
+    Page<BranchResponse> list(String search, String province, String district, Pageable pageable);
 
     BranchResponse getById(UUID id);
 

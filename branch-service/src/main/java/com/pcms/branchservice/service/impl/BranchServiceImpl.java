@@ -36,8 +36,8 @@ public class BranchServiceImpl implements BranchService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<BranchResponse> list(String search, Pageable pageable) {
-        return repository.searchBranches(search, pageable).map(this::toResponse);
+    public Page<BranchResponse> list(String search, String province, String district, Pageable pageable) {
+        return repository.searchBranches(search, province, district, pageable).map(this::toResponse);
     }
 
     @Override
@@ -67,6 +67,11 @@ public class BranchServiceImpl implements BranchService {
         branch.setAddress(request.address());
         branch.setPhone(request.phone());
         branch.setStatus(BranchStatus.ACTIVE);
+        if (request.province() != null) branch.setProvince(request.province());
+        if (request.district() != null) branch.setDistrict(request.district());
+        if (request.lat() != null) branch.setLat(request.lat());
+        if (request.lng() != null) branch.setLng(request.lng());
+        if (request.openHours() != null) branch.setOpenHours(request.openHours());
         return toResponse(repository.save(branch));
     }
 
@@ -78,6 +83,11 @@ public class BranchServiceImpl implements BranchService {
         if (request.address() != null) branch.setAddress(request.address());
         if (request.phone() != null) branch.setPhone(request.phone());
         if (request.status() != null) branch.setStatus(request.status());
+        if (request.province() != null) branch.setProvince(request.province());
+        if (request.district() != null) branch.setDistrict(request.district());
+        if (request.lat() != null) branch.setLat(request.lat());
+        if (request.lng() != null) branch.setLng(request.lng());
+        if (request.openHours() != null) branch.setOpenHours(request.openHours());
         return toResponse(repository.save(branch));
     }
 
@@ -153,13 +163,18 @@ public class BranchServiceImpl implements BranchService {
         repository.save(branch);
     }
 
-    private BranchResponse toResponse(Branch entity) {
+    public BranchResponse toResponse(Branch entity) {
         return new BranchResponse(
                 entity.getId(),
                 entity.getCode(),
                 entity.getName(),
                 entity.getAddress(),
                 entity.getPhone(),
+                entity.getProvince(),
+                entity.getDistrict(),
+                entity.getLat(),
+                entity.getLng(),
+                entity.getOpenHours(),
                 entity.getManagerId(),
                 entity.getStatus(),
                 entity.getCreatedAt(),

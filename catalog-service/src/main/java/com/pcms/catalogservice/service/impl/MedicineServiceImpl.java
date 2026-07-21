@@ -4,6 +4,7 @@ import com.pcms.catalogservice.client.CategoryClient;
 import com.pcms.catalogservice.client.SupplierClient;
 import com.pcms.catalogservice.dto.request.CreateMedicineRequest;
 import com.pcms.catalogservice.dto.request.UpdateMedicineRequest;
+import com.pcms.catalogservice.dto.response.MedicineMediaSummaryResponse;
 import com.pcms.catalogservice.dto.response.MedicineResponse;
 import com.pcms.catalogservice.dto.response.PageResponse;
 import com.pcms.catalogservice.entity.Medicine;
@@ -71,6 +72,17 @@ public class MedicineServiceImpl implements MedicineService {
         Medicine medicine = medicineRepository.findBySku(sku)
                 .orElseThrow(() -> new ResourceNotFoundException("Medicine", sku));
         return MedicineResponse.from(medicine);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MedicineMediaSummaryResponse> getMediaSummaries(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return medicineRepository.findAllById(ids).stream()
+                .map(MedicineMediaSummaryResponse::from)
+                .toList();
     }
 
     @Override

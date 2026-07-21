@@ -2,6 +2,7 @@ package com.pcms.customerportal.service.impl;
 
 import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.customerportal.client.CatalogClient;
+import com.pcms.customerportal.client.CategoryClient;
 import com.pcms.customerportal.client.InventoryClient;
 import com.pcms.customerportal.dto.response.ProductDetailResponse;
 import com.pcms.customerportal.dto.response.ProductDetailResponse.CategoryRef;
@@ -31,13 +32,16 @@ public class ShopPdpServiceImpl implements ShopPdpService {
     private static final Logger log = LoggerFactory.getLogger(ShopPdpServiceImpl.class);
 
     private final CatalogClient catalogClient;
+    private final CategoryClient categoryClient;
     private final InventoryClient inventoryClient;
     private final ProductReviewRepository reviewRepo;
 
     public ShopPdpServiceImpl(CatalogClient catalogClient,
+                              CategoryClient categoryClient,
                               InventoryClient inventoryClient,
                               ProductReviewRepository reviewRepo) {
         this.catalogClient = catalogClient;
+        this.categoryClient = categoryClient;
         this.inventoryClient = inventoryClient;
         this.reviewRepo = reviewRepo;
     }
@@ -72,8 +76,13 @@ public class ShopPdpServiceImpl implements ShopPdpService {
         Double avgRating = reviewRepo.averageRating(medicineId);
         Long reviewCount = reviewRepo.countByMedicineIdAndStatus(medicineId, "APPROVED");
         List<StockByBranch> stock = loadStock(medicineId);
-        String categoryName = str(medicine.get("categoryName"));
-        List<RelatedProduct> related = loadRelated(medicineId, categoryName);
+
+        String catId = str(medicine.get("categoryId"));
+        Map<String, Object> category = catId != null ? categoryClient.getById(catId) : Map.of();
+        String catSlug = str(category.get("slug"));
+        String catName = str(category.get("name"));
+
+        List<RelatedProduct> related = loadRelated(medicineId, catName);
 
         return new ProductDetailResponse(
                 str(medicine.get("id")),
@@ -81,9 +90,9 @@ public class ShopPdpServiceImpl implements ShopPdpService {
                 str(medicine.get("slug")),
                 str(medicine.get("name")),
                 new CategoryRef(
-                        str(medicine.get("categoryId")),
-                        str(medicine.get("categorySlug")),
-                        str(medicine.get("categoryName"))),
+                        catId,
+                        catSlug,
+                        catName),
                 toBigDecimal(medicine.get("price")),
                 str(medicine.get("unit")),
                 str(medicine.get("imageUrl")),

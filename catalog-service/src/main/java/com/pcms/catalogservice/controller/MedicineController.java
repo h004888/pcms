@@ -2,6 +2,7 @@ package com.pcms.catalogservice.controller;
 
 import com.pcms.catalogservice.dto.request.CreateMedicineRequest;
 import com.pcms.catalogservice.dto.request.UpdateMedicineRequest;
+import com.pcms.catalogservice.dto.response.MedicineMediaSummaryResponse;
 import com.pcms.catalogservice.dto.response.MedicineResponse;
 import com.pcms.catalogservice.dto.response.PageResponse;
 import com.pcms.catalogservice.service.ImageStorageService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -69,6 +71,13 @@ public class MedicineController {
     @GetMapping("/count")
     public ResponseEntity<Long> countByCategory(@RequestParam UUID categoryId) {
         return ResponseEntity.ok(medicineService.countByCategoryId(categoryId));
+    }
+
+    @GetMapping("/media-summary")
+    public ResponseEntity<List<MedicineMediaSummaryResponse>> getMediaSummaries(
+            @RequestParam(name = "ids", required = false) List<UUID> ids) {
+        List<UUID> safeIds = ids == null ? List.of() : ids;
+        return ResponseEntity.ok(medicineService.getMediaSummaries(safeIds));
     }
 
     @GetMapping("/export")

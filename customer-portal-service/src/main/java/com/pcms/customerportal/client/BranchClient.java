@@ -26,13 +26,15 @@ public interface BranchClient {
     @GetMapping("/branches")
     @CircuitBreaker(name = "branchService", fallbackMethod = "fallbackList")
     Map<String, Object> list(@RequestParam(name = "page", defaultValue = "0") int page,
-                             @RequestParam(name = "size", defaultValue = "50") int size);
+                             @RequestParam(name = "size", defaultValue = "50") int size,
+                             @RequestParam(name = "province", required = false) String province,
+                             @RequestParam(name = "district", required = false) String district);
 
     @GetMapping("/branches/{id}")
     @CircuitBreaker(name = "branchService", fallbackMethod = "fallbackGetById")
     Map<String, Object> getById(@PathVariable("id") String id);
 
-    default Map<String, Object> fallbackList(int page, int size, Throwable throwable) {
+    default Map<String, Object> fallbackList(int page, int size, String province, String district, Throwable throwable) {
         log.warn("branch-service unavailable while listing: {}", throwable.getMessage());
         return Map.of("data", List.of(), "total", 0);
     }

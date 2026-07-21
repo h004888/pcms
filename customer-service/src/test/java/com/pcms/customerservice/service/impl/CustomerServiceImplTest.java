@@ -4,6 +4,7 @@ import com.pcms.common.dto.PageResponse;
 import com.pcms.common.exception.DuplicateResourceException;
 import com.pcms.common.exception.InvalidOperationException;
 import com.pcms.customerservice.client.OrderClient;
+import com.pcms.customerservice.client.UserClient;
 import com.pcms.customerservice.dto.request.CreateCustomerRequest;
 import com.pcms.customerservice.dto.request.CustomerProvisionRequest;
 import com.pcms.customerservice.dto.response.CustomerHistoryResponse;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class CustomerServiceImplTest {
@@ -35,6 +37,7 @@ class CustomerServiceImplTest {
     private CustomerRepository customerRepository;
     private LoyaltyTransactionRepository loyaltyRepository;
     private OrderClient orderClient;
+    private UserClient userClient;
     private CustomerServiceImpl customerService;
     private UUID customerId;
 
@@ -43,7 +46,8 @@ class CustomerServiceImplTest {
         customerRepository = Mockito.mock(CustomerRepository.class);
         loyaltyRepository = Mockito.mock(LoyaltyTransactionRepository.class);
         orderClient = Mockito.mock(OrderClient.class);
-        customerService = new CustomerServiceImpl(customerRepository, loyaltyRepository, orderClient);
+        userClient = Mockito.mock(UserClient.class);
+        customerService = new CustomerServiceImpl(customerRepository, loyaltyRepository, orderClient, userClient);
         customerId = UUID.randomUUID();
     }
 
@@ -63,7 +67,7 @@ class CustomerServiceImplTest {
         Mockito.when(orderClient.getOrdersByCustomer(cid, null, null, null, null, 0, 20))
                 .thenReturn(PageResponse.empty(0, 20));
 
-        CustomerServiceImpl service = new CustomerServiceImpl(customerRepository, loyaltyRepository, orderClient);
+        CustomerServiceImpl service = new CustomerServiceImpl(customerRepository, loyaltyRepository, orderClient, userClient);
         CustomerHistoryResponse history = service.getHistory(cid, 0, 20);
 
         assertNotNull(history);
@@ -219,5 +223,35 @@ class CustomerServiceImplTest {
 
         assertThat(response.points()).isEqualTo(5000);
         assertThat(response.tier()).isEqualTo(LoyaltyTier.GOLD);
+    }
+
+    @Test
+    void generateCode_withNormalSequentialCodes_producesNextSequentialCode() {
+        Customer latest = new Customer();
+        latest.setCode("CUST-20260001");
+        when(customerRepository.findByYearPrefix(eq("2026"), any(PageRequest.class)))
+                .thenReturn(List.of(latest));
+        when(customerRepository.existsByPhone(anyString())).thenReturn(false);
+        when(customerRepository.save(any(Customer.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var request = new CreateCustomerRequest("Test", "0900000000", null, null, null, null);
+        var response = customerService.create(request);
+
+        assertThat(response.code()).isEqualTo("CUST-20260002");
+    }
+
+    @Test
+    void generateCode_withCorruptCodeInDb_stripsYearPrefixAndProducesNextCode() {
+        Customer corrupt = new Customer();
+        corrupt.setCode("CUST-202620260002");
+        when(customerRepository.findByYearPrefix(eq("2026"), any(PageRequest.class)))
+                .thenReturn(List.of(corrupt));
+        when(customerRepository.existsByPhone(anyString())).thenReturn(false);
+        when(customerRepository.save(any(Customer.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var request = new CreateCustomerRequest("Test", "0900000001", null, null, null, null);
+        var response = customerService.create(request);
+
+        assertThat(response.code()).startsWith("CUST-2026");
     }
 }

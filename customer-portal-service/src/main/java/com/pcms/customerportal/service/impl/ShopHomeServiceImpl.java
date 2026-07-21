@@ -1,5 +1,6 @@
 package com.pcms.customerportal.service.impl;
 
+import com.pcms.customerportal.client.CatalogClient;
 import com.pcms.customerportal.client.CategoryClient;
 import com.pcms.customerportal.client.OrderClient;
 import com.pcms.customerportal.dto.response.HomePageResponse;
@@ -42,17 +43,20 @@ public class ShopHomeServiceImpl implements ShopHomeService {
     private final CategoryClient categoryClient;
     private final OrderClient orderClient;
     private final QuickLinkRepository quickLinkRepository;
+    private final CatalogClient catalogClient;
     private final JdbcTemplate jdbcTemplate;
 
     public ShopHomeServiceImpl(HomeBannerRepository bannerRepo,
                                CategoryClient categoryClient,
                                OrderClient orderClient,
                                QuickLinkRepository quickLinkRepository,
-                               DataSource dataSource) {
+                               DataSource dataSource,
+                               CatalogClient catalogClient) {
         this.bannerRepo = bannerRepo;
         this.categoryClient = categoryClient;
         this.orderClient = orderClient;
         this.quickLinkRepository = quickLinkRepository;
+        this.catalogClient = catalogClient;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
@@ -160,29 +164,13 @@ public class ShopHomeServiceImpl implements ShopHomeService {
                 .toList();
         if (ids.isEmpty()) return;
 
+        Map<String, Map<String, Object>> mediaMap = fetchMediaSummaries(ids);
+
+        Map<String, Double> ratingMap = new HashMap<>();
+        Map<String, Long> reviewCountMap = new HashMap<>();
         String inClause = ids.stream()
                 .map(id -> "UUID_TO_BIN('" + id.replace("'", "''") + "')")
                 .collect(Collectors.joining(","));
-
-        // Batch 1: descriptions + slugs from pcms_catalog.medicines
-        Map<String, String> descMap = new HashMap<>();
-        Map<String, String> slugMap = new HashMap<>();
-        try {
-            var descRows = jdbcTemplate.queryForList(
-                "SELECT BIN_TO_UUID(id) as id_str, description, slug FROM pcms_catalog.medicines WHERE id IN (" + inClause + ")");
-            for (var row : descRows) {
-                descMap.put(row.get("id_str").toString(),
-                    row.get("description") != null ? row.get("description").toString() : "");
-                slugMap.put(row.get("id_str").toString(),
-                    row.get("slug") != null ? row.get("slug").toString() : "");
-            }
-        } catch (Exception e) {
-            log.warn("Failed to enrich descriptions: {}", e.getMessage());
-        }
-
-        // Batch 2: rating + review_count from pcms_customer_portal.review
-        Map<String, Double> ratingMap = new HashMap<>();
-        Map<String, Long> reviewCountMap = new HashMap<>();
         try {
             var ratingRows = jdbcTemplate.queryForList(
                 "SELECT BIN_TO_UUID(medicine_id) as med_id, AVG(rating) as avg_rating, COUNT(*) as review_count " +
@@ -202,13 +190,56 @@ public class ShopHomeServiceImpl implements ShopHomeService {
         for (int i = 0; i < list.size(); i++) {
             var item = list.get(i);
             String itemId = item.id();
+            Map<String, Object> media = mediaMap.get(itemId);
             list.set(i, new BestSellerResponse(
-                item.id(), slugMap.getOrDefault(itemId, item.slug()), item.name(), item.price(), item.imageUrl(), item.soldCount(),
-                descMap.getOrDefault(itemId, ""),
+                item.id(),
+                pickValue(media, "slug", item.slug()),
+                item.name(),
+                item.price(),
+                pickImageUrl(media, item.imageUrl()),
+                item.soldCount(),
+                pickValue(media, "description", ""),
                 ratingMap.get(itemId),
                 reviewCountMap.getOrDefault(itemId, 0L)
             ));
         }
+    }
+
+    private Map<String, Map<String, Object>> fetchMediaSummaries(List<String> ids) {
+        if (ids == null || ids.isEmpty()) return Map.of();
+        Map<String, Map<String, Object>> mediaMap = new HashMap<>();
+        try {
+            List<Map<String, Object>> summaries = catalogClient.getMediaSummaries(ids);
+            if (summaries == null) return mediaMap;
+            for (Map<String, Object> summary : summaries) {
+                Object id = summary.get("id");
+                if (id != null) {
+                    mediaMap.put(id.toString(), summary);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch media summaries from catalog-service: {}", e.getMessage());
+        }
+        return mediaMap;
+    }
+
+    private static String pickValue(Map<String, Object> summary, String field, String fallback) {
+        if (summary == null) return fallback;
+        Object raw = summary.get(field);
+        if (raw == null) return fallback;
+        String value = raw.toString();
+        return value.isEmpty() ? fallback : value;
+    }
+
+    private static String pickImageUrl(Map<String, Object> summary, String fallback) {
+        if (summary == null) return fallback == null ? "" : fallback;
+        Object raw = summary.get("imageUrl");
+        if (raw == null) return fallback == null ? "" : fallback;
+        String value = raw.toString();
+        if (value.isEmpty()) {
+            return fallback == null ? "" : fallback;
+        }
+        return value;
     }
 
     private List<CategoryTeaserResponse> loadFeaturedCategories() {
