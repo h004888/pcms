@@ -57,4 +57,13 @@ public class OrderTrackingController {
         return ResponseEntity.ok(
                 service.history(CurrentUser.requireCustomerId(userId), status, dateFrom, dateTo, page, size));
     }
+
+    @PostMapping("/{orderNumber}/cancel")
+    @Operation(summary = "Cancel pending-payment order")
+    public ResponseEntity<Void> cancel(
+            @RequestHeader(CurrentUser.USER_ID_HEADER) String userId,
+            @PathVariable("orderNumber") String orderNumber) {
+        service.cancel(orderNumber, CurrentUser.requireCustomerId(userId));
+        return ResponseEntity.noContent().build();
+    }
 }

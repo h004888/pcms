@@ -4,6 +4,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -161,4 +162,8 @@ public interface OrderClient {
         log.warn("order-service unavailable for top-medicines: {}", t.getMessage());
         return List.of();
     }
+
+    @PostMapping("/orders/{id}/cancel")
+    Map<String, Object> cancelOrder(@PathVariable("id") String orderId,
+            @RequestParam("actorId") String actorId);
 }

@@ -257,17 +257,14 @@ public class OrderServiceImpl implements OrderService {
         boolean requiresPrescription = false;
 
         for (OrderItemRequest itemReq : request.items()) {
-            // Call catalog-service to get medicine info
             log.info("[CHECKPOINT-4] Looking up medicine: {}", itemReq.medicineId());
             Map<String, Object> medicine = catalogClient.getMedicineById(itemReq.medicineId());
             String name = (String) medicine.getOrDefault("name", "Unknown");
-            // If catalog fallback returned a placeholder (id matches but name="Unknown"),
-            // the medicine was not found.
-            if ("Unknown".equals(name) || medicine.get("price") == null
-                    || BigDecimal.ZERO.compareTo(new BigDecimal(medicine.get("price").toString())) == 0) {
+            if ("Unknown".equals(name)) {
                 throw new ResourceNotFoundException("Medicine", itemReq.medicineId());
             }
-            BigDecimal price = new BigDecimal(medicine.get("price").toString());
+
+            BigDecimal price = resolveItemPrice(itemReq, medicine);
             requiresPrescription = requiresPrescription || isPrescriptionRequired(medicine);
 
             OrderItem item = new OrderItem();
@@ -328,6 +325,17 @@ public class OrderServiceImpl implements OrderService {
             return booleanValue;
         }
         return value instanceof String text && Boolean.parseBoolean(text);
+    }
+
+    private BigDecimal resolveItemPrice(OrderItemRequest itemReq, Map<String, Object> medicine) {
+        if (itemReq.unitPrice() != null) {
+            return itemReq.unitPrice();
+        }
+        if (medicine.get("price") == null
+                || BigDecimal.ZERO.compareTo(new BigDecimal(medicine.get("price").toString())) == 0) {
+            throw new ResourceNotFoundException("Medicine", itemReq.medicineId());
+        }
+        return new BigDecimal(medicine.get("price").toString());
     }
 
     private void validatePrescription(UUID prescriptionId, UUID customerId) {

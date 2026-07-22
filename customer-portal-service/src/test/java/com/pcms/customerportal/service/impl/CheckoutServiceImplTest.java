@@ -16,6 +16,7 @@ import com.pcms.customerportal.service.VoucherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -73,7 +74,8 @@ class CheckoutServiceImplTest {
         when(cartFactory.getOrCreateCart(customerId)).thenReturn(cart);
         when(cartItemRepository.findByCartId(cart.getId())).thenReturn(List.of(item));
         when(orderClient.createOrder(any(Map.class)))
-                .thenReturn(Map.of("id", orderId.toString(), "orderNumber", "ORD-001", "status", "PENDING"));
+                .thenReturn(Map.of("id", orderId.toString(), "orderNumber", "ORD-001", "status", "PENDING",
+                        "total", cart.getTotal()));
 
         CheckoutConfirmResponse result = checkoutService.confirm(customerId, request);
 
@@ -81,6 +83,60 @@ class CheckoutServiceImplTest {
         assertThat(result.orderId()).isEqualTo(orderId);
         assertThat(result.orderNumber()).isEqualTo("ORD-001");
         verify(cartFactory, times(1)).getOrCreateCart(customerId);
+    }
+
+    @Test
+    void confirm_sendsUnitPriceInOrderItems() {
+        CartItem item = new CartItem();
+        item.setId(UUID.randomUUID());
+        item.setMedicineId(UUID.randomUUID());
+        item.setQty(2);
+        item.setMedicineName("Panadol");
+        item.setUnitPrice(BigDecimal.valueOf(25000));
+
+        UUID orderId = UUID.randomUUID();
+        CheckoutConfirmRequest request = new CheckoutConfirmRequest(
+                UUID.randomUUID(), branchId, "pickup", null, "COD");
+
+        when(cartFactory.getOrCreateCart(customerId)).thenReturn(cart);
+        when(cartItemRepository.findByCartId(cart.getId())).thenReturn(List.of(item));
+        when(orderClient.createOrder(any(Map.class)))
+                .thenReturn(Map.of("id", orderId.toString(), "orderNumber", "ORD-003", "status", "PENDING"));
+
+        checkoutService.confirm(customerId, request);
+
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(orderClient).createOrder(captor.capture());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> items = (List<Map<String, Object>>) captor.getValue().get("items");
+        assertThat(items).isNotEmpty();
+        assertThat(items.get(0).get("unitPrice")).isEqualTo(BigDecimal.valueOf(25000));
+    }
+
+    @Test
+    void confirm_returnsOrderTotalFromResponse() {
+        CartItem item = new CartItem();
+        item.setId(UUID.randomUUID());
+        item.setMedicineId(UUID.randomUUID());
+        item.setQty(1);
+        item.setMedicineName("Panadol");
+        item.setUnitPrice(BigDecimal.valueOf(50000));
+
+        UUID orderId = UUID.randomUUID();
+        CheckoutConfirmRequest request = new CheckoutConfirmRequest(
+                UUID.randomUUID(), branchId, "pickup", null, "COD");
+
+        // cart total is 50000, but order-service response says 52000
+        cart.setTotal(BigDecimal.valueOf(50000));
+        when(cartFactory.getOrCreateCart(customerId)).thenReturn(cart);
+        when(cartItemRepository.findByCartId(cart.getId())).thenReturn(List.of(item));
+        when(orderClient.createOrder(any(Map.class)))
+                .thenReturn(Map.of("id", orderId.toString(), "orderNumber", "ORD-004", "status", "PENDING",
+                        "total", BigDecimal.valueOf(52000)));
+
+        CheckoutConfirmResponse result = checkoutService.confirm(customerId, request);
+
+        assertThat(result.total()).isEqualTo(BigDecimal.valueOf(52000));
     }
 
     @Test
@@ -119,8 +175,8 @@ class CheckoutServiceImplTest {
         when(cartFactory.getOrCreateCart(customerId)).thenReturn(cart);
         when(cartItemRepository.findByCartId(cart.getId())).thenReturn(List.of(item));
         when(orderClient.createOrder(any(Map.class)))
-                .thenReturn(Map.of("id", orderId.toString(), "orderNumber", "ORD-002", "status", "PENDING"));
-        when(cartRepository.save(any(Cart.class))).thenAnswer(inv -> inv.getArgument(0));
+                .thenReturn(Map.of("id", orderId.toString(), "orderNumber", "ORD-002", "status", "PENDING",
+                        "total", cart.getTotal()));        when(cartRepository.save(any(Cart.class))).thenAnswer(inv -> inv.getArgument(0));
 
         checkoutService.confirm(customerId, request);
 

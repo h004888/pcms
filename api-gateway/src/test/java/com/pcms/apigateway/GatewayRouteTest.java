@@ -25,6 +25,8 @@ class GatewayRouteTest {
                 "customer-portal-service route must include /api/v1/orders/*/track");
         assertTrue(yml.contains("/api/v1/orders/*/detail"),
                 "customer-portal-service route must include /api/v1/orders/*/detail");
+        assertTrue(yml.contains("/api/v1/orders/*/cancel"),
+                "customer-portal-service route must include /api/v1/orders/*/cancel");
     }
 
     @Test

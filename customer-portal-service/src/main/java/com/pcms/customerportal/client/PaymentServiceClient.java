@@ -25,11 +25,27 @@ public interface PaymentServiceClient {
     @CircuitBreaker(name = "paymentService", fallbackMethod = "fallbackGetStatus")
     Map<String, Object> getPaymentStatusByOrderNumber(@PathVariable String orderNumber);
 
+    @PostMapping("/payments/{id}/cancel")
+    @CircuitBreaker(name = "paymentService", fallbackMethod = "fallbackCancelPayment")
+    Map<String, Object> cancelPayment(@PathVariable("id") String paymentId);
+
+    @GetMapping("/payments/order/{orderId}")
+    @CircuitBreaker(name = "paymentService", fallbackMethod = "fallbackGetPaymentByOrder")
+    Map<String, Object> getPaymentByOrderId(@PathVariable("orderId") String orderId);
+
     default Map<String, Object> fallbackCreatePayment(Map<String, Object> request, Throwable t) {
         return Map.of("status", "DEFERRED", "message", "Payment service unavailable");
     }
 
     default Map<String, Object> fallbackGetStatus(String orderNumber, Throwable t) {
         return Map.of("status", "UNKNOWN", "message", "Payment service unavailable");
+    }
+
+    default Map<String, Object> fallbackCancelPayment(String paymentId, Throwable t) {
+        return Map.of("status", "ERROR", "message", "Payment service unavailable");
+    }
+
+    default Map<String, Object> fallbackGetPaymentByOrder(String orderId, Throwable t) {
+        return Map.of();
     }
 }

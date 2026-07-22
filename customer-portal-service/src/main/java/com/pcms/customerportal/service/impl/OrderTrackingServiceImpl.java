@@ -3,10 +3,13 @@ package com.pcms.customerportal.service.impl;
 import com.pcms.common.dto.PageResponse;
 import com.pcms.common.exception.ResourceNotFoundException;
 import com.pcms.customerportal.client.OrderClient;
+import com.pcms.customerportal.client.PaymentServiceClient;
 import com.pcms.customerportal.dto.response.OrderDetailResponse;
 import com.pcms.customerportal.dto.response.OrderHistoryItemResponse;
 import com.pcms.customerportal.dto.response.OrderTrackingResponse;
 import com.pcms.customerportal.service.OrderTrackingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,10 +22,14 @@ import java.util.UUID;
 
 @Service
 public class OrderTrackingServiceImpl implements OrderTrackingService {
-    private final OrderClient orderClient;
+    private static final Logger log = LoggerFactory.getLogger(OrderTrackingServiceImpl.class);
 
-    public OrderTrackingServiceImpl(OrderClient orderClient) {
+    private final OrderClient orderClient;
+    private final PaymentServiceClient paymentServiceClient;
+
+    public OrderTrackingServiceImpl(OrderClient orderClient, PaymentServiceClient paymentServiceClient) {
         this.orderClient = orderClient;
+        this.paymentServiceClient = paymentServiceClient;
     }
 
     @Override
@@ -59,6 +66,34 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                         new OrderDetailResponse.Item(uuidValue(item.get("medicineId")), nullableString(item.get("medicineName")),
                                 intValue(item.get("quantity"), 0), decimalValue(item.get("unitPrice")),
                                 decimalValue(item.get("discount")), decimalValue(item.get("subtotal")))).toList());
+    }
+
+    @Override
+    public void cancel(String orderNumber, UUID customerId) {
+        Map<String, Object> order = orderClient.getByNumber(orderNumber);
+        UUID owner = uuidValue(order.get("customerId"));
+        if (order.isEmpty() || owner == null || !owner.equals(customerId)) {
+            throw new ResourceNotFoundException("Order", orderNumber);
+        }
+        String orderIdStr = stringValue(order.get("id"));
+
+        orderClient.cancelOrder(orderIdStr, customerId.toString());
+
+        try {
+            Map<String, Object> payment = paymentServiceClient.getPaymentByOrderId(orderIdStr);
+            if (payment != null && !payment.isEmpty()) {
+                String paymentId = stringValue(payment.get("id"));
+                if (paymentId != null) {
+                    paymentServiceClient.cancelPayment(paymentId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Payment cancel failed for order {} after order already cancelled. "
+                    + "Manual intervention may be required.", orderNumber, e);
+            throw new IllegalStateException(
+                    "Failed to cancel payment for order " + orderNumber
+                            + ". Order has been cancelled but payment may still be PENDING.", e);
+        }
     }
 
     private OrderHistoryItemResponse historyItem(Map<String, Object> order) {

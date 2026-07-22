@@ -86,7 +86,7 @@ spring:
             - id: customer-portal-orders
               uri: lb://customer-portal-service
               predicates:
-                - Path=/api/v1/orders/history,/api/v1/orders/*/track,/api/v1/orders/*/detail
+                - Path=/api/v1/orders/history,/api/v1/orders/*/track,/api/v1/orders/*/detail,/api/v1/orders/*/cancel
               filters:
                 - StripPrefix=2
             # Order (UC06) + Coupons

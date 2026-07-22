@@ -15,4 +15,6 @@ public interface OrderTrackingService {
                                                    int page, int size);
 
     OrderDetailResponse detail(UUID orderId, UUID customerId);
+
+    void cancel(String orderNumber, UUID customerId);
 }

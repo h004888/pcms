@@ -36,6 +36,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -85,8 +86,7 @@ class OrderServiceImplTest {
                         "id", medicineId.toString(),
                         "name", "Panadol 500mg",
                         "price", BigDecimal.valueOf(45000),
-                        "prescriptionRequired", false));
-        lenient().when(sequenceRepository.findByIdForUpdate(any())).thenReturn(java.util.Optional.empty());
+                        "prescriptionRequired", false));        lenient().when(sequenceRepository.findByIdForUpdate(any())).thenReturn(java.util.Optional.empty());
         ReflectionTestUtils.setField(orderService, "bulkDiscountThreshold", 10);
         ReflectionTestUtils.setField(orderService, "bulkDiscountRate", BigDecimal.valueOf(0.05));
     }
@@ -96,7 +96,7 @@ class OrderServiceImplTest {
         // Arrange
         CreateOrderRequest request = new CreateOrderRequest(
                 customerId, branchId, null,
-                List.of(new OrderItemRequest(medicineId, 2)),
+                List.of(new OrderItemRequest(medicineId, 2, null)),
                 null);
 
         Order saved = new Order();
@@ -114,6 +114,59 @@ class OrderServiceImplTest {
 
         // Assert placeholder
         verify(orderStatusHistoryRepository).save(any(OrderStatusHistory.class));
+    }
+
+    @Test
+    void create_withProvidedUnitPrice_usesProvidedPriceNotCatalog() {
+        // Arrange — unitPrice=99999, catalog returns price=45000
+        BigDecimal providedPrice = BigDecimal.valueOf(99999);
+        CreateOrderRequest request = new CreateOrderRequest(
+                customerId, branchId, null,
+                List.of(new OrderItemRequest(medicineId, 2, providedPrice)),
+                null);
+
+        Order saved = new Order();
+        UUID orderId = UUID.randomUUID();
+        saved.setId(orderId);
+        saved.setCustomerId(customerId);
+        saved.setBranchId(branchId);
+        saved.setStatus(OrderStatus.PENDING_PAYMENT);
+        when(couponService.findApplicableCoupon(null)).thenReturn(null);
+        when(couponService.calculateDiscount(any(), any(BigDecimal.class))).thenReturn(BigDecimal.ZERO);
+        when(orderRepository.save(any(Order.class))).thenReturn(saved);
+
+        // Act
+        orderService.create(request);
+
+        // Assert — saved OrderItem must have unitPrice from request (99999), not catalog (45000)
+        verify(orderRepository).save(argThat(order ->
+                order.getItems().get(0).getUnitPrice().compareTo(providedPrice) == 0));
+    }
+
+    @Test
+    void create_withNullUnitPrice_fallsBackToCatalog() {
+        // Arrange — unitPrice is null, should use catalog price=45000
+        CreateOrderRequest request = new CreateOrderRequest(
+                customerId, branchId, null,
+                List.of(new OrderItemRequest(medicineId, 2, null)),
+                null);
+
+        Order saved = new Order();
+        UUID orderId = UUID.randomUUID();
+        saved.setId(orderId);
+        saved.setCustomerId(customerId);
+        saved.setBranchId(branchId);
+        saved.setStatus(OrderStatus.PENDING_PAYMENT);
+        when(couponService.findApplicableCoupon(null)).thenReturn(null);
+        when(couponService.calculateDiscount(any(), any(BigDecimal.class))).thenReturn(BigDecimal.ZERO);
+        when(orderRepository.save(any(Order.class))).thenReturn(saved);
+
+        // Act
+        orderService.create(request);
+
+        // Assert — should fall back to catalog price
+        verify(orderRepository).save(argThat(order ->
+                order.getItems().get(0).getUnitPrice().compareTo(BigDecimal.valueOf(45000)) == 0));
     }
 
     @Test
@@ -135,7 +188,7 @@ class OrderServiceImplTest {
                 .thenReturn(Map.of("id", customerId.toString(), "status", "UNREACHABLE"));
         CreateOrderRequest request = new CreateOrderRequest(
                 customerId, branchId, null,
-                List.of(new OrderItemRequest(medicineId, 1)),
+                List.of(new OrderItemRequest(medicineId, 1, null)),
                 null);
 
         // Act + Assert

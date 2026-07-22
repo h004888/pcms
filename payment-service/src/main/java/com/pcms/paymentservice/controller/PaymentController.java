@@ -96,6 +96,11 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.softCancel(id));
     }
 
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<PaymentResponse> cancel(@PathVariable UUID id) {
+        return ResponseEntity.ok(paymentService.cancelPending(id));
+    }
+
     @GetMapping("/{id}/refund-history")
     public ResponseEntity<RefundHistoryResponse> refundHistory(@PathVariable UUID id) {
         return ResponseEntity.ok(paymentService.refundHistory(id));

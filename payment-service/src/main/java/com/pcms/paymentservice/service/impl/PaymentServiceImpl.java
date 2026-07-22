@@ -150,6 +150,20 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
+    public PaymentResponse cancelPending(UUID id) {
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new InvalidOperationException(
+                    "Only PENDING payments can be cancelled",
+                    "Chỉ có thể hủy thanh toán đang chờ");
+        }
+        payment.setStatus(PaymentStatus.CANCELLED);
+        return PaymentResponse.from(paymentRepository.save(payment));
+    }
+
+    @Override
+    @Transactional
     public PaymentResponse refund(UUID id, RefundPaymentRequest request) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", id));

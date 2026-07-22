@@ -3,6 +3,7 @@ package com.pcms.orderservice.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -10,5 +11,6 @@ import java.util.UUID;
  */
 public record OrderItemRequest(
     @NotNull UUID medicineId,
-    @NotNull @Min(1) Integer quantity
+    @NotNull @Min(1) Integer quantity,
+    BigDecimal unitPrice
 ) {}

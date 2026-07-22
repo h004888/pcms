@@ -38,6 +38,9 @@ public interface PaymentService {
     /** Soft-cancel: mark payment REFUNDED. */
     PaymentResponse softCancel(UUID id);
 
+    /** Cancel a PENDING payment: mark payment CANCELLED. */
+    PaymentResponse cancelPending(UUID id);
+
     /** Refund payment partially or fully. */
     PaymentResponse refund(UUID id, RefundPaymentRequest request);
 

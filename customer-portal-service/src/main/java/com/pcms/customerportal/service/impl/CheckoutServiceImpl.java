@@ -124,11 +124,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
 
         // Create order via order-service
-        List<Map<String, Object>> orderItems = items.stream()
-                .map(item -> Map.<String, Object>of(
-                        "medicineId", item.getMedicineId().toString(),
-                        "quantity", item.getQty()))
-                .toList();
+        List<Map<String, Object>> orderItems = buildOrderItems(items);
 
         Map<String, Object> orderRequest = Map.of(
                 "customerId", customerId.toString(),
@@ -159,7 +155,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         UUID orderId = UUID.fromString(orderIdStr);
         String orderNumber = (String) orderResponse.getOrDefault("orderNumber", "");
         String orderStatus = (String) orderResponse.getOrDefault("status", "PENDING");
-        BigDecimal total = cart.getTotal();
+        BigDecimal total = parseTotal(orderResponse, cart.getTotal());
 
         // Create pending payment for VietQR
         if ("VIETQR".equalsIgnoreCase(request.paymentMethod())) {
@@ -186,5 +182,28 @@ public class CheckoutServiceImpl implements CheckoutService {
         log.info("[Checkout] confirmed order={} for customer={}", orderNumber, customerId);
 
         return new CheckoutConfirmResponse(orderId, orderNumber, null, total, orderStatus);
+    }
+
+    private List<Map<String, Object>> buildOrderItems(List<CartItem> items) {
+        return items.stream()
+                .map(item -> {
+                    Map<String, Object> m = new java.util.HashMap<>();
+                    m.put("medicineId", item.getMedicineId().toString());
+                    m.put("quantity", item.getQty());
+                    m.put("unitPrice", item.getUnitPrice());
+                    return m;
+                })
+                .toList();
+    }
+
+    private BigDecimal parseTotal(Map<String, Object> orderResponse, BigDecimal fallback) {
+        Object totalObj = orderResponse.get("total");
+        if (totalObj instanceof BigDecimal bd) {
+            return bd;
+        }
+        if (totalObj instanceof Number n) {
+            return BigDecimal.valueOf(n.doubleValue());
+        }
+        return fallback;
     }
 }
