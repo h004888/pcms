@@ -101,12 +101,6 @@ public class PaymentServiceImpl implements PaymentService {
                         "Insufficient tendered amount",
                         "Số tiền khách đưa không đủ");
             }
-        } else if (request.paymentMethod() == PaymentMethod.CARD || request.paymentMethod() == PaymentMethod.QR) {
-            if (request.transactionRef() == null || request.transactionRef().isBlank()) {
-                throw new InvalidOperationException(
-                        "Transaction reference is required for CARD/QR payments",
-                        "Cần mã giao dịch cho thanh toán thẻ/QR");
-            }
         }
 
         // Verify the order exists by calling order-service
@@ -244,6 +238,44 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentOpt.get();
         String status = payment.getStatus() == PaymentStatus.SUCCESS ? "PAID" : "PENDING";
         return java.util.Map.of("status", status);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse confirmPayment(UUID paymentId, UUID staffId, String paymentMethod,
+            BigDecimal amount, BigDecimal tenderedAmount, String transactionRef) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
+
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new InvalidOperationException(
+                    "Only PENDING payments can be confirmed",
+                    "Chỉ có thể xác nhận thanh toán đang chờ");
+        }
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setStaffId(staffId);
+        payment.setPaymentMethod(PaymentMethod.valueOf(paymentMethod));
+        payment.setAmount(amount);
+        if (tenderedAmount != null) {
+            payment.setTenderedAmount(tenderedAmount);
+            payment.setChangeAmount(tenderedAmount.subtract(amount));
+        }
+        if (transactionRef != null && !transactionRef.isBlank()) {
+            payment.setTransactionRef(transactionRef.replace("-", ""));
+        }
+
+        Payment saved = paymentRepository.save(payment);
+
+        // Emit outbox event for order-service
+        outboxEventRepository.save(new OutboxEvent(
+                "Order", payment.getOrderId(), "PAYMENT_COMPLETED",
+                "order-service",
+                "/orders/" + payment.getOrderId() + "/pay",
+                String.format("{\"actorId\":\"%s\"}", staffId)));
+        log.info("[payment-outbox] Confirmed payment {} for order {}", paymentId, payment.getOrderId());
+
+        return PaymentResponse.from(saved);
     }
 
     /**

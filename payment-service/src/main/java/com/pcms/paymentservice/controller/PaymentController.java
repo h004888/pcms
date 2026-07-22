@@ -1,6 +1,7 @@
 package com.pcms.paymentservice.controller;
 
 import com.pcms.common.exception.ResourceNotFoundException;
+import com.pcms.paymentservice.dto.ConfirmPaymentRequest;
 import com.pcms.paymentservice.dto.CreatePaymentRequest;
 import com.pcms.common.dto.PageResponse;
 import com.pcms.paymentservice.dto.InvoiceResponse;
@@ -66,6 +67,21 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<PaymentResponse> processPayment(@Valid @RequestBody CreatePaymentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.create(request));
+    }
+
+    /**
+     * POST /api/v1/payments/{id}/confirm - Confirm a pending payment
+     */
+    @PostMapping("/{id}/confirm")
+    public ResponseEntity<PaymentResponse> confirmPayment(@PathVariable UUID id,
+            @RequestBody ConfirmPaymentRequest request) {
+        return ResponseEntity.ok(paymentService.confirmPayment(
+                id,
+                request.staffId(),
+                request.paymentMethod(),
+                request.amount(),
+                request.tenderedAmount(),
+                request.transactionRef()));
     }
 
     @PostMapping("/{id}/refund")

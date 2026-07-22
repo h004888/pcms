@@ -35,6 +35,14 @@ public class Branch {
     @Column(nullable = false, length = 20)
     private String phone;
 
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "image_data", columnDefinition = "LONGBLOB")
+    private byte[] imageData;
+
+    @Column(name = "image_content_type", length = 100)
+    private String imageContentType;
+
     /** FK -> user-service users (BRANCH_MANAGER role) - AT2 of UC03 */
     @Column(name = "manager_id")
     private UUID managerId;
@@ -86,6 +94,10 @@ public class Branch {
     public void setAddress(String address) { this.address = address; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public byte[] getImageData() { return imageData; }
+    public void setImageData(byte[] imageData) { this.imageData = imageData; }
+    public String getImageContentType() { return imageContentType; }
+    public void setImageContentType(String imageContentType) { this.imageContentType = imageContentType; }
     public UUID getManagerId() { return managerId; }
     public void setManagerId(UUID managerId) { this.managerId = managerId; }
     public BranchStatus getStatus() { return status; }

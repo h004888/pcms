@@ -1,5 +1,7 @@
 package com.pcms.inventoryservice.client;
 
+import com.pcms.common.exception.DependencyUnavailableException;
+import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,8 +22,18 @@ public interface CatalogClient {
     Map<String, Object> getMedicineById(@PathVariable UUID id);
 
     default Map<String, Object> fallbackGetMedicine(UUID id, Throwable t) {
+        Throwable current = t;
+        while (current != null) {
+            if (current instanceof FeignException.NotFound notFound) {
+                throw notFound;
+            }
+            current = current.getCause();
+        }
+
         log.warn("Catalog service unavailable for medicine {}: {}", id, t.getMessage());
-        return Map.of("id", id.toString(), "name", "Unknown Medicine", "status", "UNREACHABLE");
+        throw new DependencyUnavailableException(
+                "Catalog service",
+                "Không thể liên lạc với danh mục thuốc để kiểm tra thuốc. Vui lòng thử lại sau.");
     }
 
     // Allow log access without static import
