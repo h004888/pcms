@@ -132,6 +132,15 @@ public class UserServiceImpl implements UserService {
         user.setFailedLoginCount(0);
         User saved = repository.save(user);
         audit("USER_CREATED", saved.getId(), saved.getId(), null, "Created user " + saved.getEmail());
+
+        if (request.role() == Role.CUSTOMER) {
+            if (request.phone() == null || request.phone().isBlank()) {
+                throw new InvalidOperationException(
+                        "Phone is required when creating a CUSTOMER user",
+                        "Số điện thoại là bắt buộc khi tạo tài khoản khách hàng");
+            }
+            provisionCustomer(saved);
+        }
         return toResponse(saved);
     }
 
@@ -235,15 +244,7 @@ public class UserServiceImpl implements UserService {
         User saved = repository.save(user);
 
         // 2.5 Provision matching customer identity before issuing tokens.
-        customerClient.register(new CustomerRegisterRequest(
-                saved.getId(),
-                saved.getFullName(),
-                saved.getPhone(),
-                saved.getEmail(),
-                null,  // address - not collected during registration
-                null,  // dob     - not collected during registration
-                null   // gender  - not collected during registration
-        ));
+        provisionCustomer(saved);
 
         // 3. Generate tokens (auto-login after register)
         String accessToken = jwtService.generateAccessToken(saved);
@@ -579,6 +580,17 @@ public class UserServiceImpl implements UserService {
             user.setPhone(request.phone());
         }
         return toResponse(repository.save(user));
+    }
+
+    private void provisionCustomer(User user) {
+        customerClient.register(new CustomerRegisterRequest(
+                user.getId(),
+                user.getFullName(),
+                user.getPhone(),
+                user.getEmail(),
+                null,
+                null,
+                null));
     }
 
     private static UUID parseUuidOrNull(String value) {
